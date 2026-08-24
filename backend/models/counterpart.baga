@@ -1,5 +1,6 @@
 // models/counterpart.baga — counterparts (контрагенти) table helpers over ormbaga.
-// Table DDL живее в schema.baga на bagabuch. is_client/is_supplier са 0/1 флагчета.
+// Table DDL живее в schema.baga на bagabuch. Типът (клиент/доставчик/двете) е
+// изведен от is_client/is_supplier — съхранението остава като два флага.
 
 import "ormbaga/orm.baga"
 import "ormbaga/sql.baga"
@@ -25,17 +26,46 @@ fn counterpart_next_id(db: OrmDb) -> OrmCount !IO !Net {
     return orm_count_sql(db, "SELECT MAX(id) AS count FROM counterparts")?
 }
 
+// Тип → флагове (customer/supplier/both → is_client/is_supplier).
+fn counterpart_is_client(t: str) -> i64 {
+    if t == "supplier" {
+        return 0
+    }
+    return 1
+}
+
+fn counterpart_is_supplier(t: str) -> i64 {
+    if t == "customer" {
+        return 0
+    }
+    return 1
+}
+
+// Флагове → тип.
+fn counterpart_type_of(ic: i64, is_: i64) -> str {
+    if ic == 1 && is_ == 0 {
+        return "customer"
+    }
+    if ic == 0 && is_ == 1 {
+        return "supplier"
+    }
+    return "both"
+}
+
 fn counterpart_to_json(q: OrmQuery, row: i64) -> JObj {
     let mut o = jobj_new()
     o = jobj_i64(o, "id", orm_cell_by_i64(q, row, "id"))
     o = jobj_str(o, "name", orm_cell_by(q, row, "name"))
+    o = jobj_str(o, "counterpart_type", counterpart_type_of(orm_cell_by_i64(q, row, "is_client"), orm_cell_by_i64(q, row, "is_supplier")))
     o = jobj_str(o, "eik", orm_cell_by(q, row, "eik"))
     o = jobj_str(o, "vat_number", orm_cell_by(q, row, "vat_number"))
     o = jobj_str(o, "address", orm_cell_by(q, row, "address"))
     o = jobj_str(o, "city", orm_cell_by(q, row, "city"))
     o = jobj_str(o, "country", orm_cell_by(q, row, "country"))
-    o = jobj_i64(o, "is_client", orm_cell_by_i64(q, row, "is_client"))
-    o = jobj_i64(o, "is_supplier", orm_cell_by_i64(q, row, "is_supplier"))
+    o = jobj_str(o, "post_code", orm_cell_by(q, row, "post_code"))
+    o = jobj_str(o, "contact_person", orm_cell_by(q, row, "contact_person"))
+    o = jobj_str(o, "email", orm_cell_by(q, row, "email"))
+    o = jobj_str(o, "phone", orm_cell_by(q, row, "phone"))
     let ca = orm_cell_by(q, row, "created_at")
     if ca != "" {
         o = jobj_str(o, "created_at", ca)
@@ -45,7 +75,7 @@ fn counterpart_to_json(q: OrmQuery, row: i64) -> JObj {
 
 // Dual-safe: без ::text кастове (граматиката на boila за кастове е по-тясна).
 fn counterpart_select_sql() -> str {
-    return "SELECT id, name, eik, vat_number, address, city, country, is_client, is_supplier, created_at FROM counterparts"
+    return "SELECT id, name, is_client, is_supplier, eik, vat_number, address, city, country, post_code, contact_person, email, phone, created_at FROM counterparts"
 }
 
 fn counterpart_find(db: OrmDb, id: i64) -> OrmQuery !IO !Net {
@@ -60,7 +90,9 @@ fn counterpart_all(db: OrmDb) -> OrmQuery !IO !Net {
     return orm_query(db, concat(counterpart_select_sql(), " ORDER BY id"))?
 }
 
-fn counterpart_create(db: OrmDb, name: str, eik: str, vat_number: str, address: str, city: str, country: str, is_client: i64, is_supplier: i64) -> OrmExec !IO !Net {
+fn counterpart_create(db: OrmDb, name: str, counterpart_type: str, eik: str, vat_number: str, address: str, city: str, country: str, post_code: str, contact_person: str, email: str, phone: str) -> OrmExec !IO !Net {
+    let ic = counterpart_is_client(counterpart_type)
+    let is_ = counterpart_is_supplier(counterpart_type)
     if counterpart_backend_boila()? == 1 {
         let c = counterpart_next_id(db)?
         if orm_ok_c(c) == 0 {
@@ -71,43 +103,59 @@ fn counterpart_create(db: OrmDb, name: str, eik: str, vat_number: str, address: 
         let cols = vec_new()
         vec_push(cols, "id")
         vec_push(cols, "name")
+        vec_push(cols, "is_client")
+        vec_push(cols, "is_supplier")
         vec_push(cols, "eik")
         vec_push(cols, "vat_number")
         vec_push(cols, "address")
         vec_push(cols, "city")
         vec_push(cols, "country")
-        vec_push(cols, "is_client")
-        vec_push(cols, "is_supplier")
+        vec_push(cols, "post_code")
+        vec_push(cols, "contact_person")
+        vec_push(cols, "email")
+        vec_push(cols, "phone")
         let vals = vec_new()
         vec_push(vals, int_to_str(nid))
         vec_push(vals, name)
+        vec_push(vals, int_to_str(ic))
+        vec_push(vals, int_to_str(is_))
         vec_push(vals, eik)
         vec_push(vals, vat_number)
         vec_push(vals, address)
         vec_push(vals, city)
         vec_push(vals, country)
-        vec_push(vals, int_to_str(is_client))
-        vec_push(vals, int_to_str(is_supplier))
+        vec_push(vals, post_code)
+        vec_push(vals, contact_person)
+        vec_push(vals, email)
+        vec_push(vals, phone)
         return orm_insert_strs(d, counterpart_table(), cols, vals)?
     }
     let cols = vec_new()
     vec_push(cols, "name")
+    vec_push(cols, "is_client")
+    vec_push(cols, "is_supplier")
     vec_push(cols, "eik")
     vec_push(cols, "vat_number")
     vec_push(cols, "address")
     vec_push(cols, "city")
     vec_push(cols, "country")
-    vec_push(cols, "is_client")
-    vec_push(cols, "is_supplier")
+    vec_push(cols, "post_code")
+    vec_push(cols, "contact_person")
+    vec_push(cols, "email")
+    vec_push(cols, "phone")
     let vals = vec_new()
     vec_push(vals, name)
+    vec_push(vals, int_to_str(ic))
+    vec_push(vals, int_to_str(is_))
     vec_push(vals, eik)
     vec_push(vals, vat_number)
     vec_push(vals, address)
     vec_push(vals, city)
     vec_push(vals, country)
-    vec_push(vals, int_to_str(is_client))
-    vec_push(vals, int_to_str(is_supplier))
+    vec_push(vals, post_code)
+    vec_push(vals, contact_person)
+    vec_push(vals, email)
+    vec_push(vals, phone)
     return orm_insert_strs(db, counterpart_table(), cols, vals)?
 }
 

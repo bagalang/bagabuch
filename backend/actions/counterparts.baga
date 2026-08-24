@@ -7,6 +7,14 @@ import "fmrbaga/action.baga"
 import "fmrbaga/jsonx.baga"
 import "ormbaga/orm.baga"
 
+// Проверява типа (customer/supplier/both).
+fn counterpart_type_ok(t: str) -> i64 {
+    if t == "customer" || t == "supplier" || t == "both" {
+        return 1
+    }
+    return 0
+}
+
 fn act_counterparts_index(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     let auth = act_require_auth(ctx, db)
     if auth.ok == 0 {
@@ -43,31 +51,23 @@ fn act_counterparts_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     if name.ok == 0 {
         return act_422_field(db, "name", name)
     }
+    let counterpart_type = jopt_str(b.doc, b.root, "counterpart_type", "both")
+    if counterpart_type_ok(counterpart_type.val) == 0 {
+        return act_err(db, 422, "counterpart_type трябва да е customer/supplier/both")
+    }
     let eik = jopt_str(b.doc, b.root, "eik", "")
     let vat_number = jopt_str(b.doc, b.root, "vat_number", "")
     let address = jopt_str(b.doc, b.root, "address", "")
     let city = jopt_str(b.doc, b.root, "city", "")
     let country = jopt_str(b.doc, b.root, "country", "BG")
-    let ic = jreq_bool(b.doc, b.root, "is_client")
-    let mut is_client: i64 = 0
-    if ic.present == 1 {
-        if ic.ok == 0 {
-            return act_422_field(db, "is_client", ic)
-        }
-        is_client = ic.num
-    }
-    let isp = jreq_bool(b.doc, b.root, "is_supplier")
-    let mut is_supplier: i64 = 0
-    if isp.present == 1 {
-        if isp.ok == 0 {
-            return act_422_field(db, "is_supplier", isp)
-        }
-        is_supplier = isp.num
-    }
+    let post_code = jopt_str(b.doc, b.root, "post_code", "")
+    let contact_person = jopt_str(b.doc, b.root, "contact_person", "")
+    let email = jopt_str(b.doc, b.root, "email", "")
+    let phone = jopt_str(b.doc, b.root, "phone", "")
     if orm_ok_db(db) == 0 {
         return act_err(db, 503, "database unavailable")
     }
-    let ins = counterpart_create(db, name.val, eik.val, vat_number.val, address.val, city.val, country.val, is_client, is_supplier)?
+    let ins = counterpart_create(db, name.val, counterpart_type.val, eik.val, vat_number.val, address.val, city.val, country.val, post_code.val, contact_person.val, email.val, phone.val)?
     if orm_ok(ins) == 0 {
         return act_err(orm_db_exec(ins), 409, orm_err_exec(ins))
     }
@@ -128,6 +128,19 @@ fn act_counterparts_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         vec_push(cols, "name")
         vec_push(vals, name.val)
     }
+    let counterpart_type = jreq_str(b.doc, b.root, "counterpart_type")
+    if counterpart_type.present == 1 {
+        if counterpart_type.ok == 0 {
+            return act_422_field(db, "counterpart_type", counterpart_type)
+        }
+        if counterpart_type_ok(counterpart_type.val) == 0 {
+            return act_err(db, 422, "counterpart_type трябва да е customer/supplier/both")
+        }
+        vec_push(cols, "is_client")
+        vec_push(vals, int_to_str(counterpart_is_client(counterpart_type.val)))
+        vec_push(cols, "is_supplier")
+        vec_push(vals, int_to_str(counterpart_is_supplier(counterpart_type.val)))
+    }
     let eik = jreq_str(b.doc, b.root, "eik")
     if eik.present == 1 {
         if eik.ok == 0 {
@@ -168,21 +181,37 @@ fn act_counterparts_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         vec_push(cols, "country")
         vec_push(vals, country.val)
     }
-    let ic = jreq_bool(b.doc, b.root, "is_client")
-    if ic.present == 1 {
-        if ic.ok == 0 {
-            return act_422_field(db, "is_client", ic)
+    let post_code = jreq_str(b.doc, b.root, "post_code")
+    if post_code.present == 1 {
+        if post_code.ok == 0 {
+            return act_422_field(db, "post_code", post_code)
         }
-        vec_push(cols, "is_client")
-        vec_push(vals, int_to_str(ic.num))
+        vec_push(cols, "post_code")
+        vec_push(vals, post_code.val)
     }
-    let isp = jreq_bool(b.doc, b.root, "is_supplier")
-    if isp.present == 1 {
-        if isp.ok == 0 {
-            return act_422_field(db, "is_supplier", isp)
+    let contact_person = jreq_str(b.doc, b.root, "contact_person")
+    if contact_person.present == 1 {
+        if contact_person.ok == 0 {
+            return act_422_field(db, "contact_person", contact_person)
         }
-        vec_push(cols, "is_supplier")
-        vec_push(vals, int_to_str(isp.num))
+        vec_push(cols, "contact_person")
+        vec_push(vals, contact_person.val)
+    }
+    let email = jreq_str(b.doc, b.root, "email")
+    if email.present == 1 {
+        if email.ok == 0 {
+            return act_422_field(db, "email", email)
+        }
+        vec_push(cols, "email")
+        vec_push(vals, email.val)
+    }
+    let phone = jreq_str(b.doc, b.root, "phone")
+    if phone.present == 1 {
+        if phone.ok == 0 {
+            return act_422_field(db, "phone", phone)
+        }
+        vec_push(cols, "phone")
+        vec_push(vals, phone.val)
     }
     if orm_ok_db(db) == 0 {
         return act_err(db, 503, "database unavailable")

@@ -288,6 +288,34 @@ fn bagabuch_migrations() -> MigrationSet {
         "ALTER TABLE companies ADD COLUMN fiscal_year_start_month BIGINT NOT NULL DEFAULT 1",
         "ALTER TABLE companies DROP COLUMN fiscal_year_start_month"
     )
+    set = migrate_add(
+        set,
+        20260824141,
+        "add_counterparts_contact_person",
+        "ALTER TABLE counterparts ADD COLUMN contact_person TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE counterparts DROP COLUMN contact_person"
+    )
+    set = migrate_add(
+        set,
+        20260824142,
+        "add_counterparts_post_code",
+        "ALTER TABLE counterparts ADD COLUMN post_code TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE counterparts DROP COLUMN post_code"
+    )
+    set = migrate_add(
+        set,
+        20260824143,
+        "add_counterparts_email",
+        "ALTER TABLE counterparts ADD COLUMN email TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE counterparts DROP COLUMN email"
+    )
+    set = migrate_add(
+        set,
+        20260824144,
+        "add_counterparts_phone",
+        "ALTER TABLE counterparts ADD COLUMN phone TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE counterparts DROP COLUMN phone"
+    )
     return set
 }
 
@@ -601,6 +629,34 @@ fn bagabuch_boila_migrations() -> MigrationSet {
         "add_companies_fiscal_year_start_month",
         "ALTER TABLE companies ADD COLUMN fiscal_year_start_month BIGINT",
         "ALTER TABLE companies DROP COLUMN fiscal_year_start_month"
+    )
+    set = migrate_add(
+        set,
+        20260824045,
+        "add_counterparts_contact_person",
+        "ALTER TABLE counterparts ADD COLUMN contact_person TEXT",
+        "ALTER TABLE counterparts DROP COLUMN contact_person"
+    )
+    set = migrate_add(
+        set,
+        20260824046,
+        "add_counterparts_post_code",
+        "ALTER TABLE counterparts ADD COLUMN post_code TEXT",
+        "ALTER TABLE counterparts DROP COLUMN post_code"
+    )
+    set = migrate_add(
+        set,
+        20260824047,
+        "add_counterparts_email",
+        "ALTER TABLE counterparts ADD COLUMN email TEXT",
+        "ALTER TABLE counterparts DROP COLUMN email"
+    )
+    set = migrate_add(
+        set,
+        20260824048,
+        "add_counterparts_phone",
+        "ALTER TABLE counterparts ADD COLUMN phone TEXT",
+        "ALTER TABLE counterparts DROP COLUMN phone"
     )
     return set
 }
