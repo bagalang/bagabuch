@@ -1,6 +1,6 @@
 // routes.baga — route table + fmr_dispatch за bagabuch.
-// Фаза 2: system + auth + companies + accounts. Следват counterparts, products,
-// invoices, journal — същата структура, модул по модул.
+// Фаза 2: system + auth + companies + accounts + counterparts + products +
+// invoices. Следва journal — същата структура, модул по модул.
 
 import "actions/system.baga"
 import "actions/auth.baga"
@@ -8,6 +8,7 @@ import "actions/companies.baga"
 import "actions/accounts.baga"
 import "actions/counterparts.baga"
 import "actions/products.baga"
+import "actions/invoices.baga"
 import "fmrbaga/app.baga"
 import "fmrbaga/ctx.baga"
 import "fmrbaga/deps.baga"
@@ -42,6 +43,11 @@ fn RID_PRODUCTS_CREATE() -> i64 { return 51 }
 fn RID_PRODUCTS_SHOW() -> i64 { return 52 }
 fn RID_PRODUCTS_UPDATE() -> i64 { return 53 }
 fn RID_PRODUCTS_DELETE() -> i64 { return 54 }
+fn RID_INVOICES_INDEX() -> i64 { return 60 }
+fn RID_INVOICES_CREATE() -> i64 { return 61 }
+fn RID_INVOICES_SHOW() -> i64 { return 62 }
+fn RID_INVOICES_UPDATE() -> i64 { return 63 }
+fn RID_INVOICES_DELETE() -> i64 { return 64 }
 
 fn fmr_build_app() -> FmrApp !IO {
     let cfg = fmr_config_load()?
@@ -75,6 +81,11 @@ fn fmr_build_app() -> FmrApp !IO {
     app = fmr_route_meta(app, "GET", "/v1/products/{id}", RID_PRODUCTS_SHOW(), "", "products", 0, "", "Product", "200", "")
     app = fmr_route_meta(app, "PATCH", "/v1/products/{id}", RID_PRODUCTS_UPDATE(), "", "products", 0, "ProductUpdate", "Product", "200", "")
     app = fmr_route_meta(app, "DELETE", "/v1/products/{id}", RID_PRODUCTS_DELETE(), "", "products", 0, "", "-", "204", "")
+    app = fmr_route_meta(app, "GET", "/v1/invoices", RID_INVOICES_INDEX(), "", "invoices", 0, "", "InvoiceList", "200", "limit,offset")
+    app = fmr_route_meta(app, "POST", "/v1/invoices", RID_INVOICES_CREATE(), "", "invoices", 0, "InvoiceCreate", "Invoice", "201", "")
+    app = fmr_route_meta(app, "GET", "/v1/invoices/{id}", RID_INVOICES_SHOW(), "", "invoices", 0, "", "Invoice", "200", "")
+    app = fmr_route_meta(app, "PATCH", "/v1/invoices/{id}", RID_INVOICES_UPDATE(), "", "invoices", 0, "InvoiceUpdate", "Invoice", "200", "")
+    app = fmr_route_meta(app, "DELETE", "/v1/invoices/{id}", RID_INVOICES_DELETE(), "", "invoices", 0, "", "-", "204", "")
     return app
 }
 
@@ -120,5 +131,10 @@ fn fmr_dispatch(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     if id == RID_PRODUCTS_SHOW() { return act_products_show(ctx, db)? }
     if id == RID_PRODUCTS_UPDATE() { return act_products_update(ctx, db)? }
     if id == RID_PRODUCTS_DELETE() { return act_products_delete(ctx, db)? }
+    if id == RID_INVOICES_INDEX() { return act_invoices_index(ctx, db)? }
+    if id == RID_INVOICES_CREATE() { return act_invoices_create(ctx, db)? }
+    if id == RID_INVOICES_SHOW() { return act_invoices_show(ctx, db)? }
+    if id == RID_INVOICES_UPDATE() { return act_invoices_update(ctx, db)? }
+    if id == RID_INVOICES_DELETE() { return act_invoices_delete(ctx, db)? }
     return fmr_out(fmr_500("unhandled route"), db)
 }
