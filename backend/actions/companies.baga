@@ -48,15 +48,43 @@ fn act_companies_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         return act_422_field(db, "eik", eik)
     }
     let vat_number = jopt_str(b.doc, b.root, "vat_number", "")
+    let ivr = jreq_bool(b.doc, b.root, "is_vat_registered")
+    let mut is_vat_registered: i64 = 0
+    if ivr.present == 1 {
+        if ivr.ok == 0 {
+            return act_422_field(db, "is_vat_registered", ivr)
+        }
+        is_vat_registered = ivr.num
+    }
+    let vat_period = jopt_str(b.doc, b.root, "vat_period", "monthly")
+    let currency = jopt_str(b.doc, b.root, "currency", "BGN")
     let address = jopt_str(b.doc, b.root, "address", "")
     let city = jopt_str(b.doc, b.root, "city", "")
+    let post_code = jopt_str(b.doc, b.root, "post_code", "")
+    let phone = jopt_str(b.doc, b.root, "phone", "")
+    let email = jopt_str(b.doc, b.root, "email", "")
+    let website = jopt_str(b.doc, b.root, "website", "")
     let mol = jopt_str(b.doc, b.root, "mol", "")
+    let manager_eik = jopt_str(b.doc, b.root, "manager_eik", "")
+    let accountant_name = jopt_str(b.doc, b.root, "accountant_name", "")
+    let accountant_egn = jopt_str(b.doc, b.root, "accountant_egn", "")
+    let tax_authority = jopt_str(b.doc, b.root, "tax_authority", "")
+    let nap_office = jopt_str(b.doc, b.root, "nap_office", "")
     let iban = jopt_str(b.doc, b.root, "iban", "")
     let bic = jopt_str(b.doc, b.root, "bic", "")
+    let inventory_valuation_method = jopt_str(b.doc, b.root, "inventory_valuation_method", "WAC")
+    let fysm = jreq_i64(b.doc, b.root, "fiscal_year_start_month")
+    let mut fiscal_year_start_month: i64 = 1
+    if fysm.present == 1 {
+        if fysm.ok == 0 {
+            return act_422_field(db, "fiscal_year_start_month", fysm)
+        }
+        fiscal_year_start_month = fysm.num
+    }
     if orm_ok_db(db) == 0 {
         return act_err(db, 503, "database unavailable")
     }
-    let ins = company_create(db, name.val, eik.val, vat_number.val, address.val, city.val, mol.val, iban.val, bic.val)?
+    let ins = company_create(db, name.val, eik.val, vat_number.val, is_vat_registered, vat_period.val, currency.val, address.val, city.val, post_code.val, phone.val, email.val, website.val, mol.val, manager_eik.val, accountant_name.val, accountant_egn.val, tax_authority.val, nap_office.val, iban.val, bic.val, inventory_valuation_method.val, fiscal_year_start_month)?
     if orm_ok(ins) == 0 {
         return act_err(orm_db_exec(ins), 409, orm_err_exec(ins))
     }
@@ -133,6 +161,30 @@ fn act_companies_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         vec_push(cols, "vat_number")
         vec_push(vals, vat_number.val)
     }
+    let ivr = jreq_bool(b.doc, b.root, "is_vat_registered")
+    if ivr.present == 1 {
+        if ivr.ok == 0 {
+            return act_422_field(db, "is_vat_registered", ivr)
+        }
+        vec_push(cols, "is_vat_registered")
+        vec_push(vals, int_to_str(ivr.num))
+    }
+    let vat_period = jreq_str(b.doc, b.root, "vat_period")
+    if vat_period.present == 1 {
+        if vat_period.ok == 0 {
+            return act_422_field(db, "vat_period", vat_period)
+        }
+        vec_push(cols, "vat_period")
+        vec_push(vals, vat_period.val)
+    }
+    let currency = jreq_str(b.doc, b.root, "currency")
+    if currency.present == 1 {
+        if currency.ok == 0 {
+            return act_422_field(db, "currency", currency)
+        }
+        vec_push(cols, "currency")
+        vec_push(vals, currency.val)
+    }
     let address = jreq_str(b.doc, b.root, "address")
     if address.present == 1 {
         if address.ok == 0 {
@@ -149,6 +201,38 @@ fn act_companies_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         vec_push(cols, "city")
         vec_push(vals, city.val)
     }
+    let post_code = jreq_str(b.doc, b.root, "post_code")
+    if post_code.present == 1 {
+        if post_code.ok == 0 {
+            return act_422_field(db, "post_code", post_code)
+        }
+        vec_push(cols, "post_code")
+        vec_push(vals, post_code.val)
+    }
+    let phone = jreq_str(b.doc, b.root, "phone")
+    if phone.present == 1 {
+        if phone.ok == 0 {
+            return act_422_field(db, "phone", phone)
+        }
+        vec_push(cols, "phone")
+        vec_push(vals, phone.val)
+    }
+    let email = jreq_str(b.doc, b.root, "email")
+    if email.present == 1 {
+        if email.ok == 0 {
+            return act_422_field(db, "email", email)
+        }
+        vec_push(cols, "email")
+        vec_push(vals, email.val)
+    }
+    let website = jreq_str(b.doc, b.root, "website")
+    if website.present == 1 {
+        if website.ok == 0 {
+            return act_422_field(db, "website", website)
+        }
+        vec_push(cols, "website")
+        vec_push(vals, website.val)
+    }
     let mol = jreq_str(b.doc, b.root, "mol")
     if mol.present == 1 {
         if mol.ok == 0 {
@@ -156,6 +240,46 @@ fn act_companies_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         }
         vec_push(cols, "mol")
         vec_push(vals, mol.val)
+    }
+    let manager_eik = jreq_str(b.doc, b.root, "manager_eik")
+    if manager_eik.present == 1 {
+        if manager_eik.ok == 0 {
+            return act_422_field(db, "manager_eik", manager_eik)
+        }
+        vec_push(cols, "manager_eik")
+        vec_push(vals, manager_eik.val)
+    }
+    let accountant_name = jreq_str(b.doc, b.root, "accountant_name")
+    if accountant_name.present == 1 {
+        if accountant_name.ok == 0 {
+            return act_422_field(db, "accountant_name", accountant_name)
+        }
+        vec_push(cols, "accountant_name")
+        vec_push(vals, accountant_name.val)
+    }
+    let accountant_egn = jreq_str(b.doc, b.root, "accountant_egn")
+    if accountant_egn.present == 1 {
+        if accountant_egn.ok == 0 {
+            return act_422_field(db, "accountant_egn", accountant_egn)
+        }
+        vec_push(cols, "accountant_egn")
+        vec_push(vals, accountant_egn.val)
+    }
+    let tax_authority = jreq_str(b.doc, b.root, "tax_authority")
+    if tax_authority.present == 1 {
+        if tax_authority.ok == 0 {
+            return act_422_field(db, "tax_authority", tax_authority)
+        }
+        vec_push(cols, "tax_authority")
+        vec_push(vals, tax_authority.val)
+    }
+    let nap_office = jreq_str(b.doc, b.root, "nap_office")
+    if nap_office.present == 1 {
+        if nap_office.ok == 0 {
+            return act_422_field(db, "nap_office", nap_office)
+        }
+        vec_push(cols, "nap_office")
+        vec_push(vals, nap_office.val)
     }
     let iban = jreq_str(b.doc, b.root, "iban")
     if iban.present == 1 {
@@ -172,6 +296,22 @@ fn act_companies_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         }
         vec_push(cols, "bic")
         vec_push(vals, bic.val)
+    }
+    let inventory_valuation_method = jreq_str(b.doc, b.root, "inventory_valuation_method")
+    if inventory_valuation_method.present == 1 {
+        if inventory_valuation_method.ok == 0 {
+            return act_422_field(db, "inventory_valuation_method", inventory_valuation_method)
+        }
+        vec_push(cols, "inventory_valuation_method")
+        vec_push(vals, inventory_valuation_method.val)
+    }
+    let fysm = jreq_i64(b.doc, b.root, "fiscal_year_start_month")
+    if fysm.present == 1 {
+        if fysm.ok == 0 {
+            return act_422_field(db, "fiscal_year_start_month", fysm)
+        }
+        vec_push(cols, "fiscal_year_start_month")
+        vec_push(vals, int_to_str(fysm.num))
     }
     if orm_ok_db(db) == 0 {
         return act_err(db, 503, "database unavailable")

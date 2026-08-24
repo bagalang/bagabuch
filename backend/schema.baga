@@ -190,6 +190,104 @@ fn bagabuch_migrations() -> MigrationSet {
         "CREATE INDEX index_bank_transactions_date ON bank_transactions (txn_date)",
         "DROP INDEX IF EXISTS index_bank_transactions_date"
     )
+    set = migrate_add(
+        set,
+        20260824127,
+        "add_companies_is_vat_registered",
+        "ALTER TABLE companies ADD COLUMN is_vat_registered BIGINT NOT NULL DEFAULT 0",
+        "ALTER TABLE companies DROP COLUMN is_vat_registered"
+    )
+    set = migrate_add(
+        set,
+        20260824128,
+        "add_companies_vat_period",
+        "ALTER TABLE companies ADD COLUMN vat_period TEXT NOT NULL DEFAULT 'monthly'",
+        "ALTER TABLE companies DROP COLUMN vat_period"
+    )
+    set = migrate_add(
+        set,
+        20260824129,
+        "add_companies_currency",
+        "ALTER TABLE companies ADD COLUMN currency TEXT NOT NULL DEFAULT 'BGN'",
+        "ALTER TABLE companies DROP COLUMN currency"
+    )
+    set = migrate_add(
+        set,
+        20260824130,
+        "add_companies_manager_eik",
+        "ALTER TABLE companies ADD COLUMN manager_eik TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE companies DROP COLUMN manager_eik"
+    )
+    set = migrate_add(
+        set,
+        20260824131,
+        "add_companies_accountant_name",
+        "ALTER TABLE companies ADD COLUMN accountant_name TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE companies DROP COLUMN accountant_name"
+    )
+    set = migrate_add(
+        set,
+        20260824132,
+        "add_companies_accountant_egn",
+        "ALTER TABLE companies ADD COLUMN accountant_egn TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE companies DROP COLUMN accountant_egn"
+    )
+    set = migrate_add(
+        set,
+        20260824133,
+        "add_companies_tax_authority",
+        "ALTER TABLE companies ADD COLUMN tax_authority TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE companies DROP COLUMN tax_authority"
+    )
+    set = migrate_add(
+        set,
+        20260824134,
+        "add_companies_nap_office",
+        "ALTER TABLE companies ADD COLUMN nap_office TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE companies DROP COLUMN nap_office"
+    )
+    set = migrate_add(
+        set,
+        20260824135,
+        "add_companies_post_code",
+        "ALTER TABLE companies ADD COLUMN post_code TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE companies DROP COLUMN post_code"
+    )
+    set = migrate_add(
+        set,
+        20260824136,
+        "add_companies_phone",
+        "ALTER TABLE companies ADD COLUMN phone TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE companies DROP COLUMN phone"
+    )
+    set = migrate_add(
+        set,
+        20260824137,
+        "add_companies_email",
+        "ALTER TABLE companies ADD COLUMN email TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE companies DROP COLUMN email"
+    )
+    set = migrate_add(
+        set,
+        20260824138,
+        "add_companies_website",
+        "ALTER TABLE companies ADD COLUMN website TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE companies DROP COLUMN website"
+    )
+    set = migrate_add(
+        set,
+        20260824139,
+        "add_companies_inventory_valuation_method",
+        "ALTER TABLE companies ADD COLUMN inventory_valuation_method TEXT NOT NULL DEFAULT 'WAC'",
+        "ALTER TABLE companies DROP COLUMN inventory_valuation_method"
+    )
+    set = migrate_add(
+        set,
+        20260824140,
+        "add_companies_fiscal_year_start_month",
+        "ALTER TABLE companies ADD COLUMN fiscal_year_start_month BIGINT NOT NULL DEFAULT 1",
+        "ALTER TABLE companies DROP COLUMN fiscal_year_start_month"
+    )
     return set
 }
 
@@ -405,6 +503,104 @@ fn bagabuch_boila_migrations() -> MigrationSet {
         "index_settings_key",
         "CREATE INDEX index_settings_key ON settings (key)",
         "DROP INDEX IF EXISTS index_settings_key"
+    )
+    set = migrate_add(
+        set,
+        20260824031,
+        "add_companies_is_vat_registered",
+        "ALTER TABLE companies ADD COLUMN is_vat_registered BIGINT",
+        "ALTER TABLE companies DROP COLUMN is_vat_registered"
+    )
+    set = migrate_add(
+        set,
+        20260824032,
+        "add_companies_vat_period",
+        "ALTER TABLE companies ADD COLUMN vat_period TEXT",
+        "ALTER TABLE companies DROP COLUMN vat_period"
+    )
+    set = migrate_add(
+        set,
+        20260824033,
+        "add_companies_currency",
+        "ALTER TABLE companies ADD COLUMN currency TEXT",
+        "ALTER TABLE companies DROP COLUMN currency"
+    )
+    set = migrate_add(
+        set,
+        20260824034,
+        "add_companies_manager_eik",
+        "ALTER TABLE companies ADD COLUMN manager_eik TEXT",
+        "ALTER TABLE companies DROP COLUMN manager_eik"
+    )
+    set = migrate_add(
+        set,
+        20260824035,
+        "add_companies_accountant_name",
+        "ALTER TABLE companies ADD COLUMN accountant_name TEXT",
+        "ALTER TABLE companies DROP COLUMN accountant_name"
+    )
+    set = migrate_add(
+        set,
+        20260824036,
+        "add_companies_accountant_egn",
+        "ALTER TABLE companies ADD COLUMN accountant_egn TEXT",
+        "ALTER TABLE companies DROP COLUMN accountant_egn"
+    )
+    set = migrate_add(
+        set,
+        20260824037,
+        "add_companies_tax_authority",
+        "ALTER TABLE companies ADD COLUMN tax_authority TEXT",
+        "ALTER TABLE companies DROP COLUMN tax_authority"
+    )
+    set = migrate_add(
+        set,
+        20260824038,
+        "add_companies_nap_office",
+        "ALTER TABLE companies ADD COLUMN nap_office TEXT",
+        "ALTER TABLE companies DROP COLUMN nap_office"
+    )
+    set = migrate_add(
+        set,
+        20260824039,
+        "add_companies_post_code",
+        "ALTER TABLE companies ADD COLUMN post_code TEXT",
+        "ALTER TABLE companies DROP COLUMN post_code"
+    )
+    set = migrate_add(
+        set,
+        20260824040,
+        "add_companies_phone",
+        "ALTER TABLE companies ADD COLUMN phone TEXT",
+        "ALTER TABLE companies DROP COLUMN phone"
+    )
+    set = migrate_add(
+        set,
+        20260824041,
+        "add_companies_email",
+        "ALTER TABLE companies ADD COLUMN email TEXT",
+        "ALTER TABLE companies DROP COLUMN email"
+    )
+    set = migrate_add(
+        set,
+        20260824042,
+        "add_companies_website",
+        "ALTER TABLE companies ADD COLUMN website TEXT",
+        "ALTER TABLE companies DROP COLUMN website"
+    )
+    set = migrate_add(
+        set,
+        20260824043,
+        "add_companies_inventory_valuation_method",
+        "ALTER TABLE companies ADD COLUMN inventory_valuation_method TEXT",
+        "ALTER TABLE companies DROP COLUMN inventory_valuation_method"
+    )
+    set = migrate_add(
+        set,
+        20260824044,
+        "add_companies_fiscal_year_start_month",
+        "ALTER TABLE companies ADD COLUMN fiscal_year_start_month BIGINT",
+        "ALTER TABLE companies DROP COLUMN fiscal_year_start_month"
     )
     return set
 }
