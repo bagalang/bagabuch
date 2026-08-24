@@ -137,6 +137,17 @@ const bg: Dict = {
   "journal.debit": "Дебит",
   "journal.credit": "Кредит",
   "journal.amount": "Сума",
+  "journal.new_entry": "Нов запис",
+  "journal.tab.purchase": "Покупки",
+  "journal.tab.sales": "Продажби",
+  "journal.tab.no_vat": "Без ДДС",
+  "journal.counterpart": "Контрагент",
+  "journal.document_number": "Документ №",
+  "journal.document_date": "Дата на документ",
+  "journal.vat_period": "ДДС период",
+  "journal.vat_amount": "ДДС сума",
+  "journal.add_line": "Добави ред",
+  "journal.balance": "Баланс",
 };
 
 const en: Dict = {
@@ -260,6 +271,17 @@ const en: Dict = {
   "journal.debit": "Debit",
   "journal.credit": "Credit",
   "journal.amount": "Amount",
+  "journal.new_entry": "New entry",
+  "journal.tab.purchase": "Purchases",
+  "journal.tab.sales": "Sales",
+  "journal.tab.no_vat": "Without VAT",
+  "journal.counterpart": "Counterpart",
+  "journal.document_number": "Document №",
+  "journal.document_date": "Document date",
+  "journal.vat_period": "VAT period",
+  "journal.vat_amount": "VAT amount",
+  "journal.add_line": "Add line",
+  "journal.balance": "Balance",
 };
 
 export const dictionaries: Record<Lang, Dict> = { bg, en };

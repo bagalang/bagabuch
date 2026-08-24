@@ -365,6 +365,69 @@ fn bagabuch_migrations() -> MigrationSet {
         "ALTER TABLE invoices ADD COLUMN journal_entry_id BIGINT NOT NULL DEFAULT 0",
         "ALTER TABLE invoices DROP COLUMN journal_entry_id"
     )
+    set = migrate_add(
+        set,
+        20260824152,
+        "add_journal_entries_vat_type",
+        "ALTER TABLE journal_entries ADD COLUMN vat_type TEXT NOT NULL DEFAULT 'no_vat'",
+        "ALTER TABLE journal_entries DROP COLUMN vat_type"
+    )
+    set = migrate_add(
+        set,
+        20260824153,
+        "add_journal_entries_counterpart_id",
+        "ALTER TABLE journal_entries ADD COLUMN counterpart_id BIGINT NOT NULL DEFAULT 0",
+        "ALTER TABLE journal_entries DROP COLUMN counterpart_id"
+    )
+    set = migrate_add(
+        set,
+        20260824154,
+        "add_journal_entries_counterpart_name",
+        "ALTER TABLE journal_entries ADD COLUMN counterpart_name TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE journal_entries DROP COLUMN counterpart_name"
+    )
+    set = migrate_add(
+        set,
+        20260824155,
+        "add_journal_entries_counterpart_vat_number",
+        "ALTER TABLE journal_entries ADD COLUMN counterpart_vat_number TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE journal_entries DROP COLUMN counterpart_vat_number"
+    )
+    set = migrate_add(
+        set,
+        20260824156,
+        "add_journal_entries_document_number",
+        "ALTER TABLE journal_entries ADD COLUMN document_number TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE journal_entries DROP COLUMN document_number"
+    )
+    set = migrate_add(
+        set,
+        20260824157,
+        "add_journal_entries_document_date",
+        "ALTER TABLE journal_entries ADD COLUMN document_date TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE journal_entries DROP COLUMN document_date"
+    )
+    set = migrate_add(
+        set,
+        20260824158,
+        "add_journal_entries_vat_period",
+        "ALTER TABLE journal_entries ADD COLUMN vat_period TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE journal_entries DROP COLUMN vat_period"
+    )
+    set = migrate_add(
+        set,
+        20260824159,
+        "add_journal_entries_total_vat_amount",
+        "ALTER TABLE journal_entries ADD COLUMN total_vat_amount NUMERIC(18,2) NOT NULL DEFAULT 0",
+        "ALTER TABLE journal_entries DROP COLUMN total_vat_amount"
+    )
+    set = migrate_add(
+        set,
+        20260824160,
+        "add_journal_lines_vat_amount",
+        "ALTER TABLE journal_lines ADD COLUMN vat_amount NUMERIC(18,2) NOT NULL DEFAULT 0",
+        "ALTER TABLE journal_lines DROP COLUMN vat_amount"
+    )
     return set
 }
 
@@ -755,6 +818,69 @@ fn bagabuch_boila_migrations() -> MigrationSet {
         "add_invoices_journal_entry_id",
         "ALTER TABLE invoices ADD COLUMN journal_entry_id BIGINT",
         "ALTER TABLE invoices DROP COLUMN journal_entry_id"
+    )
+    set = migrate_add(
+        set,
+        20260824056,
+        "add_journal_entries_vat_type",
+        "ALTER TABLE journal_entries ADD COLUMN vat_type TEXT",
+        "ALTER TABLE journal_entries DROP COLUMN vat_type"
+    )
+    set = migrate_add(
+        set,
+        20260824057,
+        "add_journal_entries_counterpart_id",
+        "ALTER TABLE journal_entries ADD COLUMN counterpart_id BIGINT",
+        "ALTER TABLE journal_entries DROP COLUMN counterpart_id"
+    )
+    set = migrate_add(
+        set,
+        20260824058,
+        "add_journal_entries_counterpart_name",
+        "ALTER TABLE journal_entries ADD COLUMN counterpart_name TEXT",
+        "ALTER TABLE journal_entries DROP COLUMN counterpart_name"
+    )
+    set = migrate_add(
+        set,
+        20260824059,
+        "add_journal_entries_counterpart_vat_number",
+        "ALTER TABLE journal_entries ADD COLUMN counterpart_vat_number TEXT",
+        "ALTER TABLE journal_entries DROP COLUMN counterpart_vat_number"
+    )
+    set = migrate_add(
+        set,
+        20260824060,
+        "add_journal_entries_document_number",
+        "ALTER TABLE journal_entries ADD COLUMN document_number TEXT",
+        "ALTER TABLE journal_entries DROP COLUMN document_number"
+    )
+    set = migrate_add(
+        set,
+        20260824061,
+        "add_journal_entries_document_date",
+        "ALTER TABLE journal_entries ADD COLUMN document_date TEXT",
+        "ALTER TABLE journal_entries DROP COLUMN document_date"
+    )
+    set = migrate_add(
+        set,
+        20260824062,
+        "add_journal_entries_vat_period",
+        "ALTER TABLE journal_entries ADD COLUMN vat_period TEXT",
+        "ALTER TABLE journal_entries DROP COLUMN vat_period"
+    )
+    set = migrate_add(
+        set,
+        20260824063,
+        "add_journal_entries_total_vat_amount",
+        "ALTER TABLE journal_entries ADD COLUMN total_vat_amount NUMERIC",
+        "ALTER TABLE journal_entries DROP COLUMN total_vat_amount"
+    )
+    set = migrate_add(
+        set,
+        20260824064,
+        "add_journal_lines_vat_amount",
+        "ALTER TABLE journal_lines ADD COLUMN vat_amount NUMERIC",
+        "ALTER TABLE journal_lines DROP COLUMN vat_amount"
     )
     return set
 }
