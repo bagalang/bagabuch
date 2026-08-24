@@ -139,7 +139,11 @@ bagabuch/
 - Готово: **auth** (token/me), **companies**, **accounts** (йерархия parent_id),
   **counterparts**, **products**, **invoices** (header+редове, тотали през SQL SUM)
   — интеграционни тестове през :8080 минават изцяло
-- Останало: **journal** (дебит/кредит записи) + `POST /v1/invoices/{id}/post`
+- Готово: **Фаза 2 пълна** — auth, companies, accounts (йерархия), counterparts,
+  products, invoices (header+редове, тотали), **журнал + пост на фактура**
+  (кореспонденции по посока: изходяща Дт411/Кт702+Кт4532, входяща Дт602+Дт4531/Кт401;
+  баланс дебит=кредит; втори пост → 409) — интеграционни тестове през :8080 минават
+- `Създай` връща новия ред през RETURNING за еднозначност (не "последен по номер")
 - По пътя са фиксирани три универсални bug-а (не bagabuch-специфични):
   - boilaDB `8f68e3b`: unknown-literal коерция str↔i64/num (числови низове в TEXT колони)
   - ormbaga `a2e68b0`: multi-column UPDATE — `sql_update_eq/_p` презаписваха SET списъка

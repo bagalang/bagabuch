@@ -65,14 +65,15 @@ fn act_accounts_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         return act_err(db, 503, "database unavailable")
     }
     let ins = account_create(db, number.val, name.val, saft_account_type.val, analytic_type.val, parent_id, parent_null)?
-    if orm_ok(ins) == 0 {
-        return act_err(orm_db_exec(ins), 409, orm_err_exec(ins))
+    if orm_ok_q(ins) == 0 || orm_nrows(ins) < 1 {
+        return act_err(orm_db_q(ins), 500, "account insert failed")
     }
-    let q = account_all(orm_db_exec(ins))?
+    let new_id = orm_cell_by_i64(ins, 0, "id")
+    let q = account_find(orm_db_q(ins), new_id)?
     if orm_ok_q(q) == 0 || orm_nrows(q) < 1 {
-        return act_err(orm_db_q(q), 500, "insert ok but row missing")
+        return act_err(orm_db_q(q), 500, "account missing after create")
     }
-    return act_created(orm_db_q(q), account_to_json(q, orm_nrows(q) - 1))
+    return act_created(orm_db_q(q), account_to_json(q, 0))
 }
 
 fn act_accounts_show(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {

@@ -1,6 +1,6 @@
 // routes.baga — route table + fmr_dispatch за bagabuch.
-// Фаза 2: system + auth + companies + accounts + counterparts + products +
-// invoices. Следва journal — същата структура, модул по модул.
+// Фаза 2 (пълна): system + auth + companies + accounts + counterparts +
+// products + invoices (+post) + journal.
 
 import "actions/system.baga"
 import "actions/auth.baga"
@@ -9,6 +9,7 @@ import "actions/accounts.baga"
 import "actions/counterparts.baga"
 import "actions/products.baga"
 import "actions/invoices.baga"
+import "actions/journal.baga"
 import "fmrbaga/app.baga"
 import "fmrbaga/ctx.baga"
 import "fmrbaga/deps.baga"
@@ -48,6 +49,9 @@ fn RID_INVOICES_CREATE() -> i64 { return 61 }
 fn RID_INVOICES_SHOW() -> i64 { return 62 }
 fn RID_INVOICES_UPDATE() -> i64 { return 63 }
 fn RID_INVOICES_DELETE() -> i64 { return 64 }
+fn RID_INVOICES_POST() -> i64 { return 65 }
+fn RID_JOURNAL_INDEX() -> i64 { return 70 }
+fn RID_JOURNAL_SHOW() -> i64 { return 71 }
 
 fn fmr_build_app() -> FmrApp !IO {
     let cfg = fmr_config_load()?
@@ -86,6 +90,9 @@ fn fmr_build_app() -> FmrApp !IO {
     app = fmr_route_meta(app, "GET", "/v1/invoices/{id}", RID_INVOICES_SHOW(), "", "invoices", 0, "", "Invoice", "200", "")
     app = fmr_route_meta(app, "PATCH", "/v1/invoices/{id}", RID_INVOICES_UPDATE(), "", "invoices", 0, "InvoiceUpdate", "Invoice", "200", "")
     app = fmr_route_meta(app, "DELETE", "/v1/invoices/{id}", RID_INVOICES_DELETE(), "", "invoices", 0, "", "-", "204", "")
+    app = fmr_route_meta(app, "POST", "/v1/invoices/{id}/post", RID_INVOICES_POST(), "", "invoices", 0, "", "JournalEntry", "201", "")
+    app = fmr_route_meta(app, "GET", "/v1/journal", RID_JOURNAL_INDEX(), "", "journal", 0, "", "JournalList", "200", "limit,offset")
+    app = fmr_route_meta(app, "GET", "/v1/journal/{id}", RID_JOURNAL_SHOW(), "", "journal", 0, "", "JournalEntry", "200", "")
     return app
 }
 
@@ -136,5 +143,8 @@ fn fmr_dispatch(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     if id == RID_INVOICES_SHOW() { return act_invoices_show(ctx, db)? }
     if id == RID_INVOICES_UPDATE() { return act_invoices_update(ctx, db)? }
     if id == RID_INVOICES_DELETE() { return act_invoices_delete(ctx, db)? }
+    if id == RID_INVOICES_POST() { return act_invoices_post(ctx, db)? }
+    if id == RID_JOURNAL_INDEX() { return act_journal_index(ctx, db)? }
+    if id == RID_JOURNAL_SHOW() { return act_journal_show(ctx, db)? }
     return fmr_out(fmr_500("unhandled route"), db)
 }

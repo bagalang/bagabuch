@@ -1,0 +1,198 @@
+// actions/journal.baga — счетоводен дневник + пост на фактура.
+// Постът генерира journal_entry + journal_lines по типови кореспонденции:
+//   изходяща (продажба): Дт 411 (общо) / Кт 702 (нето) + Кт 4532 (ДДС)
+//   входяща (покупка):   Дт 602 (нето) + Дт 4531 (ДДС) / Кт 401 (общо)
+// Сметките се търсят по номер; липсваща сметка → 422 с указание.
+
+import "../models/journal.baga"
+import "../models/invoice.baga"
+import "../models/account.baga"
+import "fmrbaga/app.baga"
+import "fmrbaga/ctx.baga"
+import "fmrbaga/action.baga"
+import "fmrbaga/jsonx.baga"
+import "ormbaga/orm.baga"
+
+fn act_journal_index(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
+    let auth = act_require_auth(ctx, db)
+    if auth.ok == 0 {
+        return auth.out
+    }
+    if orm_ok_db(db) == 0 {
+        return act_err(db, 503, "database unavailable")
+    }
+    let page = act_page(ctx, 50, 200)
+    let q = journal_all(db)?
+    if orm_ok_q(q) == 0 {
+        return act_err(orm_db_q(q), 500, orm_err_q(q))
+    }
+    let mut o = journal_list_json(q)
+    o = jobj_i64(o, "limit", page.limit)
+    o = jobj_i64(o, "offset", page.offset)
+    return act_ok(orm_db_q(q), o)
+}
+
+fn act_journal_show(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
+    let auth = act_require_auth(ctx, db)
+    if auth.ok == 0 {
+        return auth.out
+    }
+    let id = fmr_param_i64(ctx, "id")
+    if id <= 0 {
+        return act_err(db, 400, "invalid id")
+    }
+    if orm_ok_db(db) == 0 {
+        return act_err(db, 503, "database unavailable")
+    }
+    let q = journal_find(db, id)?
+    if orm_ok_q(q) == 0 {
+        return act_err(orm_db_q(q), 500, orm_err_q(q))
+    }
+    if orm_nrows(q) < 1 {
+        return act_404(orm_db_q(q), "Journal entry not found")
+    }
+    let mut o = journal_entry_to_json(q, 0)
+    let lq = journal_lines_by_entry(orm_db_q(q), id)?
+    o = jobj_arr(o, "lines", journal_lines_list_json(lq))
+    return act_ok(orm_db_q(lq), o)
+}
+
+// Търси сметка по номер; не съществува → 422 с името на номера.
+fn resolve_account(db: OrmDb, number: str, out_id: Vec<i64>) -> FmrOut !IO !Net {
+    let q = account_by_number(db, number)?
+    if orm_ok_q(q) == 0 {
+        return act_err(orm_db_q(q), 500, orm_err_q(q))
+    }
+    if orm_nrows(q) < 1 {
+        return act_err(orm_db_q(q), 422, concat("липсва сметка с номер ", number))
+    }
+    vec_push(out_id, orm_cell_by_i64(q, 0, "id"))
+    return act_ok(orm_db_q(q), jobj_new())
+}
+
+fn act_invoices_post(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
+    let auth = act_require_auth(ctx, db)
+    if auth.ok == 0 {
+        return auth.out
+    }
+    let id = fmr_param_i64(ctx, "id")
+    if id <= 0 {
+        return act_err(db, 400, "invalid id")
+    }
+    if orm_ok_db(db) == 0 {
+        return act_err(db, 503, "database unavailable")
+    }
+    let iq = invoice_find(db, id)?
+    if orm_ok_q(iq) == 0 {
+        return act_err(orm_db_q(iq), 500, orm_err_q(iq))
+    }
+    if orm_nrows(iq) < 1 {
+        return act_404(orm_db_q(iq), "Invoice not found")
+    }
+    let mut db2 = orm_db_q(iq)
+    if orm_cell_by(iq, 0, "status") == "posted" {
+        return act_err(db2, 409, "фактурата е вече постната")
+    }
+    let direction = orm_cell_by(iq, 0, "direction")
+    let net_amount = orm_cell_by(iq, 0, "net_amount")
+    let vat_amount = orm_cell_by(iq, 0, "vat_amount")
+    let total_amount = orm_cell_by(iq, 0, "total_amount")
+    let counterpart_id = orm_cell_by_i64(iq, 0, "counterpart_id")
+    let issue_date = orm_cell_by(iq, 0, "issue_date")
+    let number = orm_cell_by(iq, 0, "number")
+    // Типови кореспонденции по посока.
+    let mut debit_acc: str = ""
+    let mut credit_acc: str = ""
+    let mut vat_acc: str = ""
+    if direction == "out" {
+        debit_acc = "411"
+        credit_acc = "702"
+        vat_acc = "4532"
+    } else {
+        debit_acc = "602"
+        credit_acc = "401"
+        vat_acc = "4531"
+    }
+    let d_ids: Vec<i64> = vec_new()
+    let r1 = resolve_account(db2, debit_acc, d_ids)?
+    if vec_len(d_ids) == 0 {
+        return r1
+    }
+    db2 = r1.db
+    let debit_id = vec_get(d_ids, 0)
+    let c_ids: Vec<i64> = vec_new()
+    let r2 = resolve_account(db2, credit_acc, c_ids)?
+    if vec_len(c_ids) == 0 {
+        return r2
+    }
+    db2 = r2.db
+    let credit_id = vec_get(c_ids, 0)
+    let v_ids: Vec<i64> = vec_new()
+    let r3 = resolve_account(db2, vat_acc, v_ids)?
+    if vec_len(v_ids) == 0 {
+        return r3
+    }
+    db2 = r3.db
+    let vat_id = vec_get(v_ids, 0)
+    // journal_entry
+    let desc = concat(concat("Фактура ", number), concat(" / ", direction))
+    let eq = journal_entry_insert(db2, issue_date, "invoice", id, desc)?
+    if orm_ok_q(eq) == 0 || orm_nrows(eq) < 1 {
+        return act_err(orm_db_q(eq), 500, "journal entry insert failed")
+    }
+    let entry_id = orm_cell_by_i64(eq, 0, "id")
+    db2 = orm_db_q(eq)
+    if direction == "out" {
+        // Дт 411 общо / Кт 702 нето / Кт 4532 ДДС
+        let l1 = journal_line_insert(db2, entry_id, debit_id, "debit", total_amount, counterpart_id, 0)?
+        if orm_ok(l1) == 0 {
+            return act_err(orm_db_exec(l1), 500, orm_err_exec(l1))
+        }
+        db2 = orm_db_exec(l1)
+        let l2 = journal_line_insert(db2, entry_id, credit_id, "credit", net_amount, counterpart_id, 0)?
+        if orm_ok(l2) == 0 {
+            return act_err(orm_db_exec(l2), 500, orm_err_exec(l2))
+        }
+        db2 = orm_db_exec(l2)
+        let l3 = journal_line_insert(db2, entry_id, vat_id, "credit", vat_amount, 0, 0)?
+        if orm_ok(l3) == 0 {
+            return act_err(orm_db_exec(l3), 500, orm_err_exec(l3))
+        }
+        db2 = orm_db_exec(l3)
+    } else {
+        // Дт 602 нето / Дт 4531 ДДС / Кт 401 общо
+        let l1 = journal_line_insert(db2, entry_id, debit_id, "debit", net_amount, counterpart_id, 0)?
+        if orm_ok(l1) == 0 {
+            return act_err(orm_db_exec(l1), 500, orm_err_exec(l1))
+        }
+        db2 = orm_db_exec(l1)
+        let l2 = journal_line_insert(db2, entry_id, vat_id, "debit", vat_amount, 0, 0)?
+        if orm_ok(l2) == 0 {
+            return act_err(orm_db_exec(l2), 500, orm_err_exec(l2))
+        }
+        db2 = orm_db_exec(l2)
+        let l3 = journal_line_insert(db2, entry_id, credit_id, "credit", total_amount, counterpart_id, 0)?
+        if orm_ok(l3) == 0 {
+            return act_err(orm_db_exec(l3), 500, orm_err_exec(l3))
+        }
+        db2 = orm_db_exec(l3)
+    }
+    // статус → posted
+    let scols = vec_new()
+    vec_push(scols, "status")
+    let svals = vec_new()
+    vec_push(svals, "posted")
+    let su = orm_update_by_id(db2, invoice_table(), id, scols, svals)?
+    if orm_ok(su) == 0 {
+        return act_err(orm_db_exec(su), 500, orm_err_exec(su))
+    }
+    db2 = orm_db_exec(su)
+    let q = journal_find(db2, entry_id)?
+    if orm_ok_q(q) == 0 || orm_nrows(q) < 1 {
+        return act_err(orm_db_q(q), 500, "journal entry missing after post")
+    }
+    let mut o = journal_entry_to_json(q, 0)
+    let lq = journal_lines_by_entry(orm_db_q(q), entry_id)?
+    o = jobj_arr(o, "lines", journal_lines_list_json(lq))
+    return act_created(orm_db_q(lq), o)
+}
