@@ -333,3 +333,91 @@ fn fa_list_json(q: OrmQuery) -> JObj {
     o = jobj_i64(o, "count", orm_nrows(q))
     return o
 }
+
+// ---------- събития (жизнен цикъл) ----------
+
+fn fae_table() -> str {
+    return "fixed_asset_events"
+}
+
+fn fae_next_id(db: OrmDb) -> OrmCount !IO !Net {
+    return orm_count_sql(db, "SELECT MAX(id) AS count FROM fixed_asset_events")?
+}
+
+fn fae_to_json(q: OrmQuery, row: i64) -> JObj {
+    let mut o = jobj_new()
+    o = jobj_i64(o, "id", orm_cell_by_i64(q, row, "id"))
+    o = jobj_i64(o, "asset_id", orm_cell_by_i64(q, row, "asset_id"))
+    o = jobj_str(o, "event_type", orm_cell_by(q, row, "event_type"))
+    o = jobj_str(o, "event_date", orm_cell_by(q, row, "event_date"))
+    o = jobj_str(o, "amount", orm_cell_by(q, row, "amount"))
+    o = jobj_str(o, "prev_value", orm_cell_by(q, row, "prev_value"))
+    o = jobj_str(o, "location", orm_cell_by(q, row, "location"))
+    o = jobj_str(o, "reason", orm_cell_by(q, row, "reason"))
+    return o
+}
+
+fn fae_by_asset(db: OrmDb, asset_id: i64) -> OrmQuery !IO !Net {
+    let sql = "SELECT id, asset_id, event_type, event_date, amount, prev_value, location, reason FROM fixed_asset_events WHERE asset_id = $1 ORDER BY id"
+    let vals = vec_new()
+    let nulls = vec_new()
+    pg_param_i64(vals, nulls, asset_id)
+    return orm_query_params(db, sql, vals, nulls)?
+}
+
+fn fae_create(db: OrmDb, asset_id: i64, event_type: str, event_date: str, amount: str, prev_value: str, location: str, reason: str) -> OrmExec !IO !Net {
+    if fa_backend_boila()? == 1 {
+        let c = fae_next_id(db)?
+        if orm_ok_c(c) == 0 {
+            return OrmEErr(OrmExecFail { err: orm_err_c(c), tag: "", db: orm_db_c(c) })
+        }
+        let nid = orm_count_n(c) + 1
+        let mut d = orm_db_c(c)
+        let cols = vec_new()
+        vec_push(cols, "id")
+        vec_push(cols, "asset_id")
+        vec_push(cols, "event_type")
+        vec_push(cols, "event_date")
+        vec_push(cols, "amount")
+        vec_push(cols, "prev_value")
+        vec_push(cols, "location")
+        vec_push(cols, "reason")
+        let vals = vec_new()
+        vec_push(vals, int_to_str(nid))
+        vec_push(vals, int_to_str(asset_id))
+        vec_push(vals, event_type)
+        vec_push(vals, event_date)
+        vec_push(vals, amount)
+        vec_push(vals, prev_value)
+        vec_push(vals, location)
+        vec_push(vals, reason)
+        return orm_insert_strs(d, fae_table(), cols, vals)?
+    }
+    let cols = vec_new()
+    vec_push(cols, "asset_id")
+    vec_push(cols, "event_type")
+    vec_push(cols, "event_date")
+    vec_push(cols, "amount")
+    vec_push(cols, "prev_value")
+    vec_push(cols, "location")
+    vec_push(cols, "reason")
+    let vals = vec_new()
+    vec_push(vals, int_to_str(asset_id))
+    vec_push(vals, event_type)
+    vec_push(vals, event_date)
+    vec_push(vals, amount)
+    vec_push(vals, prev_value)
+    vec_push(vals, location)
+    vec_push(vals, reason)
+    return orm_insert_strs(db, fae_table(), cols, vals)?
+}
+
+fn fae_list_json(q: OrmQuery) -> JArr {
+    let mut arr = jarr_new()
+    let mut i: i64 = 0
+    while i < orm_nrows(q) {
+        arr = jarr_obj(arr, fae_to_json(q, i))
+        i = i + 1
+    }
+    return arr
+}

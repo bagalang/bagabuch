@@ -71,6 +71,12 @@ fn RID_FA_UPDATE() -> i64 { return 103 }
 fn RID_FA_DELETE() -> i64 { return 104 }
 fn RID_FA_DEP_PREVIEW() -> i64 { return 105 }
 fn RID_FA_DEP_POST() -> i64 { return 106 }
+fn RID_FA_REVALUE() -> i64 { return 107 }
+fn RID_FA_MOVE() -> i64 { return 108 }
+fn RID_FA_CONSERVE() -> i64 { return 109 }
+fn RID_FA_END_CONSERVE() -> i64 { return 110 }
+fn RID_FA_DISPOSE() -> i64 { return 111 }
+fn RID_FA_EVENTS() -> i64 { return 112 }
 fn RID_ACTIVE_COMPANY_GET() -> i64 { return 80 }
 fn RID_ACTIVE_COMPANY_SET() -> i64 { return 81 }
 
@@ -129,6 +135,12 @@ fn fmr_build_app() -> FmrApp !IO {
     app = fmr_route_meta(app, "DELETE", "/v1/fixed-assets/{id}", RID_FA_DELETE(), "", "fixed-assets", 0, "", "-", "204", "")
     app = fmr_route_meta(app, "POST", "/v1/fixed-assets/depreciation/preview", RID_FA_DEP_PREVIEW(), "", "fixed-assets", 0, "", "DepPreview", "200", "")
     app = fmr_route_meta(app, "POST", "/v1/fixed-assets/depreciation/post", RID_FA_DEP_POST(), "", "fixed-assets", 0, "DepPost", "JournalEntry", "201", "")
+    app = fmr_route_meta(app, "POST", "/v1/fixed-assets/{id}/revalue", RID_FA_REVALUE(), "", "fixed-assets", 0, "FaRevalue", "Fa", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/fixed-assets/{id}/move", RID_FA_MOVE(), "", "fixed-assets", 0, "FaMove", "Fa", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/fixed-assets/{id}/conserve", RID_FA_CONSERVE(), "", "fixed-assets", 0, "FaConserve", "Fa", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/fixed-assets/{id}/end-conserve", RID_FA_END_CONSERVE(), "", "fixed-assets", 0, "FaEndConserve", "Fa", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/fixed-assets/{id}/dispose", RID_FA_DISPOSE(), "", "fixed-assets", 0, "FaDispose", "Fa", "200", "")
+    app = fmr_route_meta(app, "GET", "/v1/fixed-assets/{id}/events", RID_FA_EVENTS(), "", "fixed-assets", 0, "", "FaEvents", "200", "")
     app = fmr_route_meta(app, "GET", "/v1/active-company", RID_ACTIVE_COMPANY_GET(), "", "active-company", 0, "", "Company", "200", "")
     app = fmr_route_meta(app, "PUT", "/v1/active-company", RID_ACTIVE_COMPANY_SET(), "", "active-company", 0, "ActiveCompanySet", "Company", "200", "")
     return app
@@ -199,6 +211,12 @@ fn fmr_dispatch(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     if id == RID_FA_DELETE() { return act_fa_delete(ctx, db)? }
     if id == RID_FA_DEP_PREVIEW() { return act_fa_depreciation_preview(ctx, db)? }
     if id == RID_FA_DEP_POST() { return act_fa_depreciation_post(ctx, db)? }
+    if id == RID_FA_REVALUE() { return act_fa_revalue(ctx, db)? }
+    if id == RID_FA_MOVE() { return act_fa_move(ctx, db)? }
+    if id == RID_FA_CONSERVE() { return act_fa_conserve(ctx, db)? }
+    if id == RID_FA_END_CONSERVE() { return act_fa_end_conserve(ctx, db)? }
+    if id == RID_FA_DISPOSE() { return act_fa_dispose(ctx, db)? }
+    if id == RID_FA_EVENTS() { return act_fa_events(ctx, db)? }
     if id == RID_ACTIVE_COMPANY_GET() { return act_active_company_get(ctx, db)? }
     if id == RID_ACTIVE_COMPANY_SET() { return act_active_company_set(ctx, db)? }
     return fmr_out(fmr_500("unhandled route"), db)

@@ -540,6 +540,13 @@ fn bagabuch_migrations() -> MigrationSet {
         "ALTER TABLE fixed_assets ADD COLUMN is_conserved BIGINT NOT NULL DEFAULT 0",
         "ALTER TABLE fixed_assets DROP COLUMN is_conserved"
     )
+    set = migrate_add(
+        set,
+        20260824177,
+        "create_fixed_asset_events",
+        "CREATE TABLE fixed_asset_events (id BIGSERIAL PRIMARY KEY, asset_id BIGINT NOT NULL, event_type TEXT NOT NULL, event_date TEXT NOT NULL DEFAULT '', amount TEXT NOT NULL DEFAULT '', prev_value TEXT NOT NULL DEFAULT '', location TEXT NOT NULL DEFAULT '', reason TEXT NOT NULL DEFAULT '', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())",
+        "DROP TABLE IF EXISTS fixed_asset_events"
+    )
     return set
 }
 
@@ -1105,6 +1112,13 @@ fn bagabuch_boila_migrations() -> MigrationSet {
         "add_fixed_assets_is_conserved",
         "ALTER TABLE fixed_assets ADD COLUMN is_conserved BIGINT",
         "ALTER TABLE fixed_assets DROP COLUMN is_conserved"
+    )
+    set = migrate_add(
+        set,
+        20260824081,
+        "create_fixed_asset_events",
+        "CREATE TABLE IF NOT EXISTS fixed_asset_events (id BIGINT, asset_id BIGINT, event_type TEXT, event_date TEXT, amount TEXT, prev_value TEXT, location TEXT, reason TEXT, created_at TIMESTAMPTZ, PRIMARY KEY (id))",
+        "DROP TABLE IF EXISTS fixed_asset_events"
     )
     return set
 }

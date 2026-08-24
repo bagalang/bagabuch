@@ -3,7 +3,7 @@
 // ДМА — дълготрайни материални активи: активи (CRUD), категории (ЗКПО),
 // месечна амортизация (изчисляване + осчетоводяване).
 
-import { useCallback, useEffect, useState, FormEvent } from "react";
+import { useCallback, useEffect, useState, FormEvent, Fragment } from "react";
 import { api, ListResponse } from "../../lib/api";
 import { useI18n } from "../../components/I18nProvider";
 import { RequireAuth } from "../../components/RequireAuth";
@@ -94,6 +94,19 @@ function FaInner() {
   const [depPeriod, setDepPeriod] = useState("");
   const [preview, setPreview] = useState<DepPreview | null>(null);
   const [posting, setPosting] = useState(false);
+
+  // жизнен цикъл
+  const [actionModal, setActionModal] = useState<Fa | null>(null);
+  const [actionType, setActionType] = useState("revalue");
+  const [actionDate, setActionDate] = useState("");
+  const [actionAmount, setActionAmount] = useState("");
+  const [actionLocation, setActionLocation] = useState("");
+  const [actionReason, setActionReason] = useState("");
+  const [disposalType, setDisposalType] = useState("write_off");
+  const [events, setEvents] = useState<Record<string, unknown>[]>([]);
+  const [eventsFor, setEventsFor] = useState<number | null>(null);
+  const [actionError, setActionError] = useState("");
+  const [actionBusy, setActionBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -243,6 +256,77 @@ function FaInner() {
     }
   };
 
+  const openAction = (a: Fa) => {
+    setActionModal(a);
+    setActionType("revalue");
+    setActionDate("");
+    setActionAmount("");
+    setActionLocation("");
+    setActionReason("");
+    setDisposalType("write_off");
+    setActionError("");
+  };
+
+  const handleActionSave = async () => {
+    if (!actionModal) return;
+    setActionBusy(true);
+    setActionError("");
+    try {
+      const common = {
+        event_date: actionDate,
+        reason: actionReason,
+      };
+      if (actionType === "revalue") {
+        await api.post(`/v1/fixed-assets/${actionModal.id}/revalue`, {
+          ...common,
+          new_value: actionAmount,
+        });
+      } else if (actionType === "move") {
+        await api.post(`/v1/fixed-assets/${actionModal.id}/move`, {
+          ...common,
+          location: actionLocation,
+        });
+      } else if (actionType === "conserve") {
+        await api.post(`/v1/fixed-assets/${actionModal.id}/conserve`, common);
+      } else if (actionType === "end_conserve") {
+        await api.post(`/v1/fixed-assets/${actionModal.id}/end-conserve`, common);
+      } else if (actionType === "dispose") {
+        await api.post(`/v1/fixed-assets/${actionModal.id}/dispose`, {
+          ...common,
+          disposal_type: disposalType,
+          sale_amount: actionAmount,
+        });
+      }
+      setActionModal(null);
+      await load();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  const showEvents = async (a: Fa) => {
+    if (eventsFor === a.id) {
+      setEventsFor(null);
+      return;
+    }
+    setEventsFor(a.id);
+    try {
+      const data = await api.get<{ items: Record<string, unknown>[] }>(
+        `/v1/fixed-assets/${a.id}/events`
+      );
+      setEvents(data.items ?? []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const eventLabel = (et: unknown) => {
+    const key = `fa.action.${String(et)}`;
+    return t(key);
+  };
+
   return (
     <div>
       <div className="page-head">
@@ -295,7 +379,8 @@ function FaInner() {
                 </thead>
                 <tbody>
                   {assets.map((a) => (
-                    <tr key={a.id}>
+                    <Fragment key={a.id}>
+                    <tr>
                       <td>{a.inventory_number}</td>
                       <td>{a.name}</td>
                       <td>{catName(a.category_id)}</td>
@@ -303,6 +388,12 @@ function FaInner() {
                       <td>{a.accumulated_depreciation}</td>
                       <td>{t(`fa.status.${a.status}`)}</td>
                       <td>
+                        <button className="btn btn-sm" onClick={() => openAction(a)}>
+                          {t("fa.action")}
+                        </button>{" "}
+                        <button className="btn btn-sm" onClick={() => showEvents(a)}>
+                          {t("fa.events")}
+                        </button>{" "}
                         <button className="btn btn-sm" onClick={() => openEdit(a)}>
                           {t("common.edit")}
                         </button>{" "}
@@ -311,6 +402,35 @@ function FaInner() {
                         </button>
                       </td>
                     </tr>
+                    {eventsFor === a.id && (
+                      <tr>
+                        <td colSpan={7}>
+                          <table className="table">
+                            <thead>
+                              <tr>
+                                <th>{t("fa.action.event_date")}</th>
+                                <th>{t("fa.action")}</th>
+                                <th>{t("fa.action.location")}</th>
+                                <th>{t("journal.amount")}</th>
+                                <th>{t("fa.action.reason")}</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {events.map((ev) => (
+                                <tr key={String(ev.id)}>
+                                  <td>{String(ev.event_date)}</td>
+                                  <td>{eventLabel(ev.event_type)}</td>
+                                  <td>{String(ev.location ?? "")}</td>
+                                  <td>{String(ev.amount ?? "")}</td>
+                                  <td>{String(ev.reason ?? "")}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </td>
+                      </tr>
+                    )}
+                    </Fragment>
                   ))}
                 </tbody>
               </table>
@@ -369,6 +489,110 @@ function FaInner() {
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {actionModal && (
+        <div className="modal-backdrop" onClick={() => setActionModal(null)}>
+          <div className="card modal" onClick={(e) => e.stopPropagation()}>
+            <h2 className="modal-title">
+              {t("fa.action")} — {actionModal.name}
+            </h2>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void handleActionSave();
+              }}
+            >
+              <div className="form-grid">
+                <div className="field">
+                  <label className="label">{t("fa.action")}</label>
+                  <select
+                    className="select"
+                    value={actionType}
+                    onChange={(e) => setActionType(e.target.value)}
+                  >
+                    <option value="revalue">{t("fa.action.revalue")}</option>
+                    <option value="move">{t("fa.action.move")}</option>
+                    <option value="conserve">{t("fa.action.conserve")}</option>
+                    <option value="end_conserve">{t("fa.action.end_conserve")}</option>
+                    <option value="dispose">{t("fa.action.dispose")}</option>
+                  </select>
+                </div>
+                <div className="field">
+                  <label className="label">{t("fa.action.event_date")}</label>
+                  <input
+                    className="input"
+                    value={actionDate}
+                    onChange={(e) => setActionDate(e.target.value)}
+                    placeholder="2026-09-01"
+                  />
+                </div>
+                {actionType === "revalue" && (
+                  <div className="field">
+                    <label className="label">{t("fa.action.new_value")} *</label>
+                    <input
+                      className="input"
+                      value={actionAmount}
+                      onChange={(e) => setActionAmount(e.target.value)}
+                      required
+                    />
+                  </div>
+                )}
+                {actionType === "move" && (
+                  <div className="field">
+                    <label className="label">{t("fa.action.location")} *</label>
+                    <input
+                      className="input"
+                      value={actionLocation}
+                      onChange={(e) => setActionLocation(e.target.value)}
+                      required
+                    />
+                  </div>
+                )}
+                {actionType === "dispose" && (
+                  <>
+                    <div className="field">
+                      <label className="label">{t("fa.action.disposal_type")}</label>
+                      <select
+                        className="select"
+                        value={disposalType}
+                        onChange={(e) => setDisposalType(e.target.value)}
+                      >
+                        <option value="write_off">{t("fa.action.disposal_type.write_off")}</option>
+                        <option value="sale">{t("fa.action.disposal_type.sale")}</option>
+                      </select>
+                    </div>
+                    <div className="field">
+                      <label className="label">{t("fa.action.sale_amount")}</label>
+                      <input
+                        className="input"
+                        value={actionAmount}
+                        onChange={(e) => setActionAmount(e.target.value)}
+                      />
+                    </div>
+                  </>
+                )}
+                <div className="field">
+                  <label className="label">{t("fa.action.reason")}</label>
+                  <input
+                    className="input"
+                    value={actionReason}
+                    onChange={(e) => setActionReason(e.target.value)}
+                  />
+                </div>
+              </div>
+              {actionError && <div className="error-text">{actionError}</div>}
+              <div className="form-actions">
+                <button type="button" className="btn" onClick={() => setActionModal(null)}>
+                  {t("common.cancel")}
+                </button>
+                <button className="btn btn-primary" disabled={actionBusy}>
+                  {t("common.save")}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
