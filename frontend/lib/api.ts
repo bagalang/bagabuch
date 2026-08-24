@@ -60,6 +60,7 @@ async function request<T>(
 export const api = {
   get: <T>(path: string) => request<T>(path, "GET"),
   post: <T>(path: string, body?: unknown) => request<T>(path, "POST", body),
+  put: <T>(path: string, body?: unknown) => request<T>(path, "PUT", body),
   patch: <T>(path: string, body?: unknown) => request<T>(path, "PATCH", body),
   del: <T>(path: string) => request<T>(path, "DELETE"),
 };
@@ -81,4 +82,30 @@ export function logout(): void {
 export interface ListResponse<T> {
   items: T[];
   count: number;
+}
+
+// фирма
+export interface Company {
+  id: number;
+  name: string;
+  eik: string;
+  [key: string]: unknown;
+}
+
+// активна фирма (мултитенант)
+// Събитие, на което хедърът слуша, за да обнови активната фирма.
+export const ACTIVE_COMPANY_EVENT = "bagabuch-active-company-changed";
+
+export function getActiveCompany(): Promise<Company | Record<string, never>> {
+  return api.get<Company | Record<string, never>>("/v1/active-company");
+}
+
+export async function setActiveCompany(id: number): Promise<Company> {
+  const data = await api.put<Company>("/v1/active-company", {
+    company_id: id,
+  });
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(ACTIVE_COMPANY_EVENT));
+  }
+  return data;
 }

@@ -22,11 +22,17 @@ export interface FieldDef {
   default?: string;
 }
 
+export interface RowAction {
+  labelKey: string;
+  onClick: (rec: Record<string, unknown>) => void;
+}
+
 export interface CrudConfig {
   endpoint: string;
   titleKey: string;
   fields: FieldDef[];
   columns: string[];
+  rowAction?: RowAction;
 }
 
 type Record_ = Record<string, unknown>;
@@ -179,6 +185,16 @@ export function CrudPage({ config }: { config: CrudConfig }) {
                     );
                   })}
                   <td>
+                    {config.rowAction && (
+                      <>
+                        <button
+                          className="btn btn-sm"
+                          onClick={() => config.rowAction?.onClick(rec)}
+                        >
+                          {t(config.rowAction.labelKey)}
+                        </button>{" "}
+                      </>
+                    )}
                     <button
                       className="btn btn-sm"
                       onClick={() => openEdit(rec)}

@@ -1,14 +1,22 @@
 "use client";
 
 // AppShell — обвивка за автентикираните страници: странична навигация +
-// горна лента (смяна на тема, език, изход).
+// горна лента (активна фирма + превключвател, смяна на тема, език, изход).
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ReactNode } from "react";
+import { ReactNode, useCallback, useEffect, useState } from "react";
 import { useI18n } from "./I18nProvider";
 import { useTheme } from "./ThemeProvider";
 import { useAuth } from "./AuthProvider";
+import {
+  ACTIVE_COMPANY_EVENT,
+  Company,
+  ListResponse,
+  api,
+  getActiveCompany,
+  setActiveCompany,
+} from "../lib/api";
 
 const NAV_ITEMS = [
   { href: "/", key: "nav.dashboard" },
@@ -27,10 +35,54 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
 
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [activeId, setActiveId] = useState<number>(0);
+
+  const refreshActive = useCallback(async () => {
+    try {
+      const ac = await getActiveCompany();
+      setActiveId(ac && typeof ac.id === "number" ? ac.id : 0);
+    } catch {
+      setActiveId(0);
+    }
+  }, []);
+
+  const loadCompanies = useCallback(async () => {
+    try {
+      const data = await api.get<ListResponse<Company>>("/v1/companies");
+      setCompanies(data.items ?? []);
+    } catch {
+      setCompanies([]);
+    }
+  }, []);
+
+  // Зареждане при монтиране + слушане за смяна на активната фирма.
+  // данни-фектчинг: сетСтейт е асинхронен след await.
+  useEffect(() => {
+    loadCompanies();
+    refreshActive();
+    const onActiveChange = () => refreshActive();
+    window.addEventListener(ACTIVE_COMPANY_EVENT, onActiveChange);
+    return () =>
+      window.removeEventListener(ACTIVE_COMPANY_EVENT, onActiveChange);
+  }, [loadCompanies, refreshActive]);
+
   const handleLogout = () => {
     logout();
     router.push("/login");
   };
+
+  const handleSwitch = async (id: number) => {
+    if (id === 0) return;
+    try {
+      await setActiveCompany(id);
+      setActiveId(id);
+    } catch {
+      /* запази текущата */
+    }
+  };
+
+  const activeCompany = companies.find((c) => c.id === activeId);
 
   return (
     <div className="shell">
@@ -56,7 +108,27 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
       <div className="shell-main">
         <header className="topbar">
-          <div />
+          <div className="topbar-company">
+            <span className="muted">{t("active.label")}:</span>
+            <select
+              className="select company-switch"
+              value={activeId}
+              onChange={(e) => handleSwitch(Number(e.target.value))}
+            >
+              <option value={0}>{t("active.none")}</option>
+              {companies.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            {activeCompany && (
+              <span className="badge badge-success">{activeCompany.eik}</span>
+            )}
+            <Link href="/companies" className="btn btn-ghost btn-sm">
+              {t("nav.companies")}
+            </Link>
+          </div>
           <div className="topbar-actions">
             <button
               className="btn btn-ghost btn-sm"

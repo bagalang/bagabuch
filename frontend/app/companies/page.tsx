@@ -2,6 +2,7 @@
 
 import { RequireAuth } from "../../components/RequireAuth";
 import { CrudPage, CrudConfig } from "../../components/CrudPage";
+import { setActiveCompany } from "../../lib/api";
 
 const config: CrudConfig = {
   endpoint: "/v1/companies",
@@ -17,6 +18,13 @@ const config: CrudConfig = {
     { name: "bic", labelKey: "companies.bic", type: "text" },
   ],
   columns: ["name", "eik", "vat_number", "city"],
+  rowAction: {
+    labelKey: "companies.activate",
+    onClick: (rec) => {
+      const id = Number(rec.id);
+      if (id > 0) void setActiveCompany(id);
+    },
+  },
 };
 
 export default function CompaniesPage() {

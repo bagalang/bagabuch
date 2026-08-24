@@ -10,6 +10,7 @@ import "actions/counterparts.baga"
 import "actions/products.baga"
 import "actions/invoices.baga"
 import "actions/journal.baga"
+import "actions/active_company.baga"
 import "fmrbaga/app.baga"
 import "fmrbaga/ctx.baga"
 import "fmrbaga/deps.baga"
@@ -52,6 +53,8 @@ fn RID_INVOICES_DELETE() -> i64 { return 64 }
 fn RID_INVOICES_POST() -> i64 { return 65 }
 fn RID_JOURNAL_INDEX() -> i64 { return 70 }
 fn RID_JOURNAL_SHOW() -> i64 { return 71 }
+fn RID_ACTIVE_COMPANY_GET() -> i64 { return 80 }
+fn RID_ACTIVE_COMPANY_SET() -> i64 { return 81 }
 
 fn fmr_build_app() -> FmrApp !IO {
     let cfg = fmr_config_load()?
@@ -93,6 +96,8 @@ fn fmr_build_app() -> FmrApp !IO {
     app = fmr_route_meta(app, "POST", "/v1/invoices/{id}/post", RID_INVOICES_POST(), "", "invoices", 0, "", "JournalEntry", "201", "")
     app = fmr_route_meta(app, "GET", "/v1/journal", RID_JOURNAL_INDEX(), "", "journal", 0, "", "JournalList", "200", "limit,offset")
     app = fmr_route_meta(app, "GET", "/v1/journal/{id}", RID_JOURNAL_SHOW(), "", "journal", 0, "", "JournalEntry", "200", "")
+    app = fmr_route_meta(app, "GET", "/v1/active-company", RID_ACTIVE_COMPANY_GET(), "", "active-company", 0, "", "Company", "200", "")
+    app = fmr_route_meta(app, "PUT", "/v1/active-company", RID_ACTIVE_COMPANY_SET(), "", "active-company", 0, "ActiveCompanySet", "Company", "200", "")
     return app
 }
 
@@ -146,5 +151,7 @@ fn fmr_dispatch(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     if id == RID_INVOICES_POST() { return act_invoices_post(ctx, db)? }
     if id == RID_JOURNAL_INDEX() { return act_journal_index(ctx, db)? }
     if id == RID_JOURNAL_SHOW() { return act_journal_show(ctx, db)? }
+    if id == RID_ACTIVE_COMPANY_GET() { return act_active_company_get(ctx, db)? }
+    if id == RID_ACTIVE_COMPANY_SET() { return act_active_company_set(ctx, db)? }
     return fmr_out(fmr_500("unhandled route"), db)
 }
