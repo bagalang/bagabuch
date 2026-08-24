@@ -28,10 +28,6 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-# baga print-овете са буферизирани (C stdio към тръба) — ред-базирано flushing
-STDBUF="stdbuf -oL -eL"
-command -v stdbuf >/dev/null 2>&1 || STDBUF=""
-
 wait_tcp() {
   local host="$1" port="$2"
   for _ in $(seq 1 60); do
