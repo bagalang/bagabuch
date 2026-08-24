@@ -77,3 +77,9 @@ name = "std"
 version = "0.7.0"
 source = "path+/home/ziko/z-git/baga/std"
 rev = "-"
+
+[[package]]
+name = "xmlbaga"
+version = "0.2.0"
+source = "path+/home/ziko/z-git/baga/app-product/xmlbaga"
+rev = "-"

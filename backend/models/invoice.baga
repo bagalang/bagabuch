@@ -102,6 +102,15 @@ fn invoice_all(db: OrmDb) -> OrmQuery !IO !Net {
     return orm_query(db, concat(invoice_select_sql(), " ORDER BY id"))?
 }
 
+fn invoice_by_period(db: OrmDb, accounting_month: str) -> OrmQuery !IO !Net {
+    let sql = concat(invoice_select_sql(), " WHERE accounting_month = $1 ORDER BY issue_date, id")
+    let vals = vec_new()
+    vec_push(vals, accounting_month)
+    let nulls = vec_new()
+    vec_push(nulls, 0)
+    return orm_query_params(db, sql, vals, nulls)?
+}
+
 fn invoice_lines_by_invoice(db: OrmDb, invoice_id: i64) -> OrmQuery !IO !Net {
     let sql = "SELECT id, invoice_id, product_id, description, quantity, unit_price, net_amount, vat_rate, vat_amount, total_amount FROM invoice_lines WHERE invoice_id = $1 ORDER BY id"
     let vals = vec_new()
