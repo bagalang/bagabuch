@@ -435,6 +435,111 @@ fn bagabuch_migrations() -> MigrationSet {
         "ALTER TABLE journal_entries ADD COLUMN total_amount NUMERIC(18,2) NOT NULL DEFAULT 0",
         "ALTER TABLE journal_entries DROP COLUMN total_amount"
     )
+    set = migrate_add(
+        set,
+        20260824162,
+        "create_fixed_asset_categories",
+        "CREATE TABLE fixed_asset_categories (id BIGSERIAL PRIMARY KEY, name TEXT NOT NULL, cita_category TEXT NOT NULL DEFAULT '', min_depreciation_rate NUMERIC(18,4) NOT NULL DEFAULT 0, max_depreciation_rate NUMERIC(18,4) NOT NULL DEFAULT 0, default_method TEXT NOT NULL DEFAULT 'linear', asset_account_id BIGINT, depreciation_account_id BIGINT, expense_account_id BIGINT, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())",
+        "DROP TABLE IF EXISTS fixed_asset_categories"
+    )
+    set = migrate_add(
+        set,
+        20260824163,
+        "add_fixed_assets_inventory_number",
+        "ALTER TABLE fixed_assets ADD COLUMN inventory_number TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE fixed_assets DROP COLUMN inventory_number"
+    )
+    set = migrate_add(
+        set,
+        20260824164,
+        "add_fixed_assets_category_id",
+        "ALTER TABLE fixed_assets ADD COLUMN category_id BIGINT NOT NULL DEFAULT 0",
+        "ALTER TABLE fixed_assets DROP COLUMN category_id"
+    )
+    set = migrate_add(
+        set,
+        20260824165,
+        "add_fixed_assets_put_into_service_date",
+        "ALTER TABLE fixed_assets ADD COLUMN put_into_service_date TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE fixed_assets DROP COLUMN put_into_service_date"
+    )
+    set = migrate_add(
+        set,
+        20260824166,
+        "add_fixed_assets_depreciation_method",
+        "ALTER TABLE fixed_assets ADD COLUMN depreciation_method TEXT NOT NULL DEFAULT 'linear'",
+        "ALTER TABLE fixed_assets DROP COLUMN depreciation_method"
+    )
+    set = migrate_add(
+        set,
+        20260824167,
+        "add_fixed_assets_accounting_depreciation_rate",
+        "ALTER TABLE fixed_assets ADD COLUMN accounting_depreciation_rate NUMERIC(18,4) NOT NULL DEFAULT 0",
+        "ALTER TABLE fixed_assets DROP COLUMN accounting_depreciation_rate"
+    )
+    set = migrate_add(
+        set,
+        20260824168,
+        "add_fixed_assets_tax_depreciation_rate",
+        "ALTER TABLE fixed_assets ADD COLUMN tax_depreciation_rate NUMERIC(18,4) NOT NULL DEFAULT 0",
+        "ALTER TABLE fixed_assets DROP COLUMN tax_depreciation_rate"
+    )
+    set = migrate_add(
+        set,
+        20260824169,
+        "add_fixed_assets_accumulated_depreciation",
+        "ALTER TABLE fixed_assets ADD COLUMN accumulated_depreciation NUMERIC(18,2) NOT NULL DEFAULT 0",
+        "ALTER TABLE fixed_assets DROP COLUMN accumulated_depreciation"
+    )
+    set = migrate_add(
+        set,
+        20260824170,
+        "add_fixed_assets_tax_accumulated_depreciation",
+        "ALTER TABLE fixed_assets ADD COLUMN tax_accumulated_depreciation NUMERIC(18,2) NOT NULL DEFAULT 0",
+        "ALTER TABLE fixed_assets DROP COLUMN tax_accumulated_depreciation"
+    )
+    set = migrate_add(
+        set,
+        20260824171,
+        "add_fixed_assets_status",
+        "ALTER TABLE fixed_assets ADD COLUMN status TEXT NOT NULL DEFAULT 'active'",
+        "ALTER TABLE fixed_assets DROP COLUMN status"
+    )
+    set = migrate_add(
+        set,
+        20260824172,
+        "add_fixed_assets_serial_number",
+        "ALTER TABLE fixed_assets ADD COLUMN serial_number TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE fixed_assets DROP COLUMN serial_number"
+    )
+    set = migrate_add(
+        set,
+        20260824173,
+        "add_fixed_assets_manufacturer",
+        "ALTER TABLE fixed_assets ADD COLUMN manufacturer TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE fixed_assets DROP COLUMN manufacturer"
+    )
+    set = migrate_add(
+        set,
+        20260824174,
+        "add_fixed_assets_model",
+        "ALTER TABLE fixed_assets ADD COLUMN model TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE fixed_assets DROP COLUMN model"
+    )
+    set = migrate_add(
+        set,
+        20260824175,
+        "add_fixed_assets_responsible_person",
+        "ALTER TABLE fixed_assets ADD COLUMN responsible_person TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE fixed_assets DROP COLUMN responsible_person"
+    )
+    set = migrate_add(
+        set,
+        20260824176,
+        "add_fixed_assets_is_conserved",
+        "ALTER TABLE fixed_assets ADD COLUMN is_conserved BIGINT NOT NULL DEFAULT 0",
+        "ALTER TABLE fixed_assets DROP COLUMN is_conserved"
+    )
     return set
 }
 
@@ -895,6 +1000,111 @@ fn bagabuch_boila_migrations() -> MigrationSet {
         "add_journal_entries_total_amount",
         "ALTER TABLE journal_entries ADD COLUMN total_amount NUMERIC",
         "ALTER TABLE journal_entries DROP COLUMN total_amount"
+    )
+    set = migrate_add(
+        set,
+        20260824066,
+        "create_fixed_asset_categories",
+        "CREATE TABLE IF NOT EXISTS fixed_asset_categories (id BIGINT, name TEXT, cita_category TEXT, min_depreciation_rate NUMERIC, max_depreciation_rate NUMERIC, default_method TEXT, asset_account_id BIGINT, depreciation_account_id BIGINT, expense_account_id BIGINT, created_at TIMESTAMPTZ, PRIMARY KEY (id))",
+        "DROP TABLE IF EXISTS fixed_asset_categories"
+    )
+    set = migrate_add(
+        set,
+        20260824067,
+        "add_fixed_assets_inventory_number",
+        "ALTER TABLE fixed_assets ADD COLUMN inventory_number TEXT",
+        "ALTER TABLE fixed_assets DROP COLUMN inventory_number"
+    )
+    set = migrate_add(
+        set,
+        20260824068,
+        "add_fixed_assets_category_id",
+        "ALTER TABLE fixed_assets ADD COLUMN category_id BIGINT",
+        "ALTER TABLE fixed_assets DROP COLUMN category_id"
+    )
+    set = migrate_add(
+        set,
+        20260824069,
+        "add_fixed_assets_put_into_service_date",
+        "ALTER TABLE fixed_assets ADD COLUMN put_into_service_date TEXT",
+        "ALTER TABLE fixed_assets DROP COLUMN put_into_service_date"
+    )
+    set = migrate_add(
+        set,
+        20260824070,
+        "add_fixed_assets_depreciation_method",
+        "ALTER TABLE fixed_assets ADD COLUMN depreciation_method TEXT",
+        "ALTER TABLE fixed_assets DROP COLUMN depreciation_method"
+    )
+    set = migrate_add(
+        set,
+        20260824071,
+        "add_fixed_assets_accounting_depreciation_rate",
+        "ALTER TABLE fixed_assets ADD COLUMN accounting_depreciation_rate NUMERIC",
+        "ALTER TABLE fixed_assets DROP COLUMN accounting_depreciation_rate"
+    )
+    set = migrate_add(
+        set,
+        20260824072,
+        "add_fixed_assets_tax_depreciation_rate",
+        "ALTER TABLE fixed_assets ADD COLUMN tax_depreciation_rate NUMERIC",
+        "ALTER TABLE fixed_assets DROP COLUMN tax_depreciation_rate"
+    )
+    set = migrate_add(
+        set,
+        20260824073,
+        "add_fixed_assets_accumulated_depreciation",
+        "ALTER TABLE fixed_assets ADD COLUMN accumulated_depreciation NUMERIC",
+        "ALTER TABLE fixed_assets DROP COLUMN accumulated_depreciation"
+    )
+    set = migrate_add(
+        set,
+        20260824074,
+        "add_fixed_assets_tax_accumulated_depreciation",
+        "ALTER TABLE fixed_assets ADD COLUMN tax_accumulated_depreciation NUMERIC",
+        "ALTER TABLE fixed_assets DROP COLUMN tax_accumulated_depreciation"
+    )
+    set = migrate_add(
+        set,
+        20260824075,
+        "add_fixed_assets_status",
+        "ALTER TABLE fixed_assets ADD COLUMN status TEXT",
+        "ALTER TABLE fixed_assets DROP COLUMN status"
+    )
+    set = migrate_add(
+        set,
+        20260824076,
+        "add_fixed_assets_serial_number",
+        "ALTER TABLE fixed_assets ADD COLUMN serial_number TEXT",
+        "ALTER TABLE fixed_assets DROP COLUMN serial_number"
+    )
+    set = migrate_add(
+        set,
+        20260824077,
+        "add_fixed_assets_manufacturer",
+        "ALTER TABLE fixed_assets ADD COLUMN manufacturer TEXT",
+        "ALTER TABLE fixed_assets DROP COLUMN manufacturer"
+    )
+    set = migrate_add(
+        set,
+        20260824078,
+        "add_fixed_assets_model",
+        "ALTER TABLE fixed_assets ADD COLUMN model TEXT",
+        "ALTER TABLE fixed_assets DROP COLUMN model"
+    )
+    set = migrate_add(
+        set,
+        20260824079,
+        "add_fixed_assets_responsible_person",
+        "ALTER TABLE fixed_assets ADD COLUMN responsible_person TEXT",
+        "ALTER TABLE fixed_assets DROP COLUMN responsible_person"
+    )
+    set = migrate_add(
+        set,
+        20260824080,
+        "add_fixed_assets_is_conserved",
+        "ALTER TABLE fixed_assets ADD COLUMN is_conserved BIGINT",
+        "ALTER TABLE fixed_assets DROP COLUMN is_conserved"
     )
     return set
 }

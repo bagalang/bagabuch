@@ -12,6 +12,7 @@ import "actions/invoices.baga"
 import "actions/journal.baga"
 import "actions/vat.baga"
 import "actions/saft.baga"
+import "actions/fixed_assets.baga"
 import "actions/active_company.baga"
 import "fmrbaga/app.baga"
 import "fmrbaga/ctx.baga"
@@ -59,6 +60,17 @@ fn RID_JOURNAL_CREATE() -> i64 { return 72 }
 fn RID_VAT_REGISTERS() -> i64 { return 90 }
 fn RID_VAT_RETURN() -> i64 { return 91 }
 fn RID_SAFT_EXPORT() -> i64 { return 92 }
+fn RID_FA_CATEGORIES_INDEX() -> i64 { return 95 }
+fn RID_FA_CATEGORIES_CREATE() -> i64 { return 96 }
+fn RID_FA_CATEGORIES_UPDATE() -> i64 { return 97 }
+fn RID_FA_CATEGORIES_DELETE() -> i64 { return 98 }
+fn RID_FA_INDEX() -> i64 { return 100 }
+fn RID_FA_CREATE() -> i64 { return 101 }
+fn RID_FA_SHOW() -> i64 { return 102 }
+fn RID_FA_UPDATE() -> i64 { return 103 }
+fn RID_FA_DELETE() -> i64 { return 104 }
+fn RID_FA_DEP_PREVIEW() -> i64 { return 105 }
+fn RID_FA_DEP_POST() -> i64 { return 106 }
 fn RID_ACTIVE_COMPANY_GET() -> i64 { return 80 }
 fn RID_ACTIVE_COMPANY_SET() -> i64 { return 81 }
 
@@ -106,6 +118,17 @@ fn fmr_build_app() -> FmrApp !IO {
     app = fmr_route_meta(app, "GET", "/v1/vat/registers", RID_VAT_REGISTERS(), "", "vat", 0, "", "VatRegisters", "200", "period")
     app = fmr_route_meta(app, "GET", "/v1/vat/return", RID_VAT_RETURN(), "", "vat", 0, "", "VatReturn", "200", "period")
     app = fmr_route_meta(app, "GET", "/v1/saft/export", RID_SAFT_EXPORT(), "", "saft", 0, "", "-", "200", "period,mode")
+    app = fmr_route_meta(app, "GET", "/v1/fixed-asset-categories", RID_FA_CATEGORIES_INDEX(), "", "fixed-assets", 0, "", "FacList", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/fixed-asset-categories", RID_FA_CATEGORIES_CREATE(), "", "fixed-assets", 0, "FacCreate", "Fac", "201", "")
+    app = fmr_route_meta(app, "PATCH", "/v1/fixed-asset-categories/{id}", RID_FA_CATEGORIES_UPDATE(), "", "fixed-assets", 0, "FacUpdate", "Fac", "200", "")
+    app = fmr_route_meta(app, "DELETE", "/v1/fixed-asset-categories/{id}", RID_FA_CATEGORIES_DELETE(), "", "fixed-assets", 0, "", "-", "204", "")
+    app = fmr_route_meta(app, "GET", "/v1/fixed-assets", RID_FA_INDEX(), "", "fixed-assets", 0, "", "FaList", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/fixed-assets", RID_FA_CREATE(), "", "fixed-assets", 0, "FaCreate", "Fa", "201", "")
+    app = fmr_route_meta(app, "GET", "/v1/fixed-assets/{id}", RID_FA_SHOW(), "", "fixed-assets", 0, "", "Fa", "200", "")
+    app = fmr_route_meta(app, "PATCH", "/v1/fixed-assets/{id}", RID_FA_UPDATE(), "", "fixed-assets", 0, "FaUpdate", "Fa", "200", "")
+    app = fmr_route_meta(app, "DELETE", "/v1/fixed-assets/{id}", RID_FA_DELETE(), "", "fixed-assets", 0, "", "-", "204", "")
+    app = fmr_route_meta(app, "POST", "/v1/fixed-assets/depreciation/preview", RID_FA_DEP_PREVIEW(), "", "fixed-assets", 0, "", "DepPreview", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/fixed-assets/depreciation/post", RID_FA_DEP_POST(), "", "fixed-assets", 0, "DepPost", "JournalEntry", "201", "")
     app = fmr_route_meta(app, "GET", "/v1/active-company", RID_ACTIVE_COMPANY_GET(), "", "active-company", 0, "", "Company", "200", "")
     app = fmr_route_meta(app, "PUT", "/v1/active-company", RID_ACTIVE_COMPANY_SET(), "", "active-company", 0, "ActiveCompanySet", "Company", "200", "")
     return app
@@ -165,6 +188,17 @@ fn fmr_dispatch(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     if id == RID_VAT_REGISTERS() { return act_vat_registers(ctx, db)? }
     if id == RID_VAT_RETURN() { return act_vat_return(ctx, db)? }
     if id == RID_SAFT_EXPORT() { return act_saft_export(ctx, db)? }
+    if id == RID_FA_CATEGORIES_INDEX() { return act_fa_categories_index(ctx, db)? }
+    if id == RID_FA_CATEGORIES_CREATE() { return act_fa_categories_create(ctx, db)? }
+    if id == RID_FA_CATEGORIES_UPDATE() { return act_fa_categories_update(ctx, db)? }
+    if id == RID_FA_CATEGORIES_DELETE() { return act_fa_categories_delete(ctx, db)? }
+    if id == RID_FA_INDEX() { return act_fa_index(ctx, db)? }
+    if id == RID_FA_CREATE() { return act_fa_create(ctx, db)? }
+    if id == RID_FA_SHOW() { return act_fa_show(ctx, db)? }
+    if id == RID_FA_UPDATE() { return act_fa_update(ctx, db)? }
+    if id == RID_FA_DELETE() { return act_fa_delete(ctx, db)? }
+    if id == RID_FA_DEP_PREVIEW() { return act_fa_depreciation_preview(ctx, db)? }
+    if id == RID_FA_DEP_POST() { return act_fa_depreciation_post(ctx, db)? }
     if id == RID_ACTIVE_COMPANY_GET() { return act_active_company_get(ctx, db)? }
     if id == RID_ACTIVE_COMPANY_SET() { return act_active_company_set(ctx, db)? }
     return fmr_out(fmr_500("unhandled route"), db)
