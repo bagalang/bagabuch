@@ -132,10 +132,13 @@ bagabuch/
 ### Фаза 2 — Backend API (fmrbaga)
 - Модул по модул: auth, companies, accounts, counterparts, products, invoices, journal
 - CRUD + валидация (jsonx), JWT, OpenAPI от route table
+- **Частичен PATCH** — обновяват се само присъстващите полета (иначе данни се трият);
+  `parent_id: null` в accounts сваля йерархията (NULL)
 - `POST /v1/invoices/{id}/post` генерира счетоводни записи по кореспонденции
 - Приемане: всеки модул с интеграционен тест през истински порт (не през мост)
-- Готово: **auth** (token/me) + **companies** (CRUD, числов ЕИК в TEXT, multi-column
-  UPDATE) — интеграционен тест през :8080 минава изцяло
+- Готово: **auth** (token/me), **companies**, **accounts** (йерархия parent_id),
+  **counterparts**, **products** — интеграционни тестове през :8080 минават изцяло
+- Остават: **invoices** (редове, суми, ДДС) и **journal** (дебит/кредит записи)
 - По пътя са фиксирани два универсални bug-а (не bagabuch-специфични):
   - boilaDB `8f68e3b`: unknown-literal коерция str↔i64/num (числови низове в TEXT колони)
   - ormbaga `a2e68b0`: multi-column UPDATE — `sql_update_eq/_p` презаписваха SET списъка

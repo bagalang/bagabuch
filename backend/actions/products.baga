@@ -1,13 +1,13 @@
-// actions/companies.baga — фирми: CRUD handlers.
+// actions/products.baga — стоки/услуги: CRUD handlers.
 
-import "../models/company.baga"
+import "../models/product.baga"
 import "fmrbaga/app.baga"
 import "fmrbaga/ctx.baga"
 import "fmrbaga/action.baga"
 import "fmrbaga/jsonx.baga"
 import "ormbaga/orm.baga"
 
-fn act_companies_index(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
+fn act_products_index(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     let auth = act_require_auth(ctx, db)
     if auth.ok == 0 {
         return auth.out
@@ -16,17 +16,17 @@ fn act_companies_index(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         return act_err(db, 503, "database unavailable")
     }
     let page = act_page(ctx, 50, 200)
-    let q = company_all(db)?
+    let q = product_all(db)?
     if orm_ok_q(q) == 0 {
         return act_err(orm_db_q(q), 500, orm_err_q(q))
     }
-    let mut o = company_list_json(q)
+    let mut o = product_list_json(q)
     o = jobj_i64(o, "limit", page.limit)
     o = jobj_i64(o, "offset", page.offset)
     return act_ok(orm_db_q(q), o)
 }
 
-fn act_companies_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
+fn act_products_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     let auth = act_require_auth(ctx, db)
     if auth.ok == 0 {
         return auth.out
@@ -43,31 +43,33 @@ fn act_companies_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     if name.ok == 0 {
         return act_422_field(db, "name", name)
     }
-    let eik = jreq_str(b.doc, b.root, "eik")
-    if eik.ok == 0 {
-        return act_422_field(db, "eik", eik)
+    let code = jopt_str(b.doc, b.root, "code", "")
+    let unit = jopt_str(b.doc, b.root, "unit", "")
+    let price = jopt_str(b.doc, b.root, "price", "0")
+    let vat_rate = jopt_str(b.doc, b.root, "vat_rate", "20")
+    let sv = jreq_bool(b.doc, b.root, "is_service")
+    let mut is_service: i64 = 0
+    if sv.present == 1 {
+        if sv.ok == 0 {
+            return act_422_field(db, "is_service", sv)
+        }
+        is_service = sv.num
     }
-    let vat_number = jopt_str(b.doc, b.root, "vat_number", "")
-    let address = jopt_str(b.doc, b.root, "address", "")
-    let city = jopt_str(b.doc, b.root, "city", "")
-    let mol = jopt_str(b.doc, b.root, "mol", "")
-    let iban = jopt_str(b.doc, b.root, "iban", "")
-    let bic = jopt_str(b.doc, b.root, "bic", "")
     if orm_ok_db(db) == 0 {
         return act_err(db, 503, "database unavailable")
     }
-    let ins = company_create(db, name.val, eik.val, vat_number.val, address.val, city.val, mol.val, iban.val, bic.val)?
+    let ins = product_create(db, name.val, code.val, unit.val, price.val, vat_rate.val, is_service)?
     if orm_ok(ins) == 0 {
         return act_err(orm_db_exec(ins), 409, orm_err_exec(ins))
     }
-    let q = company_all(orm_db_exec(ins))?
+    let q = product_all(orm_db_exec(ins))?
     if orm_ok_q(q) == 0 || orm_nrows(q) < 1 {
         return act_err(orm_db_q(q), 500, "insert ok but row missing")
     }
-    return act_created(orm_db_q(q), company_to_json(q, orm_nrows(q) - 1))
+    return act_created(orm_db_q(q), product_to_json(q, orm_nrows(q) - 1))
 }
 
-fn act_companies_show(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
+fn act_products_show(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     let auth = act_require_auth(ctx, db)
     if auth.ok == 0 {
         return auth.out
@@ -79,17 +81,17 @@ fn act_companies_show(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     if orm_ok_db(db) == 0 {
         return act_err(db, 503, "database unavailable")
     }
-    let q = company_find(db, id)?
+    let q = product_find(db, id)?
     if orm_ok_q(q) == 0 {
         return act_err(orm_db_q(q), 500, orm_err_q(q))
     }
     if orm_nrows(q) < 1 {
-        return act_404(orm_db_q(q), "Company not found")
+        return act_404(orm_db_q(q), "Product not found")
     }
-    return act_ok(orm_db_q(q), company_to_json(q, 0))
+    return act_ok(orm_db_q(q), product_to_json(q, 0))
 }
 
-fn act_companies_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
+fn act_products_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     let auth = act_require_auth(ctx, db)
     if auth.ok == 0 {
         return auth.out
@@ -117,87 +119,71 @@ fn act_companies_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         vec_push(cols, "name")
         vec_push(vals, name.val)
     }
-    let eik = jreq_str(b.doc, b.root, "eik")
-    if eik.present == 1 {
-        if eik.ok == 0 {
-            return act_422_field(db, "eik", eik)
+    let code = jreq_str(b.doc, b.root, "code")
+    if code.present == 1 {
+        if code.ok == 0 {
+            return act_422_field(db, "code", code)
         }
-        vec_push(cols, "eik")
-        vec_push(vals, eik.val)
+        vec_push(cols, "code")
+        vec_push(vals, code.val)
     }
-    let vat_number = jreq_str(b.doc, b.root, "vat_number")
-    if vat_number.present == 1 {
-        if vat_number.ok == 0 {
-            return act_422_field(db, "vat_number", vat_number)
+    let unit = jreq_str(b.doc, b.root, "unit")
+    if unit.present == 1 {
+        if unit.ok == 0 {
+            return act_422_field(db, "unit", unit)
         }
-        vec_push(cols, "vat_number")
-        vec_push(vals, vat_number.val)
+        vec_push(cols, "unit")
+        vec_push(vals, unit.val)
     }
-    let address = jreq_str(b.doc, b.root, "address")
-    if address.present == 1 {
-        if address.ok == 0 {
-            return act_422_field(db, "address", address)
+    let price = jreq_str(b.doc, b.root, "price")
+    if price.present == 1 {
+        if price.ok == 0 {
+            return act_422_field(db, "price", price)
         }
-        vec_push(cols, "address")
-        vec_push(vals, address.val)
+        vec_push(cols, "price")
+        vec_push(vals, price.val)
     }
-    let city = jreq_str(b.doc, b.root, "city")
-    if city.present == 1 {
-        if city.ok == 0 {
-            return act_422_field(db, "city", city)
+    let vat_rate = jreq_str(b.doc, b.root, "vat_rate")
+    if vat_rate.present == 1 {
+        if vat_rate.ok == 0 {
+            return act_422_field(db, "vat_rate", vat_rate)
         }
-        vec_push(cols, "city")
-        vec_push(vals, city.val)
+        vec_push(cols, "vat_rate")
+        vec_push(vals, vat_rate.val)
     }
-    let mol = jreq_str(b.doc, b.root, "mol")
-    if mol.present == 1 {
-        if mol.ok == 0 {
-            return act_422_field(db, "mol", mol)
+    let sv = jreq_bool(b.doc, b.root, "is_service")
+    if sv.present == 1 {
+        if sv.ok == 0 {
+            return act_422_field(db, "is_service", sv)
         }
-        vec_push(cols, "mol")
-        vec_push(vals, mol.val)
-    }
-    let iban = jreq_str(b.doc, b.root, "iban")
-    if iban.present == 1 {
-        if iban.ok == 0 {
-            return act_422_field(db, "iban", iban)
-        }
-        vec_push(cols, "iban")
-        vec_push(vals, iban.val)
-    }
-    let bic = jreq_str(b.doc, b.root, "bic")
-    if bic.present == 1 {
-        if bic.ok == 0 {
-            return act_422_field(db, "bic", bic)
-        }
-        vec_push(cols, "bic")
-        vec_push(vals, bic.val)
+        vec_push(cols, "is_service")
+        vec_push(vals, int_to_str(sv.num))
     }
     if orm_ok_db(db) == 0 {
         return act_err(db, 503, "database unavailable")
     }
     if vec_len(cols) == 0 {
-        let q0 = company_find(db, id)?
+        let q0 = product_find(db, id)?
         if orm_ok_q(q0) == 0 {
             return act_err(orm_db_q(q0), 500, orm_err_q(q0))
         }
         if orm_nrows(q0) < 1 {
-            return act_404(orm_db_q(q0), "Company not found")
+            return act_404(orm_db_q(q0), "Product not found")
         }
-        return act_ok(orm_db_q(q0), company_to_json(q0, 0))
+        return act_ok(orm_db_q(q0), product_to_json(q0, 0))
     }
-    let upd = orm_update_by_id(db, company_table(), id, cols, vals)?
+    let upd = orm_update_by_id(db, product_table(), id, cols, vals)?
     if orm_ok(upd) == 0 {
         return act_err(orm_db_exec(upd), 500, orm_err_exec(upd))
     }
-    let q = company_find(orm_db_exec(upd), id)?
+    let q = product_find(orm_db_exec(upd), id)?
     if orm_ok_q(q) == 0 || orm_nrows(q) < 1 {
-        return act_404(orm_db_q(q), "Company not found")
+        return act_404(orm_db_q(q), "Product not found")
     }
-    return act_ok(orm_db_q(q), company_to_json(q, 0))
+    return act_ok(orm_db_q(q), product_to_json(q, 0))
 }
 
-fn act_companies_delete(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
+fn act_products_delete(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     let auth = act_require_auth(ctx, db)
     if auth.ok == 0 {
         return auth.out
@@ -209,7 +195,7 @@ fn act_companies_delete(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     if orm_ok_db(db) == 0 {
         return act_err(db, 503, "database unavailable")
     }
-    let del = company_delete(db, id)?
+    let del = product_delete(db, id)?
     if orm_ok(del) == 0 {
         return act_err(orm_db_exec(del), 500, orm_err_exec(del))
     }
