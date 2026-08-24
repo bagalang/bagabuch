@@ -177,11 +177,13 @@ fn act_invoices_post(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         }
         db2 = orm_db_exec(l3)
     }
-    // статус → posted
+    // статус → posted + линк към счетоводния запис
     let scols = vec_new()
     vec_push(scols, "status")
+    vec_push(scols, "journal_entry_id")
     let svals = vec_new()
     vec_push(svals, "posted")
+    vec_push(svals, int_to_str(entry_id))
     let su = orm_update_by_id(db2, invoice_table(), id, scols, svals)?
     if orm_ok(su) == 0 {
         return act_err(orm_db_exec(su), 500, orm_err_exec(su))

@@ -10,6 +10,7 @@ import { RequireAuth } from "../../components/RequireAuth";
 interface Invoice {
   id: number;
   direction: string;
+  document_type: string;
   number: string;
   issue_date: string;
   accounting_month: string;
@@ -56,6 +57,11 @@ function InvoicesInner() {
   const [formError, setFormError] = useState("");
 
   const [direction, setDirection] = useState("out");
+  const [documentType, setDocumentType] = useState("invoice");
+  const [dueDate, setDueDate] = useState("");
+  const [taxEventDate, setTaxEventDate] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [notes, setNotes] = useState("");
   const [number, setNumber] = useState("");
   const [issueDate, setIssueDate] = useState("");
   const [accountingMonth, setAccountingMonth] = useState("");
@@ -95,6 +101,11 @@ function InvoicesInner() {
 
   const openCreate = () => {
     setDirection("out");
+    setDocumentType("invoice");
+    setDueDate("");
+    setTaxEventDate("");
+    setPaymentMethod("");
+    setNotes("");
     setNumber("");
     setIssueDate("");
     setAccountingMonth("");
@@ -127,6 +138,11 @@ function InvoicesInner() {
     try {
       const payload = {
         direction,
+        document_type: documentType,
+        due_date: dueDate,
+        tax_event_date: taxEventDate,
+        payment_method: paymentMethod,
+        notes,
         number,
         issue_date: issueDate,
         accounting_month: accountingMonth,
@@ -198,6 +214,7 @@ function InvoicesInner() {
               <tr>
                 <th>{t("invoices.number")}</th>
                 <th>{t("invoices.direction")}</th>
+                <th>{t("invoices.document_type")}</th>
                 <th>{t("invoices.issue_date")}</th>
                 <th>{t("invoices.counterpart")}</th>
                 <th>{t("invoices.total")}</th>
@@ -210,6 +227,7 @@ function InvoicesInner() {
                 <tr key={inv.id}>
                   <td>{inv.number}</td>
                   <td>{t(`invoices.direction.${inv.direction}`)}</td>
+                  <td>{t(`invoices.document_type.${inv.document_type}`)}</td>
                   <td>{inv.issue_date}</td>
                   <td>{cpName(inv.counterpart_id)}</td>
                   <td>{inv.total_amount}</td>
@@ -260,6 +278,19 @@ function InvoicesInner() {
                   </select>
                 </div>
                 <div className="field">
+                  <label className="label">{t("invoices.document_type")}</label>
+                  <select
+                    className="select"
+                    value={documentType}
+                    onChange={(e) => setDocumentType(e.target.value)}
+                  >
+                    <option value="invoice">{t("invoices.document_type.invoice")}</option>
+                    <option value="credit_note">{t("invoices.document_type.credit_note")}</option>
+                    <option value="debit_note">{t("invoices.document_type.debit_note")}</option>
+                    <option value="proforma">{t("invoices.document_type.proforma")}</option>
+                  </select>
+                </div>
+                <div className="field">
                   <label className="label">{t("invoices.number")} *</label>
                   <input
                     className="input"
@@ -274,6 +305,24 @@ function InvoicesInner() {
                     className="input"
                     value={issueDate}
                     onChange={(e) => setIssueDate(e.target.value)}
+                    placeholder="2026-08-01"
+                  />
+                </div>
+                <div className="field">
+                  <label className="label">{t("invoices.due_date")}</label>
+                  <input
+                    className="input"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                    placeholder="2026-08-15"
+                  />
+                </div>
+                <div className="field">
+                  <label className="label">{t("invoices.tax_event_date")}</label>
+                  <input
+                    className="input"
+                    value={taxEventDate}
+                    onChange={(e) => setTaxEventDate(e.target.value)}
                     placeholder="2026-08-01"
                   />
                 </div>
@@ -296,6 +345,22 @@ function InvoicesInner() {
                       </option>
                     ))}
                   </select>
+                </div>
+                <div className="field">
+                  <label className="label">{t("invoices.payment_method")}</label>
+                  <input
+                    className="input"
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label className="label">{t("invoices.notes")}</label>
+                  <input
+                    className="input"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                  />
                 </div>
               </div>
 

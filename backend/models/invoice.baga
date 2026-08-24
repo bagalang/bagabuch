@@ -39,7 +39,10 @@ fn invoice_to_json(q: OrmQuery, row: i64) -> JObj {
     o = jobj_i64(o, "id", orm_cell_by_i64(q, row, "id"))
     o = jobj_str(o, "direction", orm_cell_by(q, row, "direction"))
     o = jobj_str(o, "number", orm_cell_by(q, row, "number"))
+    o = jobj_str(o, "document_type", orm_cell_by(q, row, "document_type"))
     o = jobj_str(o, "issue_date", orm_cell_by(q, row, "issue_date"))
+    o = jobj_str(o, "due_date", orm_cell_by(q, row, "due_date"))
+    o = jobj_str(o, "tax_event_date", orm_cell_by(q, row, "tax_event_date"))
     o = jobj_str(o, "accounting_month", orm_cell_by(q, row, "accounting_month"))
     o = jobj_i64(o, "counterpart_id", orm_cell_by_i64(q, row, "counterpart_id"))
     o = jobj_str(o, "currency", orm_cell_by(q, row, "currency"))
@@ -48,6 +51,16 @@ fn invoice_to_json(q: OrmQuery, row: i64) -> JObj {
     o = jobj_str(o, "vat_amount", orm_cell_by(q, row, "vat_amount"))
     o = jobj_str(o, "total_amount", orm_cell_by(q, row, "total_amount"))
     o = jobj_str(o, "status", orm_cell_by(q, row, "status"))
+    o = jobj_str(o, "payment_method", orm_cell_by(q, row, "payment_method"))
+    o = jobj_str(o, "notes", orm_cell_by(q, row, "notes"))
+    let oid = orm_cell_by_i64(q, row, "original_invoice_id")
+    if oid > 0 {
+        o = jobj_i64(o, "original_invoice_id", oid)
+    }
+    let jid = orm_cell_by_i64(q, row, "journal_entry_id")
+    if jid > 0 {
+        o = jobj_i64(o, "journal_entry_id", jid)
+    }
     let ca = orm_cell_by(q, row, "created_at")
     if ca != "" {
         o = jobj_str(o, "created_at", ca)
@@ -74,7 +87,7 @@ fn invoice_line_to_json(q: OrmQuery, row: i64) -> JObj {
 }
 
 fn invoice_select_sql() -> str {
-    return "SELECT id, direction, number, issue_date, accounting_month, counterpart_id, currency, currency_rate, net_amount, vat_amount, total_amount, status, created_at FROM invoices"
+    return "SELECT id, direction, number, document_type, original_invoice_id, issue_date, due_date, tax_event_date, accounting_month, counterpart_id, currency, currency_rate, net_amount, vat_amount, total_amount, status, payment_method, notes, journal_entry_id, created_at FROM invoices"
 }
 
 fn invoice_find(db: OrmDb, id: i64) -> OrmQuery !IO !Net {
@@ -99,7 +112,7 @@ fn invoice_lines_by_invoice(db: OrmDb, invoice_id: i64) -> OrmQuery !IO !Net {
 
 // Вмъква header с тотали 0 и статус draft; връща реда през RETURNING (id вътре).
 // За boila ид-то се предоставя явно (няма SERIAL).
-fn invoice_create_header(db: OrmDb, direction: str, number: str, issue_date: str, accounting_month: str, counterpart_id: i64, currency: str, currency_rate: str) -> OrmQuery !IO !Net {
+fn invoice_create_header(db: OrmDb, direction: str, number: str, document_type: str, original_invoice_id: i64, issue_date: str, due_date: str, tax_event_date: str, accounting_month: str, counterpart_id: i64, currency: str, currency_rate: str, payment_method: str, notes: str) -> OrmQuery !IO !Net {
     if invoice_backend_boila()? == 1 {
         let c = invoice_next_id(db)?
         if orm_ok_c(c) == 0 {
@@ -111,7 +124,11 @@ fn invoice_create_header(db: OrmDb, direction: str, number: str, issue_date: str
         vec_push(cols, "id")
         vec_push(cols, "direction")
         vec_push(cols, "number")
+        vec_push(cols, "document_type")
+        vec_push(cols, "original_invoice_id")
         vec_push(cols, "issue_date")
+        vec_push(cols, "due_date")
+        vec_push(cols, "tax_event_date")
         vec_push(cols, "accounting_month")
         vec_push(cols, "counterpart_id")
         vec_push(cols, "currency")
@@ -120,11 +137,17 @@ fn invoice_create_header(db: OrmDb, direction: str, number: str, issue_date: str
         vec_push(cols, "vat_amount")
         vec_push(cols, "total_amount")
         vec_push(cols, "status")
+        vec_push(cols, "payment_method")
+        vec_push(cols, "notes")
         let vals = vec_new()
         vec_push(vals, int_to_str(nid))
         vec_push(vals, direction)
         vec_push(vals, number)
+        vec_push(vals, document_type)
+        vec_push(vals, int_to_str(original_invoice_id))
         vec_push(vals, issue_date)
+        vec_push(vals, due_date)
+        vec_push(vals, tax_event_date)
         vec_push(vals, accounting_month)
         vec_push(vals, int_to_str(counterpart_id))
         vec_push(vals, currency)
@@ -133,9 +156,11 @@ fn invoice_create_header(db: OrmDb, direction: str, number: str, issue_date: str
         vec_push(vals, "0")
         vec_push(vals, "0")
         vec_push(vals, "draft")
+        vec_push(vals, payment_method)
+        vec_push(vals, notes)
         let nulls = vec_new()
         let mut i: i64 = 0
-        while i < 12 {
+        while i < 18 {
             vec_push(nulls, 0)
             i = i + 1
         }
@@ -144,7 +169,11 @@ fn invoice_create_header(db: OrmDb, direction: str, number: str, issue_date: str
     let cols = vec_new()
     vec_push(cols, "direction")
     vec_push(cols, "number")
+    vec_push(cols, "document_type")
+    vec_push(cols, "original_invoice_id")
     vec_push(cols, "issue_date")
+    vec_push(cols, "due_date")
+    vec_push(cols, "tax_event_date")
     vec_push(cols, "accounting_month")
     vec_push(cols, "counterpart_id")
     vec_push(cols, "currency")
@@ -153,10 +182,16 @@ fn invoice_create_header(db: OrmDb, direction: str, number: str, issue_date: str
     vec_push(cols, "vat_amount")
     vec_push(cols, "total_amount")
     vec_push(cols, "status")
+    vec_push(cols, "payment_method")
+    vec_push(cols, "notes")
     let vals = vec_new()
     vec_push(vals, direction)
     vec_push(vals, number)
+    vec_push(vals, document_type)
+    vec_push(vals, int_to_str(original_invoice_id))
     vec_push(vals, issue_date)
+    vec_push(vals, due_date)
+    vec_push(vals, tax_event_date)
     vec_push(vals, accounting_month)
     vec_push(vals, int_to_str(counterpart_id))
     vec_push(vals, currency)
@@ -165,9 +200,11 @@ fn invoice_create_header(db: OrmDb, direction: str, number: str, issue_date: str
     vec_push(vals, "0")
     vec_push(vals, "0")
     vec_push(vals, "draft")
+    vec_push(vals, payment_method)
+    vec_push(vals, notes)
     let nulls = vec_new()
     let mut i: i64 = 0
-    while i < 11 {
+    while i < 17 {
         vec_push(nulls, 0)
         i = i + 1
     }

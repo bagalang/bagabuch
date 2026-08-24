@@ -316,6 +316,55 @@ fn bagabuch_migrations() -> MigrationSet {
         "ALTER TABLE counterparts ADD COLUMN phone TEXT NOT NULL DEFAULT ''",
         "ALTER TABLE counterparts DROP COLUMN phone"
     )
+    set = migrate_add(
+        set,
+        20260824145,
+        "add_invoices_document_type",
+        "ALTER TABLE invoices ADD COLUMN document_type TEXT NOT NULL DEFAULT 'invoice'",
+        "ALTER TABLE invoices DROP COLUMN document_type"
+    )
+    set = migrate_add(
+        set,
+        20260824146,
+        "add_invoices_original_invoice_id",
+        "ALTER TABLE invoices ADD COLUMN original_invoice_id BIGINT NOT NULL DEFAULT 0",
+        "ALTER TABLE invoices DROP COLUMN original_invoice_id"
+    )
+    set = migrate_add(
+        set,
+        20260824147,
+        "add_invoices_due_date",
+        "ALTER TABLE invoices ADD COLUMN due_date TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE invoices DROP COLUMN due_date"
+    )
+    set = migrate_add(
+        set,
+        20260824148,
+        "add_invoices_tax_event_date",
+        "ALTER TABLE invoices ADD COLUMN tax_event_date TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE invoices DROP COLUMN tax_event_date"
+    )
+    set = migrate_add(
+        set,
+        20260824149,
+        "add_invoices_payment_method",
+        "ALTER TABLE invoices ADD COLUMN payment_method TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE invoices DROP COLUMN payment_method"
+    )
+    set = migrate_add(
+        set,
+        20260824150,
+        "add_invoices_notes",
+        "ALTER TABLE invoices ADD COLUMN notes TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE invoices DROP COLUMN notes"
+    )
+    set = migrate_add(
+        set,
+        20260824151,
+        "add_invoices_journal_entry_id",
+        "ALTER TABLE invoices ADD COLUMN journal_entry_id BIGINT NOT NULL DEFAULT 0",
+        "ALTER TABLE invoices DROP COLUMN journal_entry_id"
+    )
     return set
 }
 
@@ -657,6 +706,55 @@ fn bagabuch_boila_migrations() -> MigrationSet {
         "add_counterparts_phone",
         "ALTER TABLE counterparts ADD COLUMN phone TEXT",
         "ALTER TABLE counterparts DROP COLUMN phone"
+    )
+    set = migrate_add(
+        set,
+        20260824049,
+        "add_invoices_document_type",
+        "ALTER TABLE invoices ADD COLUMN document_type TEXT",
+        "ALTER TABLE invoices DROP COLUMN document_type"
+    )
+    set = migrate_add(
+        set,
+        20260824050,
+        "add_invoices_original_invoice_id",
+        "ALTER TABLE invoices ADD COLUMN original_invoice_id BIGINT",
+        "ALTER TABLE invoices DROP COLUMN original_invoice_id"
+    )
+    set = migrate_add(
+        set,
+        20260824051,
+        "add_invoices_due_date",
+        "ALTER TABLE invoices ADD COLUMN due_date TEXT",
+        "ALTER TABLE invoices DROP COLUMN due_date"
+    )
+    set = migrate_add(
+        set,
+        20260824052,
+        "add_invoices_tax_event_date",
+        "ALTER TABLE invoices ADD COLUMN tax_event_date TEXT",
+        "ALTER TABLE invoices DROP COLUMN tax_event_date"
+    )
+    set = migrate_add(
+        set,
+        20260824053,
+        "add_invoices_payment_method",
+        "ALTER TABLE invoices ADD COLUMN payment_method TEXT",
+        "ALTER TABLE invoices DROP COLUMN payment_method"
+    )
+    set = migrate_add(
+        set,
+        20260824054,
+        "add_invoices_notes",
+        "ALTER TABLE invoices ADD COLUMN notes TEXT",
+        "ALTER TABLE invoices DROP COLUMN notes"
+    )
+    set = migrate_add(
+        set,
+        20260824055,
+        "add_invoices_journal_entry_id",
+        "ALTER TABLE invoices ADD COLUMN journal_entry_id BIGINT",
+        "ALTER TABLE invoices DROP COLUMN journal_entry_id"
     )
     return set
 }
