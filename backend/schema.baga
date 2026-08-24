@@ -1,0 +1,11 @@
+// schema.baga — миграции на bagabuch (принадлежат на приложението, не на framework-а).
+// Фаза 0: празна схема. Фаза 1 добавя таблиците (companies, accounts, counterparts,
+// products, invoices + редове, journal_entries, vat_returns, fixed_assets,
+// bank_accounts, bank_transactions, settings).
+// BoilaSQL: PRIMARY KEY задължителен; без SERIAL/DEFAULT/NOT NULL/REFERENCES.
+
+import "ormbaga/migrate.baga"
+
+fn bagabuch_migrations() -> MigrationSet {
+    return migrate_set_new()
+}

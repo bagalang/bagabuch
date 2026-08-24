@@ -1,0 +1,73 @@
+# sandak.lock — генериран от sandak, не редактирай
+
+[[package]]
+name = "backend"
+version = "0.1.0"
+source = "path+."
+rev = "-"
+
+[[package]]
+name = "boilabaga"
+version = "0.2.0"
+source = "path+/home/ziko/z-git/baga/app-product/boilabaga"
+rev = "-"
+
+[[package]]
+name = "bufbaga"
+version = "0.2.0"
+source = "path+/home/ziko/z-git/baga/app-product/bufbaga"
+rev = "-"
+
+[[package]]
+name = "fmrbaga"
+version = "0.2.0"
+source = "path+/home/ziko/z-git/baga/app-product/fmrbaga"
+rev = "-"
+
+[[package]]
+name = "httpdbaga"
+version = "0.2.0"
+source = "path+/home/ziko/z-git/baga/app-product/httpdbaga"
+rev = "-"
+
+[[package]]
+name = "jwtbaga"
+version = "0.2.0"
+source = "path+/home/ziko/z-git/baga/app-product/jwtbaga"
+rev = "-"
+
+[[package]]
+name = "logbaga"
+version = "0.2.0"
+source = "path+/home/ziko/z-git/baga/app-product/logbaga"
+rev = "-"
+
+[[package]]
+name = "metbaga"
+version = "0.2.0"
+source = "path+/home/ziko/z-git/baga/app-product/metbaga"
+rev = "-"
+
+[[package]]
+name = "ormbaga"
+version = "0.2.0"
+source = "path+/home/ziko/z-git/baga/app-product/ormbaga"
+rev = "-"
+
+[[package]]
+name = "otelbaga"
+version = "0.2.0"
+source = "path+/home/ziko/z-git/baga/app-product/otelbaga"
+rev = "-"
+
+[[package]]
+name = "pgbaga"
+version = "0.2.0"
+source = "path+/home/ziko/z-git/baga/app-product/pgbaga"
+rev = "-"
+
+[[package]]
+name = "std"
+version = "0.7.0"
+source = "path+/home/ziko/z-git/baga/std"
+rev = "-"
