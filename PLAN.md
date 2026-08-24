@@ -134,6 +134,11 @@ bagabuch/
 - CRUD + валидация (jsonx), JWT, OpenAPI от route table
 - `POST /v1/invoices/{id}/post` генерира счетоводни записи по кореспонденции
 - Приемане: всеки модул с интеграционен тест през истински порт (не през мост)
+- Готово: **auth** (token/me) + **companies** (CRUD, числов ЕИК в TEXT, multi-column
+  UPDATE) — интеграционен тест през :8080 минава изцяло
+- По пътя са фиксирани два универсални bug-а (не bagabuch-специфични):
+  - boilaDB `8f68e3b`: unknown-literal коерция str↔i64/num (числови низове в TEXT колони)
+  - ormbaga `a2e68b0`: multi-column UPDATE — `sql_update_eq/_p` презаписваха SET списъка
 
 ### Фаза 3 — Frontend (Next.js)
 - Страници по модул: login, dashboard, фирми, сметкоплан, контрагенти, фактури, дневник

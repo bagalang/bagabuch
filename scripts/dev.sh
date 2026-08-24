@@ -41,7 +41,9 @@ wait_tcp() {
 }
 
 echo "==> boilaDB serve_pg на :$BOILA_PGPORT"
-(cd "$BAGA_ROOT" && BOILA_PGPORT="$BOILA_PGPORT" $STDBUF ./baga -I . -I app-product app-product/boilaDB/tools/serve_pg.baga) &
+# 1 worker на връзка (блокиращ) — повече от броя backend връзки, за да остава
+# капацитет за psql/админ връзки успоредно.
+(cd "$BAGA_ROOT" && BOILA_PGPORT="$BOILA_PGPORT" BOILA_WORKERS="${BOILA_WORKERS:-8}" $STDBUF ./baga -I . -I app-product app-product/boilaDB/tools/serve_pg.baga) &
 pids+=($!)
 
 echo "    чакам boilaDB да отговори на TCP :$BOILA_PGPORT ..."

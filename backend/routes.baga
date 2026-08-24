@@ -1,8 +1,10 @@
 // routes.baga — route table + fmr_dispatch за bagabuch.
-// Фаза 0: само system routes (health/ready/meta/openapi/metrics).
-// Фаза 2 добавя домейн модулите (firms, accounts, counterparts, invoices, journal...).
+// Фаза 2: system + auth + companies. Следват accounts, counterparts, products,
+// invoices, journal — същата структура, модул по модул.
 
 import "actions/system.baga"
+import "actions/auth.baga"
+import "actions/companies.baga"
 import "fmrbaga/app.baga"
 import "fmrbaga/ctx.baga"
 import "fmrbaga/deps.baga"
@@ -15,6 +17,13 @@ fn RID_READY() -> i64 { return 2 }
 fn RID_META() -> i64 { return 3 }
 fn RID_OPENAPI() -> i64 { return 4 }
 fn RID_METRICS() -> i64 { return 5 }
+fn RID_TOKEN() -> i64 { return 10 }
+fn RID_ME() -> i64 { return 11 }
+fn RID_COMPANIES_INDEX() -> i64 { return 20 }
+fn RID_COMPANIES_CREATE() -> i64 { return 21 }
+fn RID_COMPANIES_SHOW() -> i64 { return 22 }
+fn RID_COMPANIES_UPDATE() -> i64 { return 23 }
+fn RID_COMPANIES_DELETE() -> i64 { return 24 }
 
 fn fmr_build_app() -> FmrApp !IO {
     let cfg = fmr_config_load()?
@@ -26,6 +35,13 @@ fn fmr_build_app() -> FmrApp !IO {
     app = fmr_route_meta(app, "GET", "/v1/meta", RID_META(), "", "system", 1, "", "Status", "200", "")
     app = fmr_route_meta(app, "GET", "/openapi.json", RID_OPENAPI(), "", "system", 1, "", "-", "200", "")
     app = fmr_route_meta(app, "GET", "/metrics", RID_METRICS(), "", "system", 0, "", "-", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/auth/token", RID_TOKEN(), "", "auth", 1, "TokenRequest?", "TokenResponse", "200", "sub:s")
+    app = fmr_route_meta(app, "GET", "/v1/me", RID_ME(), "", "auth", 0, "", "Me", "200", "")
+    app = fmr_route_meta(app, "GET", "/v1/companies", RID_COMPANIES_INDEX(), "", "companies", 0, "", "CompanyList", "200", "limit,offset")
+    app = fmr_route_meta(app, "POST", "/v1/companies", RID_COMPANIES_CREATE(), "", "companies", 0, "CompanyCreate", "Company", "201", "")
+    app = fmr_route_meta(app, "GET", "/v1/companies/{id}", RID_COMPANIES_SHOW(), "", "companies", 0, "", "Company", "200", "")
+    app = fmr_route_meta(app, "PATCH", "/v1/companies/{id}", RID_COMPANIES_UPDATE(), "", "companies", 0, "CompanyUpdate", "Company", "200", "")
+    app = fmr_route_meta(app, "DELETE", "/v1/companies/{id}", RID_COMPANIES_DELETE(), "", "companies", 0, "", "-", "204", "")
     return app
 }
 
@@ -49,5 +65,12 @@ fn fmr_dispatch(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     if id == RID_META() { return act_meta(ctx, db) }
     if id == RID_OPENAPI() { return act_openapi(ctx, db) }
     if id == RID_METRICS() { return act_metrics(ctx, db)? }
+    if id == RID_TOKEN() { return act_token(ctx, db) }
+    if id == RID_ME() { return act_me(ctx, db) }
+    if id == RID_COMPANIES_INDEX() { return act_companies_index(ctx, db)? }
+    if id == RID_COMPANIES_CREATE() { return act_companies_create(ctx, db)? }
+    if id == RID_COMPANIES_SHOW() { return act_companies_show(ctx, db)? }
+    if id == RID_COMPANIES_UPDATE() { return act_companies_update(ctx, db)? }
+    if id == RID_COMPANIES_DELETE() { return act_companies_delete(ctx, db)? }
     return fmr_out(fmr_500("unhandled route"), db)
 }
