@@ -192,7 +192,7 @@ fn act_journal_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         return act_err(db2, 422, "дебит и кредит не се балансират")
     }
     // Създаване на записа.
-    let eq = journal_entry_insert(db2, entry_date.val, "manual", 0, description.val, vat_type.val, counterpart_id, counterpart_name, counterpart_vat_number, document_number.val, document_date.val, vat_period.val, dec_to_string(vat_total))?
+    let eq = journal_entry_insert(db2, entry_date.val, "manual", 0, description.val, vat_type.val, counterpart_id, counterpart_name, counterpart_vat_number, document_number.val, document_date.val, vat_period.val, dec_to_string(credit_total), dec_to_string(vat_total))?
     if orm_ok_q(eq) == 0 || orm_nrows(eq) < 1 {
         return act_err(orm_db_q(eq), 500, "journal entry insert failed")
     }
@@ -314,7 +314,7 @@ fn act_invoices_post(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     let vat_id = vec_get(v_ids, 0)
     // journal_entry (с ДДС полетата — влиза в ДДС дневниците)
     let desc = concat(concat("Фактура ", number), concat(" / ", direction))
-    let eq = journal_entry_insert(db2, issue_date, "invoice", id, desc, vat_type, counterpart_id, counterpart_name, counterpart_vat_number, number, issue_date, accounting_month, vat_amount)?
+    let eq = journal_entry_insert(db2, issue_date, "invoice", id, desc, vat_type, counterpart_id, counterpart_name, counterpart_vat_number, number, issue_date, accounting_month, total_amount, vat_amount)?
     if orm_ok_q(eq) == 0 || orm_nrows(eq) < 1 {
         return act_err(orm_db_q(eq), 500, "journal entry insert failed")
     }

@@ -428,6 +428,13 @@ fn bagabuch_migrations() -> MigrationSet {
         "ALTER TABLE journal_lines ADD COLUMN vat_amount NUMERIC(18,2) NOT NULL DEFAULT 0",
         "ALTER TABLE journal_lines DROP COLUMN vat_amount"
     )
+    set = migrate_add(
+        set,
+        20260824161,
+        "add_journal_entries_total_amount",
+        "ALTER TABLE journal_entries ADD COLUMN total_amount NUMERIC(18,2) NOT NULL DEFAULT 0",
+        "ALTER TABLE journal_entries DROP COLUMN total_amount"
+    )
     return set
 }
 
@@ -881,6 +888,13 @@ fn bagabuch_boila_migrations() -> MigrationSet {
         "add_journal_lines_vat_amount",
         "ALTER TABLE journal_lines ADD COLUMN vat_amount NUMERIC",
         "ALTER TABLE journal_lines DROP COLUMN vat_amount"
+    )
+    set = migrate_add(
+        set,
+        20260824065,
+        "add_journal_entries_total_amount",
+        "ALTER TABLE journal_entries ADD COLUMN total_amount NUMERIC",
+        "ALTER TABLE journal_entries DROP COLUMN total_amount"
     )
     return set
 }

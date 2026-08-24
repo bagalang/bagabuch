@@ -26,6 +26,7 @@ const NAV_ITEMS = [
   { href: "/products", key: "nav.products" },
   { href: "/invoices", key: "nav.invoices" },
   { href: "/journal", key: "nav.journal" },
+  { href: "/vat", key: "nav.vat" },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {

@@ -1,0 +1,156 @@
+// actions/vat.baga — ДДС дневници (покупки/продажби) и ППДДС справка.
+// Данните идват от счетоводните записи с ДДС_тип = покупка/продажба
+// (ръчни и от постнати фактури) за дадения ДДС период. Сумирането е в
+// приложението с багадесимал (десимално точно; boila не поддържа две
+// '=' условия в WHERE).
+
+import "../models/journal.baga"
+import "fmrbaga/app.baga"
+import "fmrbaga/ctx.baga"
+import "fmrbaga/action.baga"
+import "fmrbaga/jsonx.baga"
+import "ormbaga/orm.baga"
+import "bagadecimal/src/decimal.baga"
+
+fn vat_row_json(q: OrmQuery, row: i64) -> JObj {
+    let mut o = jobj_new()
+    o = jobj_i64(o, "id", orm_cell_by_i64(q, row, "id"))
+    o = jobj_str(o, "entry_date", orm_cell_by(q, row, "entry_date"))
+    o = jobj_str(o, "document_type", orm_cell_by(q, row, "document_type"))
+    o = jobj_str(o, "document_number", orm_cell_by(q, row, "document_number"))
+    o = jobj_str(o, "document_date", orm_cell_by(q, row, "document_date"))
+    o = jobj_str(o, "counterpart_name", orm_cell_by(q, row, "counterpart_name"))
+    o = jobj_str(o, "counterpart_vat_number", orm_cell_by(q, row, "counterpart_vat_number"))
+    let total = orm_cell_by(q, row, "total_amount")
+    let vat = orm_cell_by(q, row, "total_vat_amount")
+    // основа = общо − ДДС (десимално точно)
+    let td = dec_parse(total)
+    let vd = dec_parse(vat)
+    if td.ok == 1 && vd.ok == 1 {
+        let bd = dec_sub(td.value, vd.value)
+        if bd.ok == 1 {
+            o = jobj_str(o, "base_amount", dec_to_string(bd.value))
+        }
+    }
+    o = jobj_str(o, "vat_amount", vat)
+    return o
+}
+
+fn vat_rows_json(q: OrmQuery) -> JArr {
+    let mut arr = jarr_new()
+    let mut i: i64 = 0
+    while i < orm_nrows(q) {
+        arr = jarr_obj(arr, vat_row_json(q, i))
+        i = i + 1
+    }
+    return arr
+}
+
+fn act_vat_registers(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
+    let auth = act_require_auth(ctx, db)
+    if auth.ok == 0 {
+        return auth.out
+    }
+    let period = fmr_query(ctx, "period")
+    if period == "" {
+        return act_err(db, 400, "period е задължителен (YYYY-MM-01)")
+    }
+    if orm_ok_db(db) == 0 {
+        return act_err(db, 503, "database unavailable")
+    }
+    let q = journal_by_period(db, period)?
+    if orm_ok_q(q) == 0 {
+        return act_err(orm_db_q(q), 500, orm_err_q(q))
+    }
+    // Разделяне по ДДС_тип в приложението.
+    let mut purchases = jarr_new()
+    let mut sales = jarr_new()
+    let mut i: i64 = 0
+    while i < orm_nrows(q) {
+        let vt = orm_cell_by(q, i, "vat_type")
+        if vt == "purchase" {
+            purchases = jarr_obj(purchases, vat_row_json(q, i))
+        }
+        if vt == "sales" {
+            sales = jarr_obj(sales, vat_row_json(q, i))
+        }
+        i = i + 1
+    }
+    let mut o = jobj_new()
+    o = jobj_str(o, "period", period)
+    o = jobj_arr(o, "purchases", purchases)
+    o = jobj_arr(o, "sales", sales)
+    return act_ok(orm_db_q(q), o)
+}
+
+// ППДДС — основните клетки за периода. Засега с една ставка 20%:
+// клетките по ставки (9%/0%) идват с добавянето на ставка по ред.
+fn act_vat_return(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
+    let auth = act_require_auth(ctx, db)
+    if auth.ok == 0 {
+        return auth.out
+    }
+    let period = fmr_query(ctx, "period")
+    if period == "" {
+        return act_err(db, 400, "period е задължителен (YYYY-MM-01)")
+    }
+    if orm_ok_db(db) == 0 {
+        return act_err(db, 503, "database unavailable")
+    }
+    let q = journal_by_period(db, period)?
+    if orm_ok_q(q) == 0 {
+        return act_err(orm_db_q(q), 500, orm_err_q(q))
+    }
+    // Сумиране по тип в приложението (десимално точно).
+    let mut s_base = dec_zero()
+    let mut s_vat = dec_zero()
+    let mut p_base = dec_zero()
+    let mut p_vat = dec_zero()
+    let mut i: i64 = 0
+    while i < orm_nrows(q) {
+        let vt = orm_cell_by(q, i, "vat_type")
+        let total = orm_cell_by(q, i, "total_amount")
+        let vat = orm_cell_by(q, i, "total_vat_amount")
+        let td = dec_parse(total)
+        let vd = dec_parse(vat)
+        if td.ok == 1 && vd.ok == 1 {
+            let bd = dec_sub(td.value, vd.value)
+            if bd.ok == 1 {
+                if vt == "sales" {
+                    let a1 = dec_add(s_base, bd.value)
+                    let a2 = dec_add(s_vat, vd.value)
+                    if a1.ok == 1 { s_base = a1.value }
+                    if a2.ok == 1 { s_vat = a2.value }
+                }
+                if vt == "purchase" {
+                    let a1 = dec_add(p_base, bd.value)
+                    let a2 = dec_add(p_vat, vd.value)
+                    if a1.ok == 1 { p_base = a1.value }
+                    if a2.ok == 1 { p_vat = a2.value }
+                }
+            }
+        }
+        i = i + 1
+    }
+    // дължим = начислен − кредит
+    let d = dec_sub(s_vat, p_vat)
+    let mut due = "0"
+    let mut credit = "0"
+    if d.ok == 1 {
+        if dec_is_negative(d.value) == 1 {
+            credit = dec_to_string(dec_neg(d.value))
+        } else {
+            due = dec_to_string(d.value)
+        }
+    }
+    let mut o = jobj_new()
+    o = jobj_str(o, "period", period)
+    o = jobj_str(o, "cell_01", dec_to_string(s_base))
+    o = jobj_str(o, "cell_11", dec_to_string(s_base))
+    o = jobj_str(o, "cell_31", dec_to_string(s_vat))
+    o = jobj_str(o, "cell_41", dec_to_string(p_base))
+    o = jobj_str(o, "cell_71", dec_to_string(p_vat))
+    o = jobj_str(o, "cell_81", due)
+    o = jobj_str(o, "cell_82", credit)
+    return act_ok(orm_db_q(q), o)
+}
