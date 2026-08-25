@@ -9,4 +9,5 @@ fmrbaga = { path = "../../../app-product/fmrbaga" }
 ormbaga = { path = "../../../app-product/ormbaga" }
 bagadecimal = { path = "../../../app-product/bagadecimal" }
 xmlbaga = { path = "../../../app-product/xmlbaga" }
+reportbaga = { path = "../../../app-product/reportbaga" }
 std = { path = "../../../std" }

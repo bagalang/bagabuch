@@ -65,6 +65,31 @@ export const api = {
   del: <T>(path: string) => request<T>(path, "DELETE"),
 };
 
+export async function downloadFile(path: string, filename: string): Promise<void> {
+  const headers: Record<string, string> = {};
+  const token = getToken();
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const res = await fetch(`${API_BASE}${path}`, { headers, cache: "no-store" });
+  if (!res.ok) {
+    const text = await res.text();
+    let detail = res.statusText;
+    try {
+      const data = JSON.parse(text) as { detail?: string };
+      if (data.detail) detail = data.detail;
+    } catch {
+      if (text) detail = text;
+    }
+    throw new ApiError(res.status, String(detail));
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 // автентикация
 export async function login(username: string): Promise<string> {
   const data = await api.post<{ access_token: string }>("/v1/auth/token", {

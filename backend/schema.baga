@@ -547,6 +547,34 @@ fn bagabuch_migrations() -> MigrationSet {
         "CREATE TABLE fixed_asset_events (id BIGSERIAL PRIMARY KEY, asset_id BIGINT NOT NULL, event_type TEXT NOT NULL, event_date TEXT NOT NULL DEFAULT '', amount TEXT NOT NULL DEFAULT '', prev_value TEXT NOT NULL DEFAULT '', location TEXT NOT NULL DEFAULT '', reason TEXT NOT NULL DEFAULT '', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())",
         "DROP TABLE IF EXISTS fixed_asset_events"
     )
+    set = migrate_add(
+        set,
+        20260824178,
+        "add_invoice_lines_unit",
+        "ALTER TABLE invoice_lines ADD COLUMN unit TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE invoice_lines DROP COLUMN unit"
+    )
+    set = migrate_add(
+        set,
+        20260824179,
+        "add_invoices_discount_percent",
+        "ALTER TABLE invoices ADD COLUMN discount_percent NUMERIC(18,2) NOT NULL DEFAULT 0",
+        "ALTER TABLE invoices DROP COLUMN discount_percent"
+    )
+    set = migrate_add(
+        set,
+        20260824180,
+        "add_invoices_discount_amount",
+        "ALTER TABLE invoices ADD COLUMN discount_amount NUMERIC(18,2) NOT NULL DEFAULT 0",
+        "ALTER TABLE invoices DROP COLUMN discount_amount"
+    )
+    set = migrate_add(
+        set,
+        20260824181,
+        "add_invoices_vat_exemption_reason",
+        "ALTER TABLE invoices ADD COLUMN vat_exemption_reason TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE invoices DROP COLUMN vat_exemption_reason"
+    )
     return set
 }
 
@@ -1119,6 +1147,34 @@ fn bagabuch_boila_migrations() -> MigrationSet {
         "create_fixed_asset_events",
         "CREATE TABLE IF NOT EXISTS fixed_asset_events (id BIGINT, asset_id BIGINT, event_type TEXT, event_date TEXT, amount TEXT, prev_value TEXT, location TEXT, reason TEXT, created_at TIMESTAMPTZ, PRIMARY KEY (id))",
         "DROP TABLE IF EXISTS fixed_asset_events"
+    )
+    set = migrate_add(
+        set,
+        20260824082,
+        "add_invoice_lines_unit",
+        "ALTER TABLE invoice_lines ADD COLUMN unit TEXT",
+        "ALTER TABLE invoice_lines DROP COLUMN unit"
+    )
+    set = migrate_add(
+        set,
+        20260824083,
+        "add_invoices_discount_percent",
+        "ALTER TABLE invoices ADD COLUMN discount_percent NUMERIC",
+        "ALTER TABLE invoices DROP COLUMN discount_percent"
+    )
+    set = migrate_add(
+        set,
+        20260824084,
+        "add_invoices_discount_amount",
+        "ALTER TABLE invoices ADD COLUMN discount_amount NUMERIC",
+        "ALTER TABLE invoices DROP COLUMN discount_amount"
+    )
+    set = migrate_add(
+        set,
+        20260824085,
+        "add_invoices_vat_exemption_reason",
+        "ALTER TABLE invoices ADD COLUMN vat_exemption_reason TEXT",
+        "ALTER TABLE invoices DROP COLUMN vat_exemption_reason"
     )
     return set
 }

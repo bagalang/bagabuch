@@ -253,6 +253,9 @@ fn act_invoices_post(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     if orm_cell_by(iq, 0, "status") == "posted" {
         return act_err(db2, 409, "фактурата е вече постната")
     }
+    if orm_cell_by(iq, 0, "document_type") == "proforma" {
+        return act_err(db2, 422, "проформата не се осчетоводява")
+    }
     let direction = orm_cell_by(iq, 0, "direction")
     let net_amount = orm_cell_by(iq, 0, "net_amount")
     let vat_amount = orm_cell_by(iq, 0, "vat_amount")
