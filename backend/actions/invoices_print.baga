@@ -5,6 +5,7 @@ import "../models/invoice.baga"
 import "../models/counterpart.baga"
 import "../models/company.baga"
 import "../models/setting.baga"
+import "../models/doc_type.baga"
 import "fmrbaga/app.baga"
 import "fmrbaga/ctx.baga"
 import "fmrbaga/action.baga"
@@ -16,29 +17,11 @@ import "reportbaga/report.baga"
 import "std/str/str.baga"
 
 fn inv_type_title(t: str) -> str {
-    if t == "credit_note" {
-        return "КРЕДИТНО ИЗВЕСТИЕ"
-    }
-    if t == "debit_note" {
-        return "ДЕБИТНО ИЗВЕСТИЕ"
-    }
-    if t == "proforma" {
-        return "ПРОФОРМА ФАКТУРА"
-    }
-    return "ФАКТУРА"
+    return doc_type_title(t)
 }
 
 fn inv_type_prefix(t: str) -> str {
-    if t == "credit_note" {
-        return "КИ-"
-    }
-    if t == "debit_note" {
-        return "ДИ-"
-    }
-    if t == "proforma" {
-        return "ПФ-"
-    }
-    return ""
+    return doc_type_prefix(t)
 }
 
 fn inv_h(s: str) -> str {
@@ -222,10 +205,7 @@ fn act_invoices_next_number(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     }
     let mut document_type = fmr_query(ctx, "document_type")
     if document_type == "" {
-        document_type = "invoice"
-    }
-    if document_type != "invoice" && document_type != "credit_note" && document_type != "debit_note" && document_type != "proforma" {
-        return act_err(db, 422, "document_type трябва да е invoice/credit_note/debit_note/proforma")
+        document_type = "01"
     }
     let mut direction = fmr_query(ctx, "direction")
     if direction == "" {
@@ -233,6 +213,9 @@ fn act_invoices_next_number(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     }
     if direction != "in" && direction != "out" {
         return act_err(db, 422, "direction must be 'in' or 'out'")
+    }
+    if doc_type_valid_for(direction, document_type) == 0 {
+        return act_err(db, 422, "невалиден вид данъчен документ за тази посока (код по ППДДС)")
     }
     if orm_ok_db(db) == 0 {
         return act_err(db, 503, "database unavailable")

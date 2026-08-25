@@ -47,7 +47,7 @@ function DetailInner() {
 
   const filename = (ext: string) => {
     const n = inv?.number || String(id);
-    const p = docTypePrefix(inv?.document_type || "invoice");
+    const p = docTypePrefix(inv?.document_type || "01");
     return `${p}${n}.${ext}`;
   };
 

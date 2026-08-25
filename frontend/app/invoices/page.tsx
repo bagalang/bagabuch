@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, ListResponse } from "../../lib/api";
-import { Invoice } from "../../lib/invoice";
+import { Invoice, docTypesFor } from "../../lib/invoice";
 import { useI18n } from "../../components/I18nProvider";
 import { RequireAuth } from "../../components/RequireAuth";
 
@@ -91,10 +91,12 @@ function InvoicesInner() {
               onChange={(e) => setTypeFilter(e.target.value)}
             >
               <option value="">{t("invoices.all_types")}</option>
-              <option value="invoice">{t("invoices.document_type.invoice")}</option>
-              <option value="proforma">{t("invoices.document_type.proforma")}</option>
-              <option value="debit_note">{t("invoices.document_type.debit_note")}</option>
-              <option value="credit_note">{t("invoices.document_type.credit_note")}</option>
+              {docTypesFor("out").map((dt) => (
+                <option key={dt} value={dt}>
+                  {dt === "proforma" ? "" : `${dt} — `}
+                  {t(`invoices.document_type.${dt}`)}
+                </option>
+              ))}
             </select>
           </div>
           <div className="field">

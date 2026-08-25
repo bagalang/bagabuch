@@ -11,6 +11,7 @@ import { RequireAuth } from "../../components/RequireAuth";
 interface VatRow {
   id: number;
   entry_date: string;
+  document_type: string;
   document_number: string;
   counterpart_name: string;
   counterpart_vat_number: string;
@@ -54,6 +55,7 @@ function RegistersTable({
             <thead>
               <tr>
                 <th>{t("vat.date")}</th>
+                <th>{t("vat.doc_type")}</th>
                 <th>{t("vat.document")}</th>
                 <th>{t("vat.counterpart")}</th>
                 <th>{t("vat.vat_number")}</th>
@@ -65,6 +67,9 @@ function RegistersTable({
               {rows.map((r) => (
                 <tr key={r.id}>
                   <td>{r.entry_date}</td>
+                  <td title={t(`invoices.document_type.${r.document_type}`)}>
+                    {r.document_type}
+                  </td>
                   <td>{r.document_number}</td>
                   <td>{r.counterpart_name}</td>
                   <td>{r.counterpart_vat_number}</td>
@@ -128,7 +133,7 @@ function VatInner() {
               className="input"
               value={period}
               onChange={(e) => setPeriod(e.target.value)}
-              placeholder="2026-08-01"
+              placeholder="2026-08"
             />
           </div>
           <button className="btn btn-primary" onClick={load} disabled={!period || loading}>

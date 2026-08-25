@@ -11,6 +11,7 @@ import "fmrbaga/action.baga"
 import "fmrbaga/jsonx.baga"
 import "ormbaga/orm.baga"
 import "bagadecimal/src/decimal.baga"
+import "std/str/str.baga"
 
 fn vat_row_json(q: OrmQuery, row: i64) -> JObj {
     let mut o = jobj_new()
@@ -51,9 +52,12 @@ fn act_vat_registers(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     if auth.ok == 0 {
         return auth.out
     }
-    let period = fmr_query(ctx, "period")
+    let mut period = fmr_query(ctx, "period")
     if period == "" {
-        return act_err(db, 400, "period е задължителен (YYYY-MM-01)")
+        return act_err(db, 400, "period е задължителен (YYYY-MM)")
+    }
+    if len(period) > 7 {
+        period = substr(period, 0, 7)
     }
     if orm_ok_db(db) == 0 {
         return act_err(db, 503, "database unavailable")
@@ -90,9 +94,12 @@ fn act_vat_return(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     if auth.ok == 0 {
         return auth.out
     }
-    let period = fmr_query(ctx, "period")
+    let mut period = fmr_query(ctx, "period")
     if period == "" {
-        return act_err(db, 400, "period е задължителен (YYYY-MM-01)")
+        return act_err(db, 400, "period е задължителен (YYYY-MM)")
+    }
+    if len(period) > 7 {
+        period = substr(period, 0, 7)
     }
     if orm_ok_db(db) == 0 {
         return act_err(db, 503, "database unavailable")

@@ -575,6 +575,57 @@ fn bagabuch_migrations() -> MigrationSet {
         "ALTER TABLE invoices ADD COLUMN vat_exemption_reason TEXT NOT NULL DEFAULT ''",
         "ALTER TABLE invoices DROP COLUMN vat_exemption_reason"
     )
+    // Видовете данъчни документи стават кодовете по ППДДС: 01 фактура, 02 дебитно, 03 кредитно.
+    set = migrate_add(
+        set,
+        20260824182,
+        "invoice_doc_types_to_ppdds_01",
+        "UPDATE invoices SET document_type = '01' WHERE document_type = 'invoice'",
+        "UPDATE invoices SET document_type = 'invoice' WHERE document_type = '01'"
+    )
+    set = migrate_add(
+        set,
+        20260824183,
+        "invoice_doc_types_to_ppdds_02",
+        "UPDATE invoices SET document_type = '02' WHERE document_type = 'debit_note'",
+        "UPDATE invoices SET document_type = 'debit_note' WHERE document_type = '02'"
+    )
+    set = migrate_add(
+        set,
+        20260824184,
+        "invoice_doc_types_to_ppdds_03",
+        "UPDATE invoices SET document_type = '03' WHERE document_type = 'credit_note'",
+        "UPDATE invoices SET document_type = 'credit_note' WHERE document_type = '03'"
+    )
+    set = migrate_add(
+        set,
+        20260824185,
+        "journal_doc_types_to_ppdds_01",
+        "UPDATE journal_entries SET document_type = '01' WHERE document_type = 'invoice'",
+        "UPDATE journal_entries SET document_type = 'invoice' WHERE document_type = '01'"
+    )
+    set = migrate_add(
+        set,
+        20260824186,
+        "invoices_document_type_default_01",
+        "ALTER TABLE invoices ALTER COLUMN document_type SET DEFAULT '01'",
+        "ALTER TABLE invoices ALTER COLUMN document_type SET DEFAULT 'invoice'"
+    )
+    // Обменни курсове на ЕЦБ (eurofxref); курс за 1 EUR, rate като TEXT за точност.
+    set = migrate_add(
+        set,
+        20260824187,
+        "create_exchange_rates",
+        "CREATE TABLE exchange_rates (id BIGSERIAL PRIMARY KEY, currency_code TEXT NOT NULL, rate TEXT NOT NULL, date TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())",
+        "DROP TABLE IF EXISTS exchange_rates"
+    )
+    set = migrate_add(
+        set,
+        20260824188,
+        "exchange_rates_currency_date_unique",
+        "CREATE UNIQUE INDEX exchange_rates_currency_date_idx ON exchange_rates (currency_code, date)",
+        "DROP INDEX IF EXISTS exchange_rates_currency_date_idx"
+    )
     return set
 }
 
@@ -1175,6 +1226,43 @@ fn bagabuch_boila_migrations() -> MigrationSet {
         "add_invoices_vat_exemption_reason",
         "ALTER TABLE invoices ADD COLUMN vat_exemption_reason TEXT",
         "ALTER TABLE invoices DROP COLUMN vat_exemption_reason"
+    )
+    // Видовете данъчни документи стават кодовете по ППДДС: 01 фактура, 02 дебитно, 03 кредитно.
+    set = migrate_add(
+        set,
+        20260824086,
+        "invoice_doc_types_to_ppdds_01",
+        "UPDATE invoices SET document_type = '01' WHERE document_type = 'invoice'",
+        "UPDATE invoices SET document_type = 'invoice' WHERE document_type = '01'"
+    )
+    set = migrate_add(
+        set,
+        20260824087,
+        "invoice_doc_types_to_ppdds_02",
+        "UPDATE invoices SET document_type = '02' WHERE document_type = 'debit_note'",
+        "UPDATE invoices SET document_type = 'debit_note' WHERE document_type = '02'"
+    )
+    set = migrate_add(
+        set,
+        20260824088,
+        "invoice_doc_types_to_ppdds_03",
+        "UPDATE invoices SET document_type = '03' WHERE document_type = 'credit_note'",
+        "UPDATE invoices SET document_type = 'credit_note' WHERE document_type = '03'"
+    )
+    set = migrate_add(
+        set,
+        20260824089,
+        "journal_doc_types_to_ppdds_01",
+        "UPDATE journal_entries SET document_type = '01' WHERE document_type = 'invoice'",
+        "UPDATE journal_entries SET document_type = 'invoice' WHERE document_type = '01'"
+    )
+    // Обменни курсове на ЕЦБ (eurofxref); курс за 1 EUR, rate като TEXT за точност.
+    set = migrate_add(
+        set,
+        20260824090,
+        "create_exchange_rates",
+        "CREATE TABLE IF NOT EXISTS exchange_rates (id BIGINT, currency_code TEXT, rate TEXT, date TEXT, created_at TIMESTAMPTZ, PRIMARY KEY (id))",
+        "DROP TABLE IF EXISTS exchange_rates"
     )
     return set
 }

@@ -9,6 +9,7 @@ import "../models/journal.baga"
 import "../models/invoice.baga"
 import "../models/account.baga"
 import "../models/counterpart.baga"
+import "../models/doc_type.baga"
 import "fmrbaga/app.baga"
 import "fmrbaga/ctx.baga"
 import "fmrbaga/action.baga"
@@ -98,7 +99,11 @@ fn act_journal_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     }
     let document_number = jopt_str(b.doc, b.root, "document_number", "")
     let document_date = jopt_str(b.doc, b.root, "document_date", "")
-    let vat_period = jopt_str(b.doc, b.root, "vat_period", "")
+    let vat_period_in = jopt_str(b.doc, b.root, "vat_period", "")
+    let mut vat_period = vat_period_in.val
+    if len(vat_period) > 7 {
+        vat_period = substr(vat_period, 0, 7)
+    }
     if orm_ok_db(db) == 0 {
         return act_err(db, 503, "database unavailable")
     }
@@ -192,7 +197,7 @@ fn act_journal_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         return act_err(db2, 422, "дебит и кредит не се балансират")
     }
     // Създаване на записа.
-    let eq = journal_entry_insert(db2, entry_date.val, "manual", 0, description.val, vat_type.val, counterpart_id, counterpart_name, counterpart_vat_number, document_number.val, document_date.val, vat_period.val, dec_to_string(credit_total), dec_to_string(vat_total))?
+    let eq = journal_entry_insert(db2, entry_date.val, "manual", 0, description.val, vat_type.val, counterpart_id, counterpart_name, counterpart_vat_number, document_number.val, document_date.val, vat_period, dec_to_string(credit_total), dec_to_string(vat_total))?
     if orm_ok_q(eq) == 0 || orm_nrows(eq) < 1 {
         return act_err(orm_db_q(eq), 500, "journal entry insert failed")
     }
@@ -254,8 +259,9 @@ fn act_invoices_post(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         return act_err(db2, 409, "фактурата е вече постната")
     }
     if orm_cell_by(iq, 0, "document_type") == "proforma" {
-        return act_err(db2, 422, "проформата не се осчетоводява")
+        return act_err(db2, 422, "проформата не е данъчен документ и не се осчетоводява")
     }
+    let doc_type = orm_cell_by(iq, 0, "document_type")
     let direction = orm_cell_by(iq, 0, "direction")
     let net_amount = orm_cell_by(iq, 0, "net_amount")
     let vat_amount = orm_cell_by(iq, 0, "vat_amount")
@@ -315,9 +321,9 @@ fn act_invoices_post(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     }
     db2 = r3.db
     let vat_id = vec_get(v_ids, 0)
-    // journal_entry (с ДДС полетата — влиза в ДДС дневниците)
-    let desc = concat(concat("Фактура ", number), concat(" / ", direction))
-    let eq = journal_entry_insert(db2, issue_date, "invoice", id, desc, vat_type, counterpart_id, counterpart_name, counterpart_vat_number, number, issue_date, accounting_month, total_amount, vat_amount)?
+    // journal_entry (с ДДС полетата — влиза в ДДС дневниците; видът е кодът по ППДДС)
+    let desc = concat(concat(concat(doc_type_title(doc_type), " "), number), concat(" / ", direction))
+    let eq = journal_entry_insert(db2, issue_date, doc_type, id, desc, vat_type, counterpart_id, counterpart_name, counterpart_vat_number, number, issue_date, accounting_month, total_amount, vat_amount)?
     if orm_ok_q(eq) == 0 || orm_nrows(eq) < 1 {
         return act_err(orm_db_q(eq), 500, "journal entry insert failed")
     }

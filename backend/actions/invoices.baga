@@ -4,6 +4,7 @@ import "../models/invoice.baga"
 import "../models/counterpart.baga"
 import "../models/company.baga"
 import "../models/setting.baga"
+import "../models/doc_type.baga"
 import "fmrbaga/app.baga"
 import "fmrbaga/ctx.baga"
 import "fmrbaga/action.baga"
@@ -71,9 +72,9 @@ fn act_invoices_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     }
     let currency = jopt_str(b.doc, b.root, "currency", "BGN")
     let currency_rate = jopt_str(b.doc, b.root, "currency_rate", "1")
-    let document_type = jopt_str(b.doc, b.root, "document_type", "invoice")
-    if document_type.val != "invoice" && document_type.val != "credit_note" && document_type.val != "debit_note" && document_type.val != "proforma" {
-        return act_err(db, 422, "document_type трябва да е invoice/credit_note/debit_note/proforma")
+    let document_type = jopt_str(b.doc, b.root, "document_type", "01")
+    if doc_type_valid_for(direction.val, document_type.val) == 0 {
+        return act_err(db, 422, "невалиден вид данъчен документ за тази посока (код по ППДДС)")
     }
     let oid = jreq_i64(b.doc, b.root, "original_invoice_id")
     let mut original_invoice_id: i64 = 0
@@ -83,7 +84,7 @@ fn act_invoices_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         }
         original_invoice_id = oid.num
     }
-    if document_type.val == "credit_note" || document_type.val == "debit_note" {
+    if doc_type_requires_original(document_type.val) == 1 {
         if original_invoice_id <= 0 {
             return act_err(db, 422, "известието трябва да сочи към първоначална фактура")
         }
@@ -261,6 +262,7 @@ fn act_invoices_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     if st0 == "posted" || st0 == "cancelled" {
         return act_err(orm_db_q(existing), 409, "осчетоводена или анулирана фактура не може да се променя")
     }
+    let existing_direction = orm_cell_by(existing, 0, "direction")
     let mut dbu = orm_db_q(existing)
     let body = jbody_parse_str(fmr_body(ctx))
     if body.ok == 0 {
@@ -345,8 +347,12 @@ fn act_invoices_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         if document_type.ok == 0 {
             return act_422_field(db, "document_type", document_type)
         }
-        if document_type.val != "invoice" && document_type.val != "credit_note" && document_type.val != "debit_note" && document_type.val != "proforma" {
-            return act_err(db, 422, "document_type трябва да е invoice/credit_note/debit_note/proforma")
+        let mut dir_for_type = existing_direction
+        if direction.present == 1 {
+            dir_for_type = direction.val
+        }
+        if doc_type_valid_for(dir_for_type, document_type.val) == 0 {
+            return act_err(db, 422, "невалиден вид данъчен документ за тази посока (код по ППДДС)")
         }
         vec_push(cols, "document_type")
         vec_push(vals, document_type.val)

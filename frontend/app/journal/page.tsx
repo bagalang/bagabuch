@@ -354,7 +354,7 @@ function JournalInner() {
                         className="input"
                         value={vatPeriod}
                         onChange={(e) => setVatPeriod(e.target.value)}
-                        placeholder="2026-08-01"
+                        placeholder="2026-08"
                       />
                     </div>
                     <div className="field">

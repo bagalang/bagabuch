@@ -15,6 +15,7 @@ import "actions/vat.baga"
 import "actions/saft.baga"
 import "actions/fixed_assets.baga"
 import "actions/active_company.baga"
+import "actions/exchange_rates.baga"
 import "fmrbaga/app.baga"
 import "fmrbaga/ctx.baga"
 import "fmrbaga/deps.baga"
@@ -82,6 +83,9 @@ fn RID_FA_DISPOSE() -> i64 { return 111 }
 fn RID_FA_EVENTS() -> i64 { return 112 }
 fn RID_ACTIVE_COMPANY_GET() -> i64 { return 80 }
 fn RID_ACTIVE_COMPANY_SET() -> i64 { return 81 }
+fn RID_EXCHANGE_RATES_INDEX() -> i64 { return 120 }
+fn RID_EXCHANGE_RATES_RATE() -> i64 { return 121 }
+fn RID_EXCHANGE_RATES_IMPORT() -> i64 { return 122 }
 
 fn fmr_build_app() -> FmrApp !IO {
     let cfg = fmr_config_load()?
@@ -148,6 +152,9 @@ fn fmr_build_app() -> FmrApp !IO {
     app = fmr_route_meta(app, "GET", "/v1/fixed-assets/{id}/events", RID_FA_EVENTS(), "", "fixed-assets", 0, "", "FaEvents", "200", "")
     app = fmr_route_meta(app, "GET", "/v1/active-company", RID_ACTIVE_COMPANY_GET(), "", "active-company", 0, "", "Company", "200", "")
     app = fmr_route_meta(app, "PUT", "/v1/active-company", RID_ACTIVE_COMPANY_SET(), "", "active-company", 0, "ActiveCompanySet", "Company", "200", "")
+    app = fmr_route_meta(app, "GET", "/v1/exchange-rates", RID_EXCHANGE_RATES_INDEX(), "", "exchange-rates", 0, "", "ExchangeRateList", "200", "date")
+    app = fmr_route_meta(app, "GET", "/v1/exchange-rates/rate", RID_EXCHANGE_RATES_RATE(), "", "exchange-rates", 0, "", "ExchangeRate", "200", "currency:s,date:s")
+    app = fmr_route_meta(app, "POST", "/v1/exchange-rates/import", RID_EXCHANGE_RATES_IMPORT(), "", "exchange-rates", 0, "ExchangeRateImport", "ExchangeRateImportResult", "200", "")
     return app
 }
 
@@ -164,7 +171,7 @@ fn fmr_grpc_handle(path: str, body: bytes, db: OrmDb) -> FmrOut !IO !Net {
     return fmr_out(r, db)
 }
 
-fn fmr_dispatch(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
+fn fmr_dispatch(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net !Random {
     let id = ctx.route_id
     if id == RID_HEALTH() { return act_health(ctx, db) }
     if id == RID_READY() { return act_ready(ctx, db)? }
@@ -226,5 +233,8 @@ fn fmr_dispatch(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     if id == RID_FA_EVENTS() { return act_fa_events(ctx, db)? }
     if id == RID_ACTIVE_COMPANY_GET() { return act_active_company_get(ctx, db)? }
     if id == RID_ACTIVE_COMPANY_SET() { return act_active_company_set(ctx, db)? }
+    if id == RID_EXCHANGE_RATES_INDEX() { return act_exchange_rates_index(ctx, db)? }
+    if id == RID_EXCHANGE_RATES_RATE() { return act_exchange_rates_rate(ctx, db)? }
+    if id == RID_EXCHANGE_RATES_IMPORT() { return act_exchange_rates_import(ctx, db)? }
     return fmr_out(fmr_500("unhandled route"), db)
 }

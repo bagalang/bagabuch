@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation";
 import { api, ListResponse } from "../lib/api";
 import {
   CURRENCIES,
-  DOC_TYPES,
-  DocType,
   Invoice,
   InvoiceLine,
   PAY_METHODS,
@@ -15,6 +13,8 @@ import {
   applyDiscountToLines,
   calcLine,
   calcTotals,
+  docTypeRequiresOriginal,
+  docTypesFor,
   emptyLine,
   num,
   round2,
@@ -54,12 +54,13 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
   const [loading, setLoading] = useState(mode === "edit");
 
   const [direction, setDirection] = useState("out");
-  const [documentType, setDocumentType] = useState<DocType>("invoice");
+  const [documentType, setDocumentType] = useState<string>("01");
   const [number, setNumber] = useState("");
   const [issueDate, setIssueDate] = useState(todayIso());
   const [taxEventDate, setTaxEventDate] = useState(todayIso());
   const [dueDate, setDueDate] = useState("");
-  const [currency, setCurrency] = useState("BGN");
+  const [currency, setCurrency] = useState("EUR");
+  const [currencyRate, setCurrencyRate] = useState("1");
   const [paymentMethod, setPaymentMethod] = useState("банков превод");
   const [notes, setNotes] = useState("");
   const [discountPercent, setDiscountPercent] = useState("0");
@@ -113,6 +114,12 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
   }, [loadLookups]);
 
   useEffect(() => {
+    if (!docTypesFor(direction).includes(documentType)) {
+      setDocumentType("01");
+    }
+  }, [direction, documentType]);
+
+  useEffect(() => {
     if (mode === "create") loadNumber(documentType, direction);
   }, [mode, documentType, direction, loadNumber]);
 
@@ -124,12 +131,13 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
         const inv = await api.get<Invoice>(`/v1/invoices/${invoiceId}`);
         if (cancelled) return;
         setDirection(inv.direction || "out");
-        setDocumentType((inv.document_type as DocType) || "invoice");
+        setDocumentType(inv.document_type || "01");
         setNumber(inv.number);
         setIssueDate(inv.issue_date);
         setTaxEventDate(inv.tax_event_date || inv.issue_date);
         setDueDate(inv.due_date || "");
-        setCurrency(inv.currency || "BGN");
+        setCurrency(inv.currency || "EUR");
+        setCurrencyRate(inv.currency_rate || "1");
         setPaymentMethod(inv.payment_method || "");
         setNotes(inv.notes || "");
         setDiscountPercent(inv.discount_percent || "0");
@@ -213,10 +221,7 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
         setSaving(false);
         return;
       }
-      if (
-        (documentType === "credit_note" || documentType === "debit_note") &&
-        !originalInvoiceId
-      ) {
+      if (docTypeRequiresOriginal(documentType) && !originalInvoiceId) {
         setFormError(t("invoices.need_original"));
         setSaving(false);
         return;
@@ -245,6 +250,7 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
         accounting_month: issueDate.slice(0, 7),
         counterpart_id: Number(counterpartId),
         currency,
+        currency_rate: currency === "EUR" ? "1" : currencyRate,
         payment_method: paymentMethod,
         notes,
         discount_percent: discountPercent || "0",
@@ -275,18 +281,23 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
     <form className="invoice-form" onSubmit={handleSave}>
       <section className="card invoice-section">
         <h2 className="invoice-section-title">{t("invoices.header")}</h2>
-        <div className="radio-row">
-          {DOC_TYPES.map((dt) => (
-            <label key={dt} className="radio-chip">
-              <input
-                type="radio"
-                name="document_type"
-                checked={documentType === dt}
-                onChange={() => setDocumentType(dt)}
-              />
-              {t(`invoices.document_type.${dt}`)}
-            </label>
-          ))}
+        <div className="form-grid">
+          <div className="field">
+            <label className="label">{t("invoices.document_type")}</label>
+            <select
+              className="select"
+              name="document_type"
+              value={documentType}
+              onChange={(e) => setDocumentType(e.target.value)}
+            >
+              {docTypesFor(direction).map((dt) => (
+                <option key={dt} value={dt}>
+                  {dt === "proforma" ? "" : `${dt} — `}
+                  {t(`invoices.document_type.${dt}`)}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
         <div className="form-grid">
           <div className="field">
@@ -350,8 +361,37 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
               ))}
             </select>
           </div>
+          {currency !== "EUR" && (
+            <div className="field">
+              <label className="label">{t("invoices.currency_rate")}</label>
+              <div style={{ display: "flex", gap: 6 }}>
+                <input
+                  className="input"
+                  value={currencyRate}
+                  onChange={(e) => setCurrencyRate(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  title={t("invoices.currency_rate_fetch_hint")}
+                  onClick={async () => {
+                    try {
+                      const r = await api.get<{ rate: string; date: string }>(
+                        `/v1/exchange-rates/rate?currency=${encodeURIComponent(currency)}&date=${encodeURIComponent(issueDate)}`
+                      );
+                      setCurrencyRate(r.rate);
+                    } catch (err) {
+                      setFormError(err instanceof Error ? err.message : String(err));
+                    }
+                  }}
+                >
+                  {t("invoices.currency_rate_fetch")}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-        {(documentType === "credit_note" || documentType === "debit_note") && (
+        {docTypeRequiresOriginal(documentType) && (
           <div className="field">
             <label className="label">{t("invoices.original_invoice")} *</label>
             <select
@@ -362,7 +402,7 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
             >
               <option value="">—</option>
               {invoices
-                .filter((i) => i.document_type === "invoice")
+                .filter((i) => i.document_type === "01" || i.document_type === "11")
                 .map((i) => (
                   <option key={i.id} value={i.id}>
                     {i.number} · {i.issue_date} · {i.total_amount}

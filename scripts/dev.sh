@@ -19,6 +19,11 @@ BOILA_PGPORT="${BOILA_PGPORT:-6575}"
 PORT="${PORT:-8080}"
 FRONTEND_PORT="${FRONTEND_PORT:-3000}"
 
+# Данните на boilaDB живеят в приложението (bagabuch/db), не в /tmp
+BOILA_PATH="${BOILA_PATH:-$ROOT/db}"
+mkdir -p "$BOILA_PATH"
+export BOILA_PATH
+
 pids=()
 cleanup() {
   for p in "${pids[@]:-}"; do
