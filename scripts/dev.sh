@@ -34,8 +34,8 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 wait_tcp() {
-  local host="$1" port="$2"
-  for _ in $(seq 1 60); do
+  local host="$1" port="$2" tries="${3:-60}"
+  for _ in $(seq 1 "$tries"); do
     if (exec 3<>"/dev/tcp/$host/$port") 2>/dev/null; then
       exec 3>&- 3<&- || true
       return 0
@@ -52,7 +52,8 @@ echo "==> boilaDB serve_pg на :$BOILA_PGPORT"
 pids+=($!)
 
 echo "    чакам boilaDB да отговори на TCP :$BOILA_PGPORT ..."
-wait_tcp 127.0.0.1 "$BOILA_PGPORT"
+# boilaDB се компилира при старт (минути при студена кеш) — чакаме до 10 мин
+wait_tcp 127.0.0.1 "$BOILA_PGPORT" 1200
 
 echo "==> backend на :$PORT (ORM_BACKEND=boila)"
 (
