@@ -5,6 +5,7 @@ import "../models/counterpart.baga"
 import "../models/company.baga"
 import "../models/setting.baga"
 import "../models/doc_type.baga"
+import "txn.baga"
 import "fmrbaga/app.baga"
 import "fmrbaga/ctx.baga"
 import "fmrbaga/action.baga"
@@ -113,9 +114,14 @@ fn act_invoices_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         number = invoice_next_number_str(nq, document_type.val, direction.val)
         d0 = orm_db_q(nq)
     }
+    let bgn = bb_begin(d0)?
+    if orm_ok(bgn) == 0 {
+        return act_err(orm_db_exec(bgn), 500, orm_err_exec(bgn))
+    }
+    d0 = orm_db_exec(bgn)
     let hq = invoice_create_header(d0, direction.val, number, document_type.val, original_invoice_id, issue_date.val, due_date.val, tax_event_date, accounting_month, cid.num, currency.val, currency_rate.val, payment_method.val, notes.val, discount_percent.val, discount_amount.val, vat_exemption_reason.val)?
     if orm_ok_q(hq) == 0 || orm_nrows(hq) < 1 {
-        return act_err(orm_db_q(hq), 500, "header insert failed")
+        return act_err_rb(orm_db_q(hq), 500, "header insert failed")
     }
     let new_id = orm_cell_by_i64(hq, 0, "id")
     let mut db2 = orm_db_q(hq)
@@ -127,7 +133,7 @@ fn act_invoices_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         while i < n {
             let elem = json_at(b.doc, lines_node, i)
             if json_tag(b.doc, elem) != 6 {
-                return act_err(db2, 422, "lines[i] must be an object")
+                return act_err_rb(db2, 422, "lines[i] must be an object")
             }
             let mut product_id: i64 = 0
             let mut product_null: i64 = 1
@@ -135,7 +141,7 @@ fn act_invoices_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
             if pn >= 0 && json_tag(b.doc, pn) != 0 {
                 let pid = jreq_i64(b.doc, elem, "product_id")
                 if pid.ok == 0 {
-                    return act_422_field(db2, "lines[i].product_id", pid)
+                    return act_422_field_rb(db2, "lines[i].product_id", pid)
                 }
                 product_id = pid.num
                 product_null = 0
@@ -143,29 +149,29 @@ fn act_invoices_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
             let description = jopt_str(b.doc, elem, "description", "")
             let quantity = jreq_str(b.doc, elem, "quantity")
             if quantity.ok == 0 {
-                return act_422_field(db2, "lines[i].quantity", quantity)
+                return act_422_field_rb(db2, "lines[i].quantity", quantity)
             }
             let unit = jopt_str(b.doc, elem, "unit", "бр.")
             let unit_price = jreq_str(b.doc, elem, "unit_price")
             if unit_price.ok == 0 {
-                return act_422_field(db2, "lines[i].unit_price", unit_price)
+                return act_422_field_rb(db2, "lines[i].unit_price", unit_price)
             }
             let net_amount = jreq_str(b.doc, elem, "net_amount")
             if net_amount.ok == 0 {
-                return act_422_field(db2, "lines[i].net_amount", net_amount)
+                return act_422_field_rb(db2, "lines[i].net_amount", net_amount)
             }
             let vat_rate = jopt_str(b.doc, elem, "vat_rate", "20")
             let vat_amount = jreq_str(b.doc, elem, "vat_amount")
             if vat_amount.ok == 0 {
-                return act_422_field(db2, "lines[i].vat_amount", vat_amount)
+                return act_422_field_rb(db2, "lines[i].vat_amount", vat_amount)
             }
             let total_amount = jreq_str(b.doc, elem, "total_amount")
             if total_amount.ok == 0 {
-                return act_422_field(db2, "lines[i].total_amount", total_amount)
+                return act_422_field_rb(db2, "lines[i].total_amount", total_amount)
             }
             let ins = invoice_line_insert(db2, new_id, product_id, product_null, description.val, quantity.val, unit.val, unit_price.val, net_amount.val, vat_rate.val, vat_amount.val, total_amount.val)?
             if orm_ok(ins) == 0 {
-                return act_err(orm_db_exec(ins), 500, orm_err_exec(ins))
+                return act_err_rb(orm_db_exec(ins), 500, orm_err_exec(ins))
             }
             db2 = orm_db_exec(ins)
             i = i + 1
@@ -173,9 +179,14 @@ fn act_invoices_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     }
     let rc = invoice_recalc_totals(db2, new_id)?
     if orm_ok(rc) == 0 {
-        return act_err(orm_db_exec(rc), 500, orm_err_exec(rc))
+        return act_err_rb(orm_db_exec(rc), 500, orm_err_exec(rc))
     }
     db2 = orm_db_exec(rc)
+    let cmt = bb_commit(db2)?
+    if orm_ok(cmt) == 0 {
+        return act_err_rb(orm_db_exec(cmt), 500, orm_err_exec(cmt))
+    }
+    db2 = orm_db_exec(cmt)
     let q = invoice_find(db2, new_id)?
     if orm_ok_q(q) == 0 || orm_nrows(q) < 1 {
         return act_err(orm_db_q(q), 500, "invoice missing after create")
@@ -436,17 +447,22 @@ fn act_invoices_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         }
         return act_ok(orm_db_q(q0), invoice_to_json(q0, 0))
     }
+    let bgn = bb_begin(dbu)?
+    if orm_ok(bgn) == 0 {
+        return act_err(orm_db_exec(bgn), 500, orm_err_exec(bgn))
+    }
+    dbu = orm_db_exec(bgn)
     if vec_len(cols) > 0 {
         let upd = orm_update_by_id(dbu, invoice_table(), id, cols, vals)?
         if orm_ok(upd) == 0 {
-            return act_err(orm_db_exec(upd), 500, orm_err_exec(upd))
+            return act_err_rb(orm_db_exec(upd), 500, orm_err_exec(upd))
         }
         dbu = orm_db_exec(upd)
     }
     if has_lines == 1 {
         let dl = invoice_delete_lines(dbu, id)?
         if orm_ok(dl) == 0 {
-            return act_err(orm_db_exec(dl), 500, orm_err_exec(dl))
+            return act_err_rb(orm_db_exec(dl), 500, orm_err_exec(dl))
         }
         dbu = orm_db_exec(dl)
         let n = json_count(b.doc, lines_node)
@@ -454,7 +470,7 @@ fn act_invoices_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         while i < n {
             let elem = json_at(b.doc, lines_node, i)
             if json_tag(b.doc, elem) != 6 {
-                return act_err(dbu, 422, "lines[i] must be an object")
+                return act_err_rb(dbu, 422, "lines[i] must be an object")
             }
             let mut product_id: i64 = 0
             let mut product_null: i64 = 1
@@ -462,7 +478,7 @@ fn act_invoices_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
             if pn >= 0 && json_tag(b.doc, pn) != 0 {
                 let pid = jreq_i64(b.doc, elem, "product_id")
                 if pid.ok == 0 {
-                    return act_422_field(dbu, "lines[i].product_id", pid)
+                    return act_422_field_rb(dbu, "lines[i].product_id", pid)
                 }
                 product_id = pid.num
                 product_null = 0
@@ -470,39 +486,44 @@ fn act_invoices_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
             let description = jopt_str(b.doc, elem, "description", "")
             let quantity = jreq_str(b.doc, elem, "quantity")
             if quantity.ok == 0 {
-                return act_422_field(dbu, "lines[i].quantity", quantity)
+                return act_422_field_rb(dbu, "lines[i].quantity", quantity)
             }
             let unit = jopt_str(b.doc, elem, "unit", "бр.")
             let unit_price = jreq_str(b.doc, elem, "unit_price")
             if unit_price.ok == 0 {
-                return act_422_field(dbu, "lines[i].unit_price", unit_price)
+                return act_422_field_rb(dbu, "lines[i].unit_price", unit_price)
             }
             let net_amount = jreq_str(b.doc, elem, "net_amount")
             if net_amount.ok == 0 {
-                return act_422_field(dbu, "lines[i].net_amount", net_amount)
+                return act_422_field_rb(dbu, "lines[i].net_amount", net_amount)
             }
             let vat_rate = jopt_str(b.doc, elem, "vat_rate", "20")
             let vat_amount = jreq_str(b.doc, elem, "vat_amount")
             if vat_amount.ok == 0 {
-                return act_422_field(dbu, "lines[i].vat_amount", vat_amount)
+                return act_422_field_rb(dbu, "lines[i].vat_amount", vat_amount)
             }
             let total_amount = jreq_str(b.doc, elem, "total_amount")
             if total_amount.ok == 0 {
-                return act_422_field(dbu, "lines[i].total_amount", total_amount)
+                return act_422_field_rb(dbu, "lines[i].total_amount", total_amount)
             }
             let ins = invoice_line_insert(dbu, id, product_id, product_null, description.val, quantity.val, unit.val, unit_price.val, net_amount.val, vat_rate.val, vat_amount.val, total_amount.val)?
             if orm_ok(ins) == 0 {
-                return act_err(orm_db_exec(ins), 500, orm_err_exec(ins))
+                return act_err_rb(orm_db_exec(ins), 500, orm_err_exec(ins))
             }
             dbu = orm_db_exec(ins)
             i = i + 1
         }
         let rc = invoice_recalc_totals(dbu, id)?
         if orm_ok(rc) == 0 {
-            return act_err(orm_db_exec(rc), 500, orm_err_exec(rc))
+            return act_err_rb(orm_db_exec(rc), 500, orm_err_exec(rc))
         }
         dbu = orm_db_exec(rc)
     }
+    let cmt = bb_commit(dbu)?
+    if orm_ok(cmt) == 0 {
+        return act_err_rb(orm_db_exec(cmt), 500, orm_err_exec(cmt))
+    }
+    dbu = orm_db_exec(cmt)
     let q = invoice_find(dbu, id)?
     if orm_ok_q(q) == 0 || orm_nrows(q) < 1 {
         return act_404(orm_db_q(q), "Invoice not found")

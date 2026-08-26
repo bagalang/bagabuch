@@ -24,12 +24,22 @@ BOILA_PATH="${BOILA_PATH:-$ROOT/db}"
 mkdir -p "$BOILA_PATH"
 export BOILA_PATH
 
+PIDFILE="$ROOT/.dev.pids"
+: > "$PIDFILE"
+
 pids=()
+record_pid() {
+  pids+=("$1")
+  echo "$1" >> "$PIDFILE"
+}
+
 cleanup() {
   for p in "${pids[@]:-}"; do
     kill "$p" 2>/dev/null || true
+    pkill -P "$p" 2>/dev/null || true
   done
   wait 2>/dev/null || true
+  rm -f "$PIDFILE"
 }
 trap cleanup EXIT INT TERM
 
@@ -46,10 +56,21 @@ wait_tcp() {
 }
 
 echo "==> boilaDB serve_pg на :$BOILA_PGPORT"
-# 1 worker на връзка (блокиращ) — повече от броя backend връзки, за да остава
-# капацитет за psql/админ връзки успоредно.
-(cd "$BAGA_ROOT" && BOILA_PGPORT="$BOILA_PGPORT" BOILA_WORKERS="${BOILA_WORKERS:-8}" $STDBUF ./baga -I . -I app-product app-product/boilaDB/tools/serve_pg.baga) &
-pids+=($!)
+# P31 connection mux: idle keep-alive fds стоят в poll; worker-ите въртят
+# по едно заявление и паркират fd-то. Не е 1 worker на връзка — 8 стигат
+# за backend + psql. P30: BOILA_SYNC_EVERY остава 1 (счетоводна издръжливост).
+# P43 dual-get: нови BOILA_PATH директории; стара база без маркера p43|dual
+# пада към scan (коректно, по-бавно).
+(
+  cd "$BAGA_ROOT"
+  export BOILA_PGPORT BOILA_WORKERS="${BOILA_WORKERS:-8}"
+  if [ -n "$STDBUF" ]; then
+    exec stdbuf -oL -eL ./baga -I . -I app-product app-product/boilaDB/tools/serve_pg.baga
+  else
+    exec ./baga -I . -I app-product app-product/boilaDB/tools/serve_pg.baga
+  fi
+) &
+record_pid $!
 
 echo "    чакам boilaDB да отговори на TCP :$BOILA_PGPORT ..."
 # boilaDB се компилира при старт (минути при студена кеш) — чакаме до 10 мин
@@ -62,18 +83,22 @@ echo "==> backend на :$PORT (ORM_BACKEND=boila)"
   export BOILA_PGUSER="${BOILA_PGUSER:-boila}" BOILA_PGDATABASE="${BOILA_PGDATABASE:-boila}"
   export FMR_WORKERS="${FMR_WORKERS:-4}" FMR_LOG="${FMR_LOG:-1}" FMR_CORS="${FMR_CORS:-*}"
   export FMR_JWT_SECRET="${FMR_JWT_SECRET:-dev-secret}" FMR_TITLE=bagabuch FMR_VERSION=0.1.0
-  $STDBUF ./baga -I . -I app-product app-product/bagabuch/backend/start.baga
+  if [ -n "$STDBUF" ]; then
+    exec stdbuf -oL -eL ./baga -I . -I app-product app-product/bagabuch/backend/start.baga
+  else
+    exec ./baga -I . -I app-product app-product/bagabuch/backend/start.baga
+  fi
 ) &
-pids+=($!)
+record_pid $!
 
 echo "==> frontend на :$FRONTEND_PORT"
-(cd "$ROOT/frontend" && npm run dev -- --port "$FRONTEND_PORT") &
-pids+=($!)
+(cd "$ROOT/frontend" && exec npm run dev -- --port "$FRONTEND_PORT") &
+record_pid $!
 
 echo
 echo "Стартирани (универсални приложения, само през портове):"
 echo "  boilaDB  : PostgreSQL v3 wire на :$BOILA_PGPORT"
 echo "  backend  : HTTP/JSON на :$PORT          (/health /ready /v1/meta /openapi.json)"
 echo "  frontend : Next.js на :$FRONTEND_PORT"
-echo "Ctrl+C спира всичко."
-wait
+echo "Ctrl+C спира всичко. От друг терминал: ./scripts/stop.sh"
+wait || true

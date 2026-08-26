@@ -15,7 +15,8 @@ fn boot_migrate() -> i64 !Net !IO !Random {
         print(concat("migrate: db connect failed: ", orm_err_db(db)))
         return 1
     }
-    // bagabuch_migrations_auto: Postgres SERIAL/FK или boila BoilaSQL (ORM_BACKEND=).
+    // bagabuch_migrations_auto: Postgres набор или историческия boila набор
+    // (ORM_BACKEND=). Нови boila миграции ползват текущия BoilaSQL (P20–P29).
     let set = bagabuch_migrations_auto()?
     let up = migrate_up(db, set)?
     if migrate_is_ok(up) == 0 {

@@ -10,6 +10,7 @@ import "../models/invoice.baga"
 import "../models/account.baga"
 import "../models/counterpart.baga"
 import "../models/doc_type.baga"
+import "txn.baga"
 import "fmrbaga/app.baga"
 import "fmrbaga/ctx.baga"
 import "fmrbaga/action.baga"
@@ -196,10 +197,15 @@ fn act_journal_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     if dec_cmp(debit_total, credit_total) != 0 {
         return act_err(db2, 422, "дебит и кредит не се балансират")
     }
-    // Създаване на записа.
+    // Създаване на записа (P4 BEGIN: entry + редове са една транзакция).
+    let bgn = bb_begin(db2)?
+    if orm_ok(bgn) == 0 {
+        return act_err(orm_db_exec(bgn), 500, orm_err_exec(bgn))
+    }
+    db2 = orm_db_exec(bgn)
     let eq = journal_entry_insert(db2, entry_date.val, "manual", 0, description.val, vat_type.val, counterpart_id, counterpart_name, counterpart_vat_number, document_number.val, document_date.val, vat_period, dec_to_string(credit_total), dec_to_string(vat_total))?
     if orm_ok_q(eq) == 0 || orm_nrows(eq) < 1 {
-        return act_err(orm_db_q(eq), 500, "journal entry insert failed")
+        return act_err_rb(orm_db_q(eq), 500, "journal entry insert failed")
     }
     let entry_id = orm_cell_by_i64(eq, 0, "id")
     db2 = orm_db_q(eq)
@@ -207,11 +213,16 @@ fn act_journal_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     while i < n {
         let li = journal_line_insert(db2, entry_id, vec_get(line_accs, i), vec_get(line_dirs, i), vec_get(line_amounts, i), vec_get(line_vats, i), counterpart_id, 0)?
         if orm_ok(li) == 0 {
-            return act_err(orm_db_exec(li), 500, orm_err_exec(li))
+            return act_err_rb(orm_db_exec(li), 500, orm_err_exec(li))
         }
         db2 = orm_db_exec(li)
         i = i + 1
     }
+    let cmt = bb_commit(db2)?
+    if orm_ok(cmt) == 0 {
+        return act_err_rb(orm_db_exec(cmt), 500, orm_err_exec(cmt))
+    }
+    db2 = orm_db_exec(cmt)
     let q = journal_find(db2, entry_id)?
     if orm_ok_q(q) == 0 || orm_nrows(q) < 1 {
         return act_err(orm_db_q(q), 500, "journal entry missing after create")
@@ -321,11 +332,16 @@ fn act_invoices_post(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     }
     db2 = r3.db
     let vat_id = vec_get(v_ids, 0)
-    // journal_entry (с ДДС полетата — влиза в ДДС дневниците; видът е кодът по ППДДС)
+    // journal_entry + редове + статус на фактурата — една транзакция (P4).
     let desc = concat(concat(concat(doc_type_title(doc_type), " "), number), concat(" / ", direction))
+    let bgn = bb_begin(db2)?
+    if orm_ok(bgn) == 0 {
+        return act_err(orm_db_exec(bgn), 500, orm_err_exec(bgn))
+    }
+    db2 = orm_db_exec(bgn)
     let eq = journal_entry_insert(db2, issue_date, doc_type, id, desc, vat_type, counterpart_id, counterpart_name, counterpart_vat_number, number, issue_date, accounting_month, total_amount, vat_amount)?
     if orm_ok_q(eq) == 0 || orm_nrows(eq) < 1 {
-        return act_err(orm_db_q(eq), 500, "journal entry insert failed")
+        return act_err_rb(orm_db_q(eq), 500, "journal entry insert failed")
     }
     let entry_id = orm_cell_by_i64(eq, 0, "id")
     db2 = orm_db_q(eq)
@@ -333,34 +349,34 @@ fn act_invoices_post(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         // Дт 411 общо / Кт 702 нето / Кт 4532 ДДС
         let l1 = journal_line_insert(db2, entry_id, debit_id, "debit", total_amount, "0", counterpart_id, 0)?
         if orm_ok(l1) == 0 {
-            return act_err(orm_db_exec(l1), 500, orm_err_exec(l1))
+            return act_err_rb(orm_db_exec(l1), 500, orm_err_exec(l1))
         }
         db2 = orm_db_exec(l1)
         let l2 = journal_line_insert(db2, entry_id, credit_id, "credit", net_amount, "0", counterpart_id, 0)?
         if orm_ok(l2) == 0 {
-            return act_err(orm_db_exec(l2), 500, orm_err_exec(l2))
+            return act_err_rb(orm_db_exec(l2), 500, orm_err_exec(l2))
         }
         db2 = orm_db_exec(l2)
         let l3 = journal_line_insert(db2, entry_id, vat_id, "credit", vat_amount, vat_amount, 0, 0)?
         if orm_ok(l3) == 0 {
-            return act_err(orm_db_exec(l3), 500, orm_err_exec(l3))
+            return act_err_rb(orm_db_exec(l3), 500, orm_err_exec(l3))
         }
         db2 = orm_db_exec(l3)
     } else {
         // Дт 602 нето / Дт 4531 ДДС / Кт 401 общо
         let l1 = journal_line_insert(db2, entry_id, debit_id, "debit", net_amount, "0", counterpart_id, 0)?
         if orm_ok(l1) == 0 {
-            return act_err(orm_db_exec(l1), 500, orm_err_exec(l1))
+            return act_err_rb(orm_db_exec(l1), 500, orm_err_exec(l1))
         }
         db2 = orm_db_exec(l1)
         let l2 = journal_line_insert(db2, entry_id, vat_id, "debit", vat_amount, vat_amount, 0, 0)?
         if orm_ok(l2) == 0 {
-            return act_err(orm_db_exec(l2), 500, orm_err_exec(l2))
+            return act_err_rb(orm_db_exec(l2), 500, orm_err_exec(l2))
         }
         db2 = orm_db_exec(l2)
         let l3 = journal_line_insert(db2, entry_id, credit_id, "credit", total_amount, "0", counterpart_id, 0)?
         if orm_ok(l3) == 0 {
-            return act_err(orm_db_exec(l3), 500, orm_err_exec(l3))
+            return act_err_rb(orm_db_exec(l3), 500, orm_err_exec(l3))
         }
         db2 = orm_db_exec(l3)
     }
@@ -373,9 +389,14 @@ fn act_invoices_post(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     vec_push(svals, int_to_str(entry_id))
     let su = orm_update_by_id(db2, invoice_table(), id, scols, svals)?
     if orm_ok(su) == 0 {
-        return act_err(orm_db_exec(su), 500, orm_err_exec(su))
+        return act_err_rb(orm_db_exec(su), 500, orm_err_exec(su))
     }
     db2 = orm_db_exec(su)
+    let cmt = bb_commit(db2)?
+    if orm_ok(cmt) == 0 {
+        return act_err_rb(orm_db_exec(cmt), 500, orm_err_exec(cmt))
+    }
+    db2 = orm_db_exec(cmt)
     let q = journal_find(db2, entry_id)?
     if orm_ok_q(q) == 0 || orm_nrows(q) < 1 {
         return act_err(orm_db_q(q), 500, "journal entry missing after post")

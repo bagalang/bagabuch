@@ -34,7 +34,7 @@
 | Слой | Технология |
 |------|-----------|
 | Backend | Baga + fmrbaga framework (HTTP/JSON, route-id dispatch, OpenAPI, JWT) |
-| База данни | boilaDB (BoilaSQL) — отделен процес, PostgreSQL v3 wire |
+| База данни | boilaDB (BoilaSQL) — отделен процес, PostgreSQL v3 wire; P20 SERIAL/FK, P28 JOIN/EXISTS, P31 mux, P43 O(1) point GET |
 | Frontend | Next.js (App Router, React 19, чист CSS) |
 | Автентикация | JWT |
 
@@ -70,12 +70,17 @@
 ## Стартиране
 
 ```bash
-./scripts/dev.sh
+./scripts/dev.sh     # цял стек (Ctrl+C в същия терминал също спира)
+./scripts/stop.sh    # спира стека и от друг терминал
+./scripts/seed.sh    # демо данни (след като backend е на :8080)
 ```
 
-Стартира трите услуги на техните портове (boilaDB → backend → frontend) и ги
-спира заедно с `Ctrl+C`. Отвори `http://localhost:3000` — вход с произволно
-потребителско име (скелетът изпраща само `sub`, паролата не се проверява).
+Стартира трите услуги на техните портове (boilaDB → backend → frontend).
+Отвори `http://localhost:3000` — вход с произволно потребителско име
+(скелетът изпраща само `sub`, паролата не се проверява).
+За разработка: изтрий `db/` (пази `.gitignore`), пусни `dev.sh`, после
+`./scripts/seed.sh` — фирма Бага ООД, сметкоплан, контрагенти, фактури.
+Вход: потребител `demo` (паролата се игнорира).
 
 Портовете и настройките се задават само чрез env променливи (виж
 `backend/.env.example`); нищо не е хардкоднато.
@@ -140,3 +145,14 @@ bagabuch е **отделно репозиторий** (`github.com:bagalang/baga
 - boilaDB `8f68e3b` — unknown-literal коерция str↔i64/num (числови низове в TEXT)
 - ormbaga `a2e68b0` — multi-column UPDATE (презаписваше SET списъка)
 - boilaDB `c7d5fbb` — числови низове с водещи нули вече не се инференцират като числа
+
+Dual наборът миграции (Postgres vs исторически BoilaSQL) остава: качените
+CREATE TABLE в boila набора са от преди P20 (без SERIAL/DEFAULT/NOT NULL/
+REFERENCES), а `ALTER TABLE ADD COLUMN` в boila все още е само nullable.
+Нови boila миграции ползват текущия диалект (UNIQUE INDEX, IF NOT EXISTS,
+DROP INDEX … ON t). Приложението още подава явен PK (`MAX(id)+1`) за
+таблиците без SERIAL — броячът се закача само при CREATE TABLE … BIGSERIAL.
+
+Стар `BOILA_PATH` (без маркера `p43|dual`) работи с scan fallback на
+versioned GET; нова директория получава O(1) point GET (P43). Backup:
+`app-product/boilaDB/tools/backup.baga` (`BACKUP_MODE=create|verify|restore`).

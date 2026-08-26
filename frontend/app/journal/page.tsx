@@ -25,6 +25,8 @@ interface JournalLine {
   direction: string;
   amount: string;
   vat_amount?: string;
+  account_number?: string;
+  account_name?: string;
 }
 
 interface Account {
@@ -108,9 +110,14 @@ function JournalInner() {
     loadRefs();
   }, [load, loadRefs]);
 
-  const accLabel = (id: number) => {
-    const a = accounts.find((x) => x.id === id);
-    return a ? `${a.number} ${a.name}` : String(id);
+  const accLabel = (line: JournalLine) => {
+    if (line.account_number) {
+      return line.account_name
+        ? `${line.account_number} ${line.account_name}`
+        : line.account_number;
+    }
+    const a = accounts.find((x) => x.id === line.account_id);
+    return a ? `${a.number} ${a.name}` : String(line.account_id);
   };
 
   const toggle = async (entry: JournalEntry) => {
@@ -268,7 +275,7 @@ function JournalInner() {
                           <tbody>
                             {linesByEntry[en.id].map((l) => (
                               <tr key={l.id}>
-                                <td>{accLabel(l.account_id)}</td>
+                                <td>{accLabel(l)}</td>
                                 <td>{l.direction === "debit" ? l.amount : ""}</td>
                                 <td>{l.direction === "credit" ? l.amount : ""}</td>
                                 <td>{l.vat_amount || ""}</td>

@@ -93,6 +93,7 @@ export interface Invoice {
   tax_event_date?: string;
   accounting_month?: string;
   counterpart_id: number;
+  counterpart_name?: string;
   currency: string;
   currency_rate?: string;
   net_amount: string;

@@ -64,6 +64,13 @@ fn invoice_to_json(q: OrmQuery, row: i64) -> JObj {
     if jid > 0 {
         o = jobj_i64(o, "journal_entry_id", jid)
     }
+    let mut cname = orm_cell_by(q, row, "counterpart_name")
+    if cname == "" {
+        cname = orm_cell_by(q, row, "name")
+    }
+    if cname != "" {
+        o = jobj_str(o, "counterpart_name", cname)
+    }
     let ca = orm_cell_by(q, row, "created_at")
     if ca != "" {
         o = jobj_str(o, "created_at", ca)
@@ -90,8 +97,12 @@ fn invoice_line_to_json(q: OrmQuery, row: i64) -> JObj {
     return o
 }
 
+fn invoice_select_cols() -> str {
+    return "id, direction, number, document_type, original_invoice_id, issue_date, due_date, tax_event_date, accounting_month, counterpart_id, currency, currency_rate, net_amount, vat_amount, total_amount, status, payment_method, notes, discount_percent, discount_amount, vat_exemption_reason, journal_entry_id, created_at"
+}
+
 fn invoice_select_sql() -> str {
-    return "SELECT id, direction, number, document_type, original_invoice_id, issue_date, due_date, tax_event_date, accounting_month, counterpart_id, currency, currency_rate, net_amount, vat_amount, total_amount, status, payment_method, notes, discount_percent, discount_amount, vat_exemption_reason, journal_entry_id, created_at FROM invoices"
+    return concat("SELECT ", concat(invoice_select_cols(), " FROM invoices"))
 }
 
 fn invoice_find(db: OrmDb, id: i64) -> OrmQuery !IO !Net {
@@ -103,7 +114,10 @@ fn invoice_find(db: OrmDb, id: i64) -> OrmQuery !IO !Net {
 }
 
 fn invoice_all(db: OrmDb) -> OrmQuery !IO !Net {
-    return orm_query(db, concat(invoice_select_sql(), " ORDER BY id"))?
+    // P28 LEFT JOIN: името на контрагента в същия ред (без N+1). ON ползва
+    // неквалифицирани колони — counterpart_id е само в invoices, id е в дясната.
+    let sql = concat(concat("SELECT ", concat(invoice_select_cols(), ", name FROM invoices")), " LEFT JOIN counterparts ON counterpart_id = id ORDER BY number")
+    return orm_query(db, sql)?
 }
 
 fn invoice_by_period(db: OrmDb, accounting_month: str) -> OrmQuery !IO !Net {
@@ -124,7 +138,7 @@ fn invoice_lines_by_invoice(db: OrmDb, invoice_id: i64) -> OrmQuery !IO !Net {
 }
 
 // Вмъква header с тотали 0 и статус draft; връща реда през RETURNING (id вътре).
-// За boila ид-то се предоставя явно (няма SERIAL).
+// За boila ид-то се предоставя явно (таблицата е преди P20, без SERIAL).
 fn invoice_create_header(db: OrmDb, direction: str, number: str, document_type: str, original_invoice_id: i64, issue_date: str, due_date: str, tax_event_date: str, accounting_month: str, counterpart_id: i64, currency: str, currency_rate: str, payment_method: str, notes: str, discount_percent: str, discount_amount: str, vat_exemption_reason: str) -> OrmQuery !IO !Net {
     if invoice_backend_boila()? == 1 {
         let c = invoice_next_id(db)?

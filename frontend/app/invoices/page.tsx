@@ -43,8 +43,10 @@ function InvoicesInner() {
       .catch(() => setCounterparts([]));
   }, [load]);
 
-  const cpName = (id: number) =>
-    counterparts.find((c) => c.id === id)?.name ?? String(id);
+  const cpName = (inv: Invoice) =>
+    inv.counterpart_name ||
+    counterparts.find((c) => c.id === inv.counterpart_id)?.name ||
+    String(inv.counterpart_id);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -52,7 +54,11 @@ function InvoicesInner() {
       if (typeFilter && inv.document_type !== typeFilter) return false;
       if (dirFilter && inv.direction !== dirFilter) return false;
       if (!q) return true;
-      const name = (counterparts.find((c) => c.id === inv.counterpart_id)?.name ?? "").toLowerCase();
+      const name = (
+        inv.counterpart_name ||
+        counterparts.find((c) => c.id === inv.counterpart_id)?.name ||
+        ""
+      ).toLowerCase();
       return inv.number.toLowerCase().includes(q) || name.includes(q);
     });
   }, [rows, search, typeFilter, dirFilter, counterparts]);
@@ -142,7 +148,7 @@ function InvoicesInner() {
                     <Link href={`/invoices/${inv.id}`}>{inv.number}</Link>
                   </td>
                   <td>{inv.issue_date}</td>
-                  <td>{cpName(inv.counterpart_id)}</td>
+                  <td>{cpName(inv)}</td>
                   <td>
                     {inv.total_amount} {inv.currency}
                   </td>

@@ -77,6 +77,18 @@ fn journal_line_to_json(q: OrmQuery, row: i64) -> JObj {
     if pr > 0 {
         o = jobj_i64(o, "product_id", pr)
     }
+    let mut an = orm_cell_by(q, row, "account_number")
+    if an == "" {
+        an = orm_cell_by(q, row, "number")
+    }
+    if an != "" {
+        o = jobj_str(o, "account_number", an)
+        let mut anm = orm_cell_by(q, row, "account_name")
+        if anm == "" {
+            anm = orm_cell_by(q, row, "name")
+        }
+        o = jobj_str(o, "account_name", anm)
+    }
     return o
 }
 
@@ -97,7 +109,7 @@ fn journal_all(db: OrmDb) -> OrmQuery !IO !Net {
 }
 
 fn journal_lines_by_entry(db: OrmDb, entry_id: i64) -> OrmQuery !IO !Net {
-    let sql = "SELECT id, entry_id, account_id, direction, amount, vat_amount, counterpart_id, product_id FROM journal_lines WHERE entry_id = $1 ORDER BY id"
+    let sql = "SELECT id, entry_id, account_id, direction, amount, vat_amount, counterpart_id, product_id, number, name FROM journal_lines LEFT JOIN accounts ON account_id = id WHERE entry_id = $1 ORDER BY id"
     let vals = vec_new()
     let nulls = vec_new()
     pg_param_i64(vals, nulls, entry_id)

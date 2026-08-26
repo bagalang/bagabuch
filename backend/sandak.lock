@@ -25,6 +25,12 @@ source = "path+/home/ziko/z-git/baga/app-product/bufbaga"
 rev = "-"
 
 [[package]]
+name = "csvbaga"
+version = "0.3.0"
+source = "path+/home/ziko/z-git/baga/app-product/csvbaga"
+rev = "-"
+
+[[package]]
 name = "fmrbaga"
 version = "0.2.0"
 source = "path+/home/ziko/z-git/baga/app-product/fmrbaga"
@@ -49,9 +55,21 @@ source = "path+/home/ziko/z-git/baga/app-product/logbaga"
 rev = "-"
 
 [[package]]
+name = "mdbaga"
+version = "0.2.0"
+source = "path+/home/ziko/z-git/baga/app-product/mdbaga"
+rev = "-"
+
+[[package]]
 name = "metbaga"
 version = "0.2.0"
 source = "path+/home/ziko/z-git/baga/app-product/metbaga"
+rev = "-"
+
+[[package]]
+name = "officebaga"
+version = "0.3.0"
+source = "path+/home/ziko/z-git/baga/app-product/officebaga"
 rev = "-"
 
 [[package]]
@@ -67,9 +85,21 @@ source = "path+/home/ziko/z-git/baga/app-product/otelbaga"
 rev = "-"
 
 [[package]]
+name = "pdfbaga"
+version = "0.2.2"
+source = "path+/home/ziko/z-git/baga/app-product/pdfbaga"
+rev = "-"
+
+[[package]]
 name = "pgbaga"
 version = "0.2.0"
 source = "path+/home/ziko/z-git/baga/app-product/pgbaga"
+rev = "-"
+
+[[package]]
+name = "reportbaga"
+version = "0.3.4"
+source = "path+/home/ziko/z-git/baga/app-product/reportbaga"
 rev = "-"
 
 [[package]]
@@ -79,7 +109,19 @@ source = "path+/home/ziko/z-git/baga/std"
 rev = "-"
 
 [[package]]
+name = "tplbaga"
+version = "0.2.0"
+source = "path+/home/ziko/z-git/baga/app-product/tplbaga"
+rev = "-"
+
+[[package]]
 name = "xmlbaga"
 version = "0.2.0"
 source = "path+/home/ziko/z-git/baga/app-product/xmlbaga"
+rev = "-"
+
+[[package]]
+name = "zipbaga"
+version = "0.3.0"
+source = "path+/home/ziko/z-git/baga/app-product/zipbaga"
 rev = "-"

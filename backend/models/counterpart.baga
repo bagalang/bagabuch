@@ -21,7 +21,7 @@ fn counterpart_backend_boila() -> i64 !IO {
     return 0
 }
 
-// Следващ PK за backend без SERIAL (boila). NULL max → 0.
+// Следващ PK: таблицата е създадена преди P20 (без BIGSERIAL). NULL max → 0.
 fn counterpart_next_id(db: OrmDb) -> OrmCount !IO !Net {
     return orm_count_sql(db, "SELECT MAX(id) AS count FROM counterparts")?
 }

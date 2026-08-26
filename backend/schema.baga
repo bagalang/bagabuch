@@ -1,7 +1,11 @@
 // schema.baga — миграции на bagabuch (принадлежат на приложението, не на framework-а).
-// Postgres set-ът използва SERIAL/FK; boila set-ът е BoilaSQL-safe (явен PK, без
-// SERIAL/DEFAULT/NOT NULL/REFERENCES — ограниченията се пазят в приложението).
-// start.baga избира чрез bagabuch_migrations_auto() + ORM_BACKEND.
+// Два набора заради историята: Postgres DDL-ът ползва SERIAL/FK/NOT NULL/DEFAULT
+// още от фаза 1. Boila наборът е създаден преди P20–P21 (тогава BoilaSQL нямаше
+// SERIAL/DEFAULT/NOT NULL/REFERENCES) — качените CREATE/ALTER не се пипат.
+// Днес BoilaSQL има SERIAL, NOT NULL, DEFAULT, REFERENCES, UNIQUE INDEX, N JOIN,
+// EXISTS; ALTER ADD COLUMN остава само nullable (затова dual set-ът стои).
+// Нови таблици в boila набора: пълният BoilaSQL. start.baga избира чрез
+// bagabuch_migrations_auto() + ORM_BACKEND.
 
 import "ormbaga/migrate.baga"
 import "std/os/os.baga"
@@ -626,10 +630,33 @@ fn bagabuch_migrations() -> MigrationSet {
         "CREATE UNIQUE INDEX exchange_rates_currency_date_idx ON exchange_rates (currency_code, date)",
         "DROP INDEX IF EXISTS exchange_rates_currency_date_idx"
     )
+    // P21 unique вече е в 24188; date индексът обслужва by-date и latest (P5 ORDER BY/LIMIT).
+    set = migrate_add(
+        set,
+        20260824189,
+        "index_exchange_rates_date",
+        "CREATE INDEX IF NOT EXISTS index_exchange_rates_date ON exchange_rates (date)",
+        "DROP INDEX IF EXISTS index_exchange_rates_date"
+    )
+    set = migrate_add(
+        set,
+        20260824190,
+        "index_fixed_asset_events_asset_id",
+        "CREATE INDEX IF NOT EXISTS index_fixed_asset_events_asset_id ON fixed_asset_events (asset_id)",
+        "DROP INDEX IF EXISTS index_fixed_asset_events_asset_id"
+    )
+    set = migrate_add(
+        set,
+        20260824191,
+        "index_invoices_original_invoice_id",
+        "CREATE INDEX IF NOT EXISTS index_invoices_original_invoice_id ON invoices (original_invoice_id)",
+        "DROP INDEX IF EXISTS index_invoices_original_invoice_id"
+    )
     return set
 }
 
-// BoilaSQL: PRIMARY KEY задължителен; без SERIAL/DEFAULT/NOT NULL/REFERENCES.
+// Исторически BoilaSQL набор (преди P20–P21). Нови миграции оттук нататък
+// ползват текущия диалект: UNIQUE INDEX, IF NOT EXISTS, DROP INDEX … ON t.
 fn bagabuch_boila_migrations() -> MigrationSet {
     let mut set = migrate_set_new()
     set = migrate_add(
@@ -1264,6 +1291,44 @@ fn bagabuch_boila_migrations() -> MigrationSet {
         "CREATE TABLE IF NOT EXISTS exchange_rates (id BIGINT, currency_code TEXT, rate TEXT, date TEXT, created_at TIMESTAMPTZ, PRIMARY KEY (id))",
         "DROP TABLE IF EXISTS exchange_rates"
     )
+    // P21-1: UNIQUE по (currency_code, date) — липсваше в boila набора.
+    // Multi-column UNIQUE пази само уникалност (не обслужва WHERE) — отделен
+    // индекс по currency_code за WHERE currency_code = $1 (as-of).
+    set = migrate_add(
+        set,
+        20260824091,
+        "exchange_rates_currency_date_unique",
+        "CREATE UNIQUE INDEX IF NOT EXISTS exchange_rates_currency_date_idx ON exchange_rates (currency_code, date)",
+        "DROP INDEX IF EXISTS exchange_rates_currency_date_idx ON exchange_rates"
+    )
+    set = migrate_add(
+        set,
+        20260824092,
+        "index_exchange_rates_currency",
+        "CREATE INDEX IF NOT EXISTS index_exchange_rates_currency ON exchange_rates (currency_code)",
+        "DROP INDEX IF EXISTS index_exchange_rates_currency ON exchange_rates"
+    )
+    set = migrate_add(
+        set,
+        20260824093,
+        "index_exchange_rates_date",
+        "CREATE INDEX IF NOT EXISTS index_exchange_rates_date ON exchange_rates (date)",
+        "DROP INDEX IF EXISTS index_exchange_rates_date ON exchange_rates"
+    )
+    set = migrate_add(
+        set,
+        20260824094,
+        "index_fixed_asset_events_asset_id",
+        "CREATE INDEX IF NOT EXISTS index_fixed_asset_events_asset_id ON fixed_asset_events (asset_id)",
+        "DROP INDEX IF EXISTS index_fixed_asset_events_asset_id ON fixed_asset_events"
+    )
+    set = migrate_add(
+        set,
+        20260824095,
+        "index_invoices_original_invoice_id",
+        "CREATE INDEX IF NOT EXISTS index_invoices_original_invoice_id ON invoices (original_invoice_id)",
+        "DROP INDEX IF EXISTS index_invoices_original_invoice_id ON invoices"
+    )
     return set
 }
 
@@ -1276,6 +1341,8 @@ fn bagabuch_backend_is_boila() -> i64 !IO {
 }
 
 // Избира набор миграции според конфигурирания backend.
+// Boila вече приема SERIAL/FK при CREATE TABLE; dual set-ът остава заради
+// вече приложените миграции и ALTER ADD COLUMN (nullable-only).
 fn bagabuch_migrations_auto() -> MigrationSet !IO {
     if bagabuch_backend_is_boila()? == 1 {
         return bagabuch_boila_migrations()

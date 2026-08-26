@@ -1,6 +1,9 @@
 // models/exchange_rate.baga — обменни курсове на ЕЦБ (за 1 EUR).
 // Курсът е TEXT (десимална точност, без float). Уникалност (currency_code, date)
-// се пази в приложението: boila не поддържа две '=' условия в WHERE.
+// е UNIQUE INDEX (P21-1). BoilaSQL още отказва две '=' условия
+// ("повторно = условие") и AND на = с <= по втора колона тихо игнорира
+// втората — as-of е WHERE currency_code = $1 ORDER BY date DESC, после
+// date <= в приложението.
 
 import "ormbaga/orm.baga"
 import "ormbaga/sql.baga"
@@ -51,8 +54,24 @@ fn exchange_rate_by_date(db: OrmDb, date: str) -> OrmQuery !IO !Net {
     return orm_query_params(db, sql, vals, nulls)?
 }
 
+// Последната дата с курсове; еднореден SELECT вместо пълен scan в приложението.
+fn exchange_rate_latest_q(db: OrmDb) -> OrmQuery !IO !Net {
+    return orm_query(db, "SELECT date FROM exchange_rates ORDER BY date DESC LIMIT 1")?
+}
+
+// Курсове за една валута, най-новите първи. date <= се прилага в asof_pick
+// (две колони в WHERE още не са надеждни в BoilaSQL).
+fn exchange_rate_by_currency(db: OrmDb, currency: str) -> OrmQuery !IO !Net {
+    let sql = concat(exchange_rate_select_sql(), " WHERE currency_code = $1 ORDER BY date DESC")
+    let vals = vec_new()
+    vec_push(vals, currency)
+    let nulls = vec_new()
+    vec_push(nulls, 0)
+    return orm_query_params(db, sql, vals, nulls)?
+}
+
 // Лексикографско сравнение (низовите < > в baga гледат само първия байт).
-// -1 / 0 / 1. ISO датите са с равна дължина, затова байт-по-байт е точно.
+// ISO датите са с равна дължина, затова байт-по-байт е точно.
 fn er_str_cmp(a: str, b: str) -> i64 {
     let mut n = len(a)
     if len(b) < n {
@@ -79,18 +98,16 @@ fn er_str_cmp(a: str, b: str) -> i64 {
     return 0
 }
 
-// Последната дата с курсове в таблицата; "" ако е празна.
-fn exchange_rate_latest_date(q: OrmQuery) -> str {
-    let mut best = ""
+// Първи ред с date <= target (q е ORDER BY date DESC). -1 ако няма.
+fn exchange_rate_asof_pick(q: OrmQuery, date: str) -> i64 {
     let mut i: i64 = 0
     while i < orm_nrows(q) {
-        let d = orm_cell_by(q, i, "date")
-        if er_str_cmp(d, best) > 0 {
-            best = d
+        if er_str_cmp(orm_cell_by(q, i, "date"), date) <= 0 {
+            return i
         }
         i = i + 1
     }
-    return best
+    return 0 - 1
 }
 
 // Ред на (currency, date) в резултат от заявка; -1 ако липсва.
@@ -105,30 +122,6 @@ fn exchange_rate_row_of_pair(q: OrmQuery, currency: str, date: str) -> i64 {
         i = i + 1
     }
     return 0 - 1
-}
-
-// Курс на currency за date; при липса — най-близка по-ранна дата.
-// Връща "date|rate" или "" при пълна липса. (ISO датите се сравняват низово.)
-fn exchange_rate_lookup(q: OrmQuery, currency: str, date: str) -> str {
-    let mut best_date = ""
-    let mut best_rate = ""
-    let mut i: i64 = 0
-    while i < orm_nrows(q) {
-        if orm_cell_by(q, i, "currency_code") == currency {
-            let d = orm_cell_by(q, i, "date")
-            if er_str_cmp(d, date) <= 0 {
-                if er_str_cmp(d, best_date) > 0 {
-                    best_date = d
-                    best_rate = orm_cell_by(q, i, "rate")
-                }
-            }
-        }
-        i = i + 1
-    }
-    if best_date == "" {
-        return ""
-    }
-    return concat(concat(best_date, "|"), best_rate)
 }
 
 fn exchange_rate_insert(db: OrmDb, currency: str, rate: str, date: str) -> OrmExec !IO !Net {
