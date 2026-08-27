@@ -1,0 +1,50 @@
+// schema_pg_c.baga — настройки на фирмата за SAF-T BG (полета, обекти,
+// действителни собственици, предприятия-майки). Postgres наборът ползва
+// NOT NULL/DEFAULT; качените CREATE/ALTER не се пипат.
+
+import "ormbaga/migrate.baga"
+
+fn bagabuch_migrations_c() -> MigrationSet {
+    let mut set = migrate_set_new()
+    set = migrate_add(set, 20260827101, "add_companies_country", "ALTER TABLE companies ADD COLUMN country TEXT NOT NULL DEFAULT 'BG'", "ALTER TABLE companies DROP COLUMN country")
+    set = migrate_add(set, 20260827102, "add_companies_manager_name", "ALTER TABLE companies ADD COLUMN manager_name TEXT NOT NULL DEFAULT ''", "ALTER TABLE companies DROP COLUMN manager_name")
+    set = migrate_add(set, 20260827103, "add_companies_manager_egn", "ALTER TABLE companies ADD COLUMN manager_egn TEXT NOT NULL DEFAULT ''", "ALTER TABLE companies DROP COLUMN manager_egn")
+    set = migrate_add(set, 20260827104, "add_companies_authorized_person_name", "ALTER TABLE companies ADD COLUMN authorized_person_name TEXT NOT NULL DEFAULT ''", "ALTER TABLE companies DROP COLUMN authorized_person_name")
+    set = migrate_add(set, 20260827105, "add_companies_authorized_person_egn", "ALTER TABLE companies ADD COLUMN authorized_person_egn TEXT NOT NULL DEFAULT ''", "ALTER TABLE companies DROP COLUMN authorized_person_egn")
+    set = migrate_add(set, 20260827106, "add_companies_vat_branch_number", "ALTER TABLE companies ADD COLUMN vat_branch_number TEXT NOT NULL DEFAULT ''", "ALTER TABLE companies DROP COLUMN vat_branch_number")
+    set = migrate_add(set, 20260827107, "add_companies_tax_accounting_basis", "ALTER TABLE companies ADD COLUMN tax_accounting_basis TEXT NOT NULL DEFAULT 'A'", "ALTER TABLE companies DROP COLUMN tax_accounting_basis")
+    set = migrate_add(set, 20260827108, "add_companies_tax_entity", "ALTER TABLE companies ADD COLUMN tax_entity TEXT NOT NULL DEFAULT ''", "ALTER TABLE companies DROP COLUMN tax_entity")
+    set = migrate_add(set, 20260827109, "add_companies_software_company_name", "ALTER TABLE companies ADD COLUMN software_company_name TEXT NOT NULL DEFAULT 'bagabuch'", "ALTER TABLE companies DROP COLUMN software_company_name")
+    set = migrate_add(set, 20260827110, "add_companies_software_id", "ALTER TABLE companies ADD COLUMN software_id TEXT NOT NULL DEFAULT 'BAGABUCH'", "ALTER TABLE companies DROP COLUMN software_id")
+    set = migrate_add(set, 20260827111, "add_companies_software_version", "ALTER TABLE companies ADD COLUMN software_version TEXT NOT NULL DEFAULT '1.0'", "ALTER TABLE companies DROP COLUMN software_version")
+    set = migrate_add(set, 20260827112, "add_companies_is_part_of_group", "ALTER TABLE companies ADD COLUMN is_part_of_group TEXT NOT NULL DEFAULT ''", "ALTER TABLE companies DROP COLUMN is_part_of_group")
+    set = migrate_add(set, 20260827113, "add_companies_street_name", "ALTER TABLE companies ADD COLUMN street_name TEXT NOT NULL DEFAULT ''", "ALTER TABLE companies DROP COLUMN street_name")
+    set = migrate_add(set, 20260827114, "add_companies_building_number", "ALTER TABLE companies ADD COLUMN building_number TEXT NOT NULL DEFAULT ''", "ALTER TABLE companies DROP COLUMN building_number")
+    set = migrate_add(set, 20260827115, "add_companies_region", "ALTER TABLE companies ADD COLUMN region TEXT NOT NULL DEFAULT ''", "ALTER TABLE companies DROP COLUMN region")
+    set = migrate_add(set, 20260827116, "add_companies_settings", "ALTER TABLE companies ADD COLUMN settings TEXT NOT NULL DEFAULT '{}'", "ALTER TABLE companies DROP COLUMN settings")
+    set = migrate_add(
+        set,
+        20260827117,
+        "create_company_locations",
+        "CREATE TABLE company_locations (id BIGSERIAL PRIMARY KEY, company_id BIGINT NOT NULL, name TEXT NOT NULL, location_type TEXT NOT NULL DEFAULT 'OFFICE', street_name TEXT NOT NULL DEFAULT '', building_number TEXT NOT NULL DEFAULT '', city TEXT NOT NULL DEFAULT '', post_code TEXT NOT NULL DEFAULT '', region TEXT NOT NULL DEFAULT '', country TEXT NOT NULL DEFAULT 'BG', is_main BIGINT NOT NULL DEFAULT 0, is_active BIGINT NOT NULL DEFAULT 1, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())",
+        "DROP TABLE IF EXISTS company_locations"
+    )
+    set = migrate_add(
+        set,
+        20260827118,
+        "create_beneficial_owners",
+        "CREATE TABLE beneficial_owners (id BIGSERIAL PRIMARY KEY, company_id BIGINT NOT NULL, first_name_bg TEXT NOT NULL, last_name_bg TEXT NOT NULL, egn TEXT NOT NULL DEFAULT '', first_name_latin TEXT NOT NULL DEFAULT '', last_name_latin TEXT NOT NULL DEFAULT '', country TEXT NOT NULL DEFAULT 'BG', ownership_percentage TEXT NOT NULL DEFAULT '0', is_active BIGINT NOT NULL DEFAULT 1, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())",
+        "DROP TABLE IF EXISTS beneficial_owners"
+    )
+    set = migrate_add(
+        set,
+        20260827119,
+        "create_ultimate_parents",
+        "CREATE TABLE ultimate_parents (id BIGSERIAL PRIMARY KEY, company_id BIGINT NOT NULL, name_bg TEXT NOT NULL, uic TEXT NOT NULL DEFAULT '', name_latin TEXT NOT NULL DEFAULT '', country TEXT NOT NULL DEFAULT 'BG', is_active BIGINT NOT NULL DEFAULT 1, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())",
+        "DROP TABLE IF EXISTS ultimate_parents"
+    )
+    set = migrate_add(set, 20260827120, "index_company_locations_company_id", "CREATE INDEX IF NOT EXISTS index_company_locations_company_id ON company_locations (company_id)", "DROP INDEX IF EXISTS index_company_locations_company_id")
+    set = migrate_add(set, 20260827121, "index_beneficial_owners_company_id", "CREATE INDEX IF NOT EXISTS index_beneficial_owners_company_id ON beneficial_owners (company_id)", "DROP INDEX IF EXISTS index_beneficial_owners_company_id")
+    set = migrate_add(set, 20260827122, "index_ultimate_parents_company_id", "CREATE INDEX IF NOT EXISTS index_ultimate_parents_company_id ON ultimate_parents (company_id)", "DROP INDEX IF EXISTS index_ultimate_parents_company_id")
+    return set
+}

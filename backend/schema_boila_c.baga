@@ -1,0 +1,50 @@
+// schema_boila_c.baga — настройки на фирмата за SAF-T BG (полета, обекти,
+// действителни собственици, предприятия-майки). ALTER ADD COLUMN е
+// nullable-only в boila; две '=' в WHERE още не са надеждни.
+
+import "ormbaga/migrate.baga"
+
+fn bagabuch_boila_migrations_c() -> MigrationSet {
+    let mut set = migrate_set_new()
+    set = migrate_add(set, 20260827001, "add_companies_country", "ALTER TABLE companies ADD COLUMN country TEXT", "ALTER TABLE companies DROP COLUMN country")
+    set = migrate_add(set, 20260827002, "add_companies_manager_name", "ALTER TABLE companies ADD COLUMN manager_name TEXT", "ALTER TABLE companies DROP COLUMN manager_name")
+    set = migrate_add(set, 20260827003, "add_companies_manager_egn", "ALTER TABLE companies ADD COLUMN manager_egn TEXT", "ALTER TABLE companies DROP COLUMN manager_egn")
+    set = migrate_add(set, 20260827004, "add_companies_authorized_person_name", "ALTER TABLE companies ADD COLUMN authorized_person_name TEXT", "ALTER TABLE companies DROP COLUMN authorized_person_name")
+    set = migrate_add(set, 20260827005, "add_companies_authorized_person_egn", "ALTER TABLE companies ADD COLUMN authorized_person_egn TEXT", "ALTER TABLE companies DROP COLUMN authorized_person_egn")
+    set = migrate_add(set, 20260827006, "add_companies_vat_branch_number", "ALTER TABLE companies ADD COLUMN vat_branch_number TEXT", "ALTER TABLE companies DROP COLUMN vat_branch_number")
+    set = migrate_add(set, 20260827007, "add_companies_tax_accounting_basis", "ALTER TABLE companies ADD COLUMN tax_accounting_basis TEXT", "ALTER TABLE companies DROP COLUMN tax_accounting_basis")
+    set = migrate_add(set, 20260827008, "add_companies_tax_entity", "ALTER TABLE companies ADD COLUMN tax_entity TEXT", "ALTER TABLE companies DROP COLUMN tax_entity")
+    set = migrate_add(set, 20260827009, "add_companies_software_company_name", "ALTER TABLE companies ADD COLUMN software_company_name TEXT", "ALTER TABLE companies DROP COLUMN software_company_name")
+    set = migrate_add(set, 20260827010, "add_companies_software_id", "ALTER TABLE companies ADD COLUMN software_id TEXT", "ALTER TABLE companies DROP COLUMN software_id")
+    set = migrate_add(set, 20260827011, "add_companies_software_version", "ALTER TABLE companies ADD COLUMN software_version TEXT", "ALTER TABLE companies DROP COLUMN software_version")
+    set = migrate_add(set, 20260827012, "add_companies_is_part_of_group", "ALTER TABLE companies ADD COLUMN is_part_of_group TEXT", "ALTER TABLE companies DROP COLUMN is_part_of_group")
+    set = migrate_add(set, 20260827013, "add_companies_street_name", "ALTER TABLE companies ADD COLUMN street_name TEXT", "ALTER TABLE companies DROP COLUMN street_name")
+    set = migrate_add(set, 20260827014, "add_companies_building_number", "ALTER TABLE companies ADD COLUMN building_number TEXT", "ALTER TABLE companies DROP COLUMN building_number")
+    set = migrate_add(set, 20260827015, "add_companies_region", "ALTER TABLE companies ADD COLUMN region TEXT", "ALTER TABLE companies DROP COLUMN region")
+    set = migrate_add(set, 20260827016, "add_companies_settings", "ALTER TABLE companies ADD COLUMN settings TEXT", "ALTER TABLE companies DROP COLUMN settings")
+    set = migrate_add(
+        set,
+        20260827017,
+        "create_company_locations",
+        "CREATE TABLE IF NOT EXISTS company_locations (id BIGINT, company_id BIGINT, name TEXT, location_type TEXT, street_name TEXT, building_number TEXT, city TEXT, post_code TEXT, region TEXT, country TEXT, is_main BIGINT, is_active BIGINT, created_at TIMESTAMPTZ, PRIMARY KEY (id))",
+        "DROP TABLE IF EXISTS company_locations"
+    )
+    set = migrate_add(
+        set,
+        20260827018,
+        "create_beneficial_owners",
+        "CREATE TABLE IF NOT EXISTS beneficial_owners (id BIGINT, company_id BIGINT, first_name_bg TEXT, last_name_bg TEXT, egn TEXT, first_name_latin TEXT, last_name_latin TEXT, country TEXT, ownership_percentage TEXT, is_active BIGINT, created_at TIMESTAMPTZ, PRIMARY KEY (id))",
+        "DROP TABLE IF EXISTS beneficial_owners"
+    )
+    set = migrate_add(
+        set,
+        20260827019,
+        "create_ultimate_parents",
+        "CREATE TABLE IF NOT EXISTS ultimate_parents (id BIGINT, company_id BIGINT, name_bg TEXT, uic TEXT, name_latin TEXT, country TEXT, is_active BIGINT, created_at TIMESTAMPTZ, PRIMARY KEY (id))",
+        "DROP TABLE IF EXISTS ultimate_parents"
+    )
+    set = migrate_add(set, 20260827020, "index_company_locations_company_id", "CREATE INDEX IF NOT EXISTS index_company_locations_company_id ON company_locations (company_id)", "DROP INDEX IF EXISTS index_company_locations_company_id ON company_locations")
+    set = migrate_add(set, 20260827021, "index_beneficial_owners_company_id", "CREATE INDEX IF NOT EXISTS index_beneficial_owners_company_id ON beneficial_owners (company_id)", "DROP INDEX IF EXISTS index_beneficial_owners_company_id ON beneficial_owners")
+    set = migrate_add(set, 20260827022, "index_ultimate_parents_company_id", "CREATE INDEX IF NOT EXISTS index_ultimate_parents_company_id ON ultimate_parents (company_id)", "DROP INDEX IF EXISTS index_ultimate_parents_company_id ON ultimate_parents")
+    return set
+}

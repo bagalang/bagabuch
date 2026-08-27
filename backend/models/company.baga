@@ -53,6 +53,22 @@ fn company_to_json(q: OrmQuery, row: i64) -> JObj {
     if fysm > 0 {
         o = jobj_i64(o, "fiscal_year_start_month", fysm)
     }
+    o = jobj_str(o, "country", orm_cell_by(q, row, "country"))
+    o = jobj_str(o, "manager_name", orm_cell_by(q, row, "manager_name"))
+    o = jobj_str(o, "manager_egn", orm_cell_by(q, row, "manager_egn"))
+    o = jobj_str(o, "authorized_person_name", orm_cell_by(q, row, "authorized_person_name"))
+    o = jobj_str(o, "authorized_person_egn", orm_cell_by(q, row, "authorized_person_egn"))
+    o = jobj_str(o, "vat_branch_number", orm_cell_by(q, row, "vat_branch_number"))
+    o = jobj_str(o, "tax_accounting_basis", orm_cell_by(q, row, "tax_accounting_basis"))
+    o = jobj_str(o, "tax_entity", orm_cell_by(q, row, "tax_entity"))
+    o = jobj_str(o, "software_company_name", orm_cell_by(q, row, "software_company_name"))
+    o = jobj_str(o, "software_id", orm_cell_by(q, row, "software_id"))
+    o = jobj_str(o, "software_version", orm_cell_by(q, row, "software_version"))
+    o = jobj_str(o, "is_part_of_group", orm_cell_by(q, row, "is_part_of_group"))
+    o = jobj_str(o, "street_name", orm_cell_by(q, row, "street_name"))
+    o = jobj_str(o, "building_number", orm_cell_by(q, row, "building_number"))
+    o = jobj_str(o, "region", orm_cell_by(q, row, "region"))
+    o = jobj_str(o, "settings", orm_cell_by(q, row, "settings"))
     let ca = orm_cell_by(q, row, "created_at")
     if ca != "" {
         o = jobj_str(o, "created_at", ca)
@@ -62,7 +78,7 @@ fn company_to_json(q: OrmQuery, row: i64) -> JObj {
 
 // Dual-safe: без ::text кастове (граматиката на boila за кастове е по-тясна).
 fn company_select_sql() -> str {
-    return "SELECT id, name, eik, vat_number, is_vat_registered, vat_period, currency, address, city, post_code, phone, email, website, mol, manager_eik, accountant_name, accountant_egn, tax_authority, nap_office, iban, bic, inventory_valuation_method, fiscal_year_start_month, created_at FROM companies"
+    return "SELECT id, name, eik, vat_number, is_vat_registered, vat_period, currency, address, city, post_code, phone, email, website, mol, manager_eik, accountant_name, accountant_egn, tax_authority, nap_office, iban, bic, inventory_valuation_method, fiscal_year_start_month, country, manager_name, manager_egn, authorized_person_name, authorized_person_egn, vat_branch_number, tax_accounting_basis, tax_entity, software_company_name, software_id, software_version, is_part_of_group, street_name, building_number, region, settings, created_at FROM companies"
 }
 
 fn company_find(db: OrmDb, id: i64) -> OrmQuery !IO !Net {

@@ -21,6 +21,7 @@ import {
 const NAV_ITEMS = [
   { href: "/", key: "nav.dashboard" },
   { href: "/companies", key: "nav.companies" },
+  { href: "/settings", key: "nav.settings" },
   { href: "/accounts", key: "nav.accounts" },
   { href: "/counterparts", key: "nav.counterparts" },
   { href: "/products", key: "nav.products" },

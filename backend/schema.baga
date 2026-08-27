@@ -6,14 +6,16 @@
 // EXISTS; ALTER ADD COLUMN остава само nullable (затова dual set-ът стои).
 // Нови таблици в boila набора: пълният BoilaSQL. start.baga избира чрез
 // bagabuch_migrations_auto() + ORM_BACKEND.
-// Списъците са в schema_pg_a/b + schema_boila_a/b (filesize gate 600).
+// Списъците са в schema_pg_a/b/c + schema_boila_a/b/c (filesize gate 600).
 
 import "ormbaga/migrate.baga"
 import "std/os/os.baga"
 import "schema_pg_a.baga"
 import "schema_pg_b.baga"
+import "schema_pg_c.baga"
 import "schema_boila_a.baga"
 import "schema_boila_b.baga"
+import "schema_boila_c.baga"
 
 fn mig_append(dst: MigrationSet, src: MigrationSet) -> MigrationSet {
     let mut out = dst
@@ -27,11 +29,11 @@ fn mig_append(dst: MigrationSet, src: MigrationSet) -> MigrationSet {
 }
 
 fn bagabuch_migrations() -> MigrationSet {
-    return mig_append(bagabuch_migrations_a(), bagabuch_migrations_b())
+    return mig_append(mig_append(bagabuch_migrations_a(), bagabuch_migrations_b()), bagabuch_migrations_c())
 }
 
 fn bagabuch_boila_migrations() -> MigrationSet {
-    return mig_append(bagabuch_boila_migrations_a(), bagabuch_boila_migrations_b())
+    return mig_append(mig_append(bagabuch_boila_migrations_a(), bagabuch_boila_migrations_b()), bagabuch_boila_migrations_c())
 }
 
 fn bagabuch_backend_is_boila() -> i64 !IO {

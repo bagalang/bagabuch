@@ -5,6 +5,7 @@
 import "actions/system.baga"
 import "actions/auth.baga"
 import "actions/companies.baga"
+import "actions/company_settings.baga"
 import "actions/accounts.baga"
 import "actions/counterparts.baga"
 import "actions/products.baga"
@@ -88,6 +89,16 @@ fn RID_ACTIVE_COMPANY_SET() -> i64 { return 81 }
 fn RID_EXCHANGE_RATES_INDEX() -> i64 { return 120 }
 fn RID_EXCHANGE_RATES_RATE() -> i64 { return 121 }
 fn RID_EXCHANGE_RATES_IMPORT() -> i64 { return 122 }
+fn RID_COMPANY_SETTINGS() -> i64 { return 125 }
+fn RID_CLOC_CREATE() -> i64 { return 126 }
+fn RID_CLOC_UPDATE() -> i64 { return 127 }
+fn RID_CLOC_DELETE() -> i64 { return 128 }
+fn RID_BOWN_CREATE() -> i64 { return 129 }
+fn RID_BOWN_UPDATE() -> i64 { return 130 }
+fn RID_BOWN_DELETE() -> i64 { return 131 }
+fn RID_UPAR_CREATE() -> i64 { return 132 }
+fn RID_UPAR_UPDATE() -> i64 { return 133 }
+fn RID_UPAR_DELETE() -> i64 { return 134 }
 
 fn fmr_build_app() -> FmrApp !IO {
     let cfg = fmr_config_load()?
@@ -106,6 +117,16 @@ fn fmr_build_app() -> FmrApp !IO {
     app = fmr_route_meta(app, "GET", "/v1/companies/{id}", RID_COMPANIES_SHOW(), "", "companies", 0, "", "Company", "200", "")
     app = fmr_route_meta(app, "PATCH", "/v1/companies/{id}", RID_COMPANIES_UPDATE(), "", "companies", 0, "CompanyUpdate", "Company", "200", "")
     app = fmr_route_meta(app, "DELETE", "/v1/companies/{id}", RID_COMPANIES_DELETE(), "", "companies", 0, "", "-", "204", "")
+    app = fmr_route_meta(app, "GET", "/v1/companies/{id}/settings", RID_COMPANY_SETTINGS(), "", "companies", 0, "", "CompanySettings", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/companies/{id}/locations", RID_CLOC_CREATE(), "", "companies", 0, "LocationCreate", "Location", "201", "")
+    app = fmr_route_meta(app, "PATCH", "/v1/company-locations/{id}", RID_CLOC_UPDATE(), "", "companies", 0, "LocationUpdate", "Location", "200", "")
+    app = fmr_route_meta(app, "DELETE", "/v1/company-locations/{id}", RID_CLOC_DELETE(), "", "companies", 0, "", "-", "204", "")
+    app = fmr_route_meta(app, "POST", "/v1/companies/{id}/beneficial-owners", RID_BOWN_CREATE(), "", "companies", 0, "OwnerCreate", "Owner", "201", "")
+    app = fmr_route_meta(app, "PATCH", "/v1/beneficial-owners/{id}", RID_BOWN_UPDATE(), "", "companies", 0, "OwnerUpdate", "Owner", "200", "")
+    app = fmr_route_meta(app, "DELETE", "/v1/beneficial-owners/{id}", RID_BOWN_DELETE(), "", "companies", 0, "", "-", "204", "")
+    app = fmr_route_meta(app, "POST", "/v1/companies/{id}/ultimate-parents", RID_UPAR_CREATE(), "", "companies", 0, "ParentCreate", "Parent", "201", "")
+    app = fmr_route_meta(app, "PATCH", "/v1/ultimate-parents/{id}", RID_UPAR_UPDATE(), "", "companies", 0, "ParentUpdate", "Parent", "200", "")
+    app = fmr_route_meta(app, "DELETE", "/v1/ultimate-parents/{id}", RID_UPAR_DELETE(), "", "companies", 0, "", "-", "204", "")
     app = fmr_route_meta(app, "GET", "/v1/accounts", RID_ACCOUNTS_INDEX(), "", "accounts", 0, "", "AccountList", "200", "limit,offset")
     app = fmr_route_meta(app, "POST", "/v1/accounts", RID_ACCOUNTS_CREATE(), "", "accounts", 0, "AccountCreate", "Account", "201", "")
     app = fmr_route_meta(app, "GET", "/v1/accounts/{id}", RID_ACCOUNTS_SHOW(), "", "accounts", 0, "", "Account", "200", "")
@@ -189,6 +210,16 @@ fn fmr_dispatch(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net !Random {
     if id == RID_COMPANIES_SHOW() { return act_companies_show(ctx, db)? }
     if id == RID_COMPANIES_UPDATE() { return act_companies_update(ctx, db)? }
     if id == RID_COMPANIES_DELETE() { return act_companies_delete(ctx, db)? }
+    if id == RID_COMPANY_SETTINGS() { return act_company_settings_get(ctx, db)? }
+    if id == RID_CLOC_CREATE() { return act_cloc_create(ctx, db)? }
+    if id == RID_CLOC_UPDATE() { return act_cloc_update(ctx, db)? }
+    if id == RID_CLOC_DELETE() { return act_cloc_delete(ctx, db)? }
+    if id == RID_BOWN_CREATE() { return act_bown_create(ctx, db)? }
+    if id == RID_BOWN_UPDATE() { return act_bown_update(ctx, db)? }
+    if id == RID_BOWN_DELETE() { return act_bown_delete(ctx, db)? }
+    if id == RID_UPAR_CREATE() { return act_upar_create(ctx, db)? }
+    if id == RID_UPAR_UPDATE() { return act_upar_update(ctx, db)? }
+    if id == RID_UPAR_DELETE() { return act_upar_delete(ctx, db)? }
     if id == RID_ACCOUNTS_INDEX() { return act_accounts_index(ctx, db)? }
     if id == RID_ACCOUNTS_CREATE() { return act_accounts_create(ctx, db)? }
     if id == RID_ACCOUNTS_SHOW() { return act_accounts_show(ctx, db)? }

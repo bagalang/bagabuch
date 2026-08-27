@@ -697,8 +697,93 @@ textarea {
   font-size: 12px;
 }
 
+.card-pad {
+  padding: 20px 24px;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 650;
+  margin: 0 0 14px;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid var(--primary);
+  margin-bottom: 20px;
+}
+
+.tab {
+  padding: 10px 20px;
+  border: none;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  border-radius: var(--radius) var(--radius) 0 0;
+  font-weight: 500;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab-active {
+  background: var(--primary);
+  color: #fff;
+}
+
+.tab-active:hover {
+  color: #fff;
+}
+
+.form-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0 16px;
+}
+
+.inline-form {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.flash-ok,
+.flash-err {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  margin-bottom: 14px;
+}
+
+.flash-ok {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.flash-err {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
 @media (max-width: 800px) {
   .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .form-grid-3 {
     grid-template-columns: 1fr;
   }
   .party-preview {

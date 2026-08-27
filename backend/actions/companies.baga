@@ -313,6 +313,102 @@ fn act_companies_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         vec_push(cols, "fiscal_year_start_month")
         vec_push(vals, int_to_str(fysm.num))
     }
+    let country = jreq_str(b.doc, b.root, "country")
+    if country.present == 1 {
+        if country.ok == 0 { return act_422_field(db, "country", country) }
+        vec_push(cols, "country")
+        vec_push(vals, country.val)
+    }
+    let manager_name = jreq_str(b.doc, b.root, "manager_name")
+    if manager_name.present == 1 {
+        if manager_name.ok == 0 { return act_422_field(db, "manager_name", manager_name) }
+        vec_push(cols, "manager_name")
+        vec_push(vals, manager_name.val)
+    }
+    let manager_egn = jreq_str(b.doc, b.root, "manager_egn")
+    if manager_egn.present == 1 {
+        if manager_egn.ok == 0 { return act_422_field(db, "manager_egn", manager_egn) }
+        vec_push(cols, "manager_egn")
+        vec_push(vals, manager_egn.val)
+    }
+    let authorized_person_name = jreq_str(b.doc, b.root, "authorized_person_name")
+    if authorized_person_name.present == 1 {
+        if authorized_person_name.ok == 0 { return act_422_field(db, "authorized_person_name", authorized_person_name) }
+        vec_push(cols, "authorized_person_name")
+        vec_push(vals, authorized_person_name.val)
+    }
+    let authorized_person_egn = jreq_str(b.doc, b.root, "authorized_person_egn")
+    if authorized_person_egn.present == 1 {
+        if authorized_person_egn.ok == 0 { return act_422_field(db, "authorized_person_egn", authorized_person_egn) }
+        vec_push(cols, "authorized_person_egn")
+        vec_push(vals, authorized_person_egn.val)
+    }
+    let vat_branch_number = jreq_str(b.doc, b.root, "vat_branch_number")
+    if vat_branch_number.present == 1 {
+        if vat_branch_number.ok == 0 { return act_422_field(db, "vat_branch_number", vat_branch_number) }
+        vec_push(cols, "vat_branch_number")
+        vec_push(vals, vat_branch_number.val)
+    }
+    let tax_accounting_basis = jreq_str(b.doc, b.root, "tax_accounting_basis")
+    if tax_accounting_basis.present == 1 {
+        if tax_accounting_basis.ok == 0 { return act_422_field(db, "tax_accounting_basis", tax_accounting_basis) }
+        vec_push(cols, "tax_accounting_basis")
+        vec_push(vals, tax_accounting_basis.val)
+    }
+    let tax_entity = jreq_str(b.doc, b.root, "tax_entity")
+    if tax_entity.present == 1 {
+        if tax_entity.ok == 0 { return act_422_field(db, "tax_entity", tax_entity) }
+        vec_push(cols, "tax_entity")
+        vec_push(vals, tax_entity.val)
+    }
+    let software_company_name = jreq_str(b.doc, b.root, "software_company_name")
+    if software_company_name.present == 1 {
+        if software_company_name.ok == 0 { return act_422_field(db, "software_company_name", software_company_name) }
+        vec_push(cols, "software_company_name")
+        vec_push(vals, software_company_name.val)
+    }
+    let software_id = jreq_str(b.doc, b.root, "software_id")
+    if software_id.present == 1 {
+        if software_id.ok == 0 { return act_422_field(db, "software_id", software_id) }
+        vec_push(cols, "software_id")
+        vec_push(vals, software_id.val)
+    }
+    let software_version = jreq_str(b.doc, b.root, "software_version")
+    if software_version.present == 1 {
+        if software_version.ok == 0 { return act_422_field(db, "software_version", software_version) }
+        vec_push(cols, "software_version")
+        vec_push(vals, software_version.val)
+    }
+    let is_part_of_group = jreq_str(b.doc, b.root, "is_part_of_group")
+    if is_part_of_group.present == 1 {
+        if is_part_of_group.ok == 0 { return act_422_field(db, "is_part_of_group", is_part_of_group) }
+        vec_push(cols, "is_part_of_group")
+        vec_push(vals, is_part_of_group.val)
+    }
+    let street_name = jreq_str(b.doc, b.root, "street_name")
+    if street_name.present == 1 {
+        if street_name.ok == 0 { return act_422_field(db, "street_name", street_name) }
+        vec_push(cols, "street_name")
+        vec_push(vals, street_name.val)
+    }
+    let building_number = jreq_str(b.doc, b.root, "building_number")
+    if building_number.present == 1 {
+        if building_number.ok == 0 { return act_422_field(db, "building_number", building_number) }
+        vec_push(cols, "building_number")
+        vec_push(vals, building_number.val)
+    }
+    let region = jreq_str(b.doc, b.root, "region")
+    if region.present == 1 {
+        if region.ok == 0 { return act_422_field(db, "region", region) }
+        vec_push(cols, "region")
+        vec_push(vals, region.val)
+    }
+    let settings = jreq_str(b.doc, b.root, "settings")
+    if settings.present == 1 {
+        if settings.ok == 0 { return act_422_field(db, "settings", settings) }
+        vec_push(cols, "settings")
+        vec_push(vals, settings.val)
+    }
     if orm_ok_db(db) == 0 {
         return act_err(db, 503, "database unavailable")
     }
