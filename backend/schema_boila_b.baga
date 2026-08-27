@@ -346,6 +346,14 @@ fn bagabuch_boila_migrations_b() -> MigrationSet {
         "CREATE INDEX IF NOT EXISTS index_invoices_original_invoice_id ON invoices (original_invoice_id)",
         "DROP INDEX IF EXISTS index_invoices_original_invoice_id ON invoices"
     )
+    // Суровият (дълъг) адрес от VIES (ALTER ADD COLUMN е nullable-only в boila).
+    set = migrate_add(
+        set,
+        20260824096,
+        "add_counterparts_vies_address",
+        "ALTER TABLE counterparts ADD COLUMN vies_address TEXT",
+        "ALTER TABLE counterparts DROP COLUMN vies_address"
+    )
     return set
 }
 

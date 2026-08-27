@@ -316,6 +316,15 @@ fn bagabuch_migrations_b() -> MigrationSet {
         "CREATE INDEX IF NOT EXISTS index_invoices_original_invoice_id ON invoices (original_invoice_id)",
         "DROP INDEX IF EXISTS index_invoices_original_invoice_id"
     )
+    // Суровият (дълъг) адрес от VIES се пази отделно; структурираните полета
+    // address/city/post_code се пълнят от парсването (SAF-T BG).
+    set = migrate_add(
+        set,
+        20260824192,
+        "add_counterparts_vies_address",
+        "ALTER TABLE counterparts ADD COLUMN vies_address TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE counterparts DROP COLUMN vies_address"
+    )
     return set
 }
 

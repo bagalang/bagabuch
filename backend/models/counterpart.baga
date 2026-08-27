@@ -60,6 +60,7 @@ fn counterpart_to_json(q: OrmQuery, row: i64) -> JObj {
     o = jobj_str(o, "eik", orm_cell_by(q, row, "eik"))
     o = jobj_str(o, "vat_number", orm_cell_by(q, row, "vat_number"))
     o = jobj_str(o, "address", orm_cell_by(q, row, "address"))
+    o = jobj_str(o, "vies_address", orm_cell_by(q, row, "vies_address"))
     o = jobj_str(o, "city", orm_cell_by(q, row, "city"))
     o = jobj_str(o, "country", orm_cell_by(q, row, "country"))
     o = jobj_str(o, "post_code", orm_cell_by(q, row, "post_code"))
@@ -75,7 +76,7 @@ fn counterpart_to_json(q: OrmQuery, row: i64) -> JObj {
 
 // Dual-safe: без ::text кастове (граматиката на boila за кастове е по-тясна).
 fn counterpart_select_sql() -> str {
-    return "SELECT id, name, is_client, is_supplier, eik, vat_number, address, city, country, post_code, contact_person, email, phone, created_at FROM counterparts"
+    return "SELECT id, name, is_client, is_supplier, eik, vat_number, address, vies_address, city, country, post_code, contact_person, email, phone, created_at FROM counterparts"
 }
 
 fn counterpart_find(db: OrmDb, id: i64) -> OrmQuery !IO !Net {
@@ -90,7 +91,7 @@ fn counterpart_all(db: OrmDb) -> OrmQuery !IO !Net {
     return orm_query(db, concat(counterpart_select_sql(), " ORDER BY id"))?
 }
 
-fn counterpart_create(db: OrmDb, name: str, counterpart_type: str, eik: str, vat_number: str, address: str, city: str, country: str, post_code: str, contact_person: str, email: str, phone: str) -> OrmExec !IO !Net {
+fn counterpart_create(db: OrmDb, name: str, counterpart_type: str, eik: str, vat_number: str, address: str, vies_address: str, city: str, country: str, post_code: str, contact_person: str, email: str, phone: str) -> OrmExec !IO !Net {
     let ic = counterpart_is_client(counterpart_type)
     let is_ = counterpart_is_supplier(counterpart_type)
     if counterpart_backend_boila()? == 1 {
@@ -108,6 +109,7 @@ fn counterpart_create(db: OrmDb, name: str, counterpart_type: str, eik: str, vat
         vec_push(cols, "eik")
         vec_push(cols, "vat_number")
         vec_push(cols, "address")
+        vec_push(cols, "vies_address")
         vec_push(cols, "city")
         vec_push(cols, "country")
         vec_push(cols, "post_code")
@@ -122,6 +124,7 @@ fn counterpart_create(db: OrmDb, name: str, counterpart_type: str, eik: str, vat
         vec_push(vals, eik)
         vec_push(vals, vat_number)
         vec_push(vals, address)
+        vec_push(vals, vies_address)
         vec_push(vals, city)
         vec_push(vals, country)
         vec_push(vals, post_code)
@@ -137,6 +140,7 @@ fn counterpart_create(db: OrmDb, name: str, counterpart_type: str, eik: str, vat
     vec_push(cols, "eik")
     vec_push(cols, "vat_number")
     vec_push(cols, "address")
+    vec_push(cols, "vies_address")
     vec_push(cols, "city")
     vec_push(cols, "country")
     vec_push(cols, "post_code")
@@ -150,6 +154,7 @@ fn counterpart_create(db: OrmDb, name: str, counterpart_type: str, eik: str, vat
     vec_push(vals, eik)
     vec_push(vals, vat_number)
     vec_push(vals, address)
+    vec_push(vals, vies_address)
     vec_push(vals, city)
     vec_push(vals, country)
     vec_push(vals, post_code)

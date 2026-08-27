@@ -45,6 +45,8 @@ fn RID_COUNTERPARTS_CREATE() -> i64 { return 41 }
 fn RID_COUNTERPARTS_SHOW() -> i64 { return 42 }
 fn RID_COUNTERPARTS_UPDATE() -> i64 { return 43 }
 fn RID_COUNTERPARTS_DELETE() -> i64 { return 44 }
+fn RID_COUNTERPARTS_VIES_LOOKUP() -> i64 { return 45 }
+fn RID_COUNTERPARTS_VIES_CREATE() -> i64 { return 46 }
 fn RID_PRODUCTS_INDEX() -> i64 { return 50 }
 fn RID_PRODUCTS_CREATE() -> i64 { return 51 }
 fn RID_PRODUCTS_SHOW() -> i64 { return 52 }
@@ -111,6 +113,8 @@ fn fmr_build_app() -> FmrApp !IO {
     app = fmr_route_meta(app, "DELETE", "/v1/accounts/{id}", RID_ACCOUNTS_DELETE(), "", "accounts", 0, "", "-", "204", "")
     app = fmr_route_meta(app, "GET", "/v1/counterparts", RID_COUNTERPARTS_INDEX(), "", "counterparts", 0, "", "CounterpartList", "200", "limit,offset")
     app = fmr_route_meta(app, "POST", "/v1/counterparts", RID_COUNTERPARTS_CREATE(), "", "counterparts", 0, "CounterpartCreate", "Counterpart", "201", "")
+    app = fmr_route_meta(app, "GET", "/v1/counterparts/vies-lookup", RID_COUNTERPARTS_VIES_LOOKUP(), "", "counterparts", 0, "", "ViesLookup", "200", "vat:s")
+    app = fmr_route_meta(app, "POST", "/v1/counterparts/vies", RID_COUNTERPARTS_VIES_CREATE(), "", "counterparts", 0, "CounterpartViesCreate", "Counterpart", "201", "")
     app = fmr_route_meta(app, "GET", "/v1/counterparts/{id}", RID_COUNTERPARTS_SHOW(), "", "counterparts", 0, "", "Counterpart", "200", "")
     app = fmr_route_meta(app, "PATCH", "/v1/counterparts/{id}", RID_COUNTERPARTS_UPDATE(), "", "counterparts", 0, "CounterpartUpdate", "Counterpart", "200", "")
     app = fmr_route_meta(app, "DELETE", "/v1/counterparts/{id}", RID_COUNTERPARTS_DELETE(), "", "counterparts", 0, "", "-", "204", "")
@@ -195,6 +199,8 @@ fn fmr_dispatch(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net !Random {
     if id == RID_COUNTERPARTS_SHOW() { return act_counterparts_show(ctx, db)? }
     if id == RID_COUNTERPARTS_UPDATE() { return act_counterparts_update(ctx, db)? }
     if id == RID_COUNTERPARTS_DELETE() { return act_counterparts_delete(ctx, db)? }
+    if id == RID_COUNTERPARTS_VIES_LOOKUP() { return act_counterparts_vies_lookup(ctx, db)? }
+    if id == RID_COUNTERPARTS_VIES_CREATE() { return act_counterparts_vies_create(ctx, db)? }
     if id == RID_PRODUCTS_INDEX() { return act_products_index(ctx, db)? }
     if id == RID_PRODUCTS_CREATE() { return act_products_create(ctx, db)? }
     if id == RID_PRODUCTS_SHOW() { return act_products_show(ctx, db)? }

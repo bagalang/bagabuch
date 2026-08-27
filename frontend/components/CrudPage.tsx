@@ -16,7 +16,7 @@ export interface SelectOption {
 export interface FieldDef {
   name: string;
   labelKey: string;
-  type: "text" | "number" | "select" | "checkbox";
+  type: "text" | "number" | "select" | "checkbox" | "textarea";
   required?: boolean;
   options?: SelectOption[];
   default?: string;
@@ -27,12 +27,37 @@ export interface RowAction {
   onClick: (rec: Record<string, unknown>) => void;
 }
 
+// VIES извличане: бутон в модала, който пита backend-а за ЕС ДДС номер и
+// попълва полетата на формата (име, адрес, суров VIES адрес, държава, ЕИК за BG).
+export interface ViesConfig {
+  endpoint: string; // напр. "/v1/counterparts/vies-lookup"
+  vatField: string; // полето с ДДС номера (източник на заявката)
+  map: Record<string, string>; // ключ от отговора → поле във формата
+  eikField?: string; // попълва се само за BG номера (vat без кода)
+  labelKey: string;
+  loadingKey: string;
+  invalidKey: string;
+  filledKey: string;
+}
+
+export interface ViesLookupResponse {
+  valid: boolean;
+  name: string;
+  address: string;
+  vies_address: string;
+  user_error: string;
+  request_date: string;
+  vat_number: string;
+  country_code: string;
+}
+
 export interface CrudConfig {
   endpoint: string;
   titleKey: string;
   fields: FieldDef[];
   columns: string[];
   rowAction?: RowAction;
+  vies?: ViesConfig;
 }
 
 type Record_ = Record<string, unknown>;
@@ -58,6 +83,9 @@ export function CrudPage({ config }: { config: CrudConfig }) {
   const [form, setForm] = useState<Record<string, string | boolean>>({});
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
+  const [viesLoading, setViesLoading] = useState(false);
+  const [viesError, setViesError] = useState("");
+  const [viesFilled, setViesFilled] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -87,6 +115,8 @@ export function CrudPage({ config }: { config: CrudConfig }) {
     setForm(initial);
     setEditing(null);
     setFormError("");
+    setViesError("");
+    setViesFilled(false);
     setModalOpen(true);
   };
 
@@ -100,7 +130,50 @@ export function CrudPage({ config }: { config: CrudConfig }) {
     setForm(initial);
     setEditing(rec);
     setFormError("");
+    setViesError("");
+    setViesFilled(false);
     setModalOpen(true);
+  };
+
+  // VIES: чете ДДС номера от формата, пита backend-а и попълва полетата.
+  const handleViesFetch = async () => {
+    const v = config.vies;
+    if (!v) return;
+    const vat = String(form[v.vatField] ?? "").trim();
+    setViesFilled(false);
+    if (!vat) {
+      setViesError(t(v.invalidKey));
+      return;
+    }
+    setViesLoading(true);
+    setViesError("");
+    try {
+      const data = await api.get<ViesLookupResponse>(
+        `${v.endpoint}?vat=${encodeURIComponent(vat)}`
+      );
+      if (!data.valid) {
+        setViesError(t(v.invalidKey));
+        return;
+      }
+      setForm((prev) => {
+        const next = { ...prev, [v.vatField]: data.vat_number };
+        for (const [respKey, field] of Object.entries(v.map)) {
+          const val = (data as unknown as Record_)[respKey];
+          if (typeof val === "string" && val !== "" && val !== "---") {
+            next[field] = val;
+          }
+        }
+        if (v.eikField && data.country_code === "BG") {
+          next[v.eikField] = data.vat_number.substring(2);
+        }
+        return next;
+      });
+      setViesFilled(true);
+    } catch (err) {
+      setViesError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setViesLoading(false);
+    }
   };
 
   const buildPayload = (): Record_ => {
@@ -222,6 +295,24 @@ export function CrudPage({ config }: { config: CrudConfig }) {
               {editing ? t("common.edit") : t("common.create")}
             </h2>
             <form onSubmit={handleSave}>
+              {config.vies && (
+                <div className="form-actions" style={{ justifyContent: "flex-start" }}>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={handleViesFetch}
+                    disabled={viesLoading}
+                  >
+                    {viesLoading
+                      ? t(config.vies.loadingKey)
+                      : t(config.vies.labelKey)}
+                  </button>
+                  {viesFilled && !viesError && (
+                    <span className="muted">{t(config.vies.filledKey)}</span>
+                  )}
+                  {viesError && <span className="error-text">{viesError}</span>}
+                </div>
+              )}
               <div className="form-grid">
                 {config.fields.map((f) => (
                   <div className="field" key={f.name}>
@@ -246,6 +337,14 @@ export function CrudPage({ config }: { config: CrudConfig }) {
                         type="checkbox"
                         checked={Boolean(form[f.name])}
                         onChange={(e) => setField(f.name, e.target.checked)}
+                      />
+                    ) : f.type === "textarea" ? (
+                      <textarea
+                        className="input"
+                        rows={3}
+                        value={String(form[f.name] ?? "")}
+                        onChange={(e) => setField(f.name, e.target.value)}
+                        required={f.required}
                       />
                     ) : (
                       <input

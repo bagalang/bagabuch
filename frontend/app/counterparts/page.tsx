@@ -6,6 +6,21 @@ import { CrudPage, CrudConfig } from "../../components/CrudPage";
 const config: CrudConfig = {
   endpoint: "/v1/counterparts",
   titleKey: "counterparts.title",
+  vies: {
+    endpoint: "/v1/counterparts/vies-lookup",
+    vatField: "vat_number",
+    eikField: "eik",
+    map: {
+      name: "name",
+      address: "address",
+      vies_address: "vies_address",
+      country_code: "country",
+    },
+    labelKey: "counterparts.vies.fetch",
+    loadingKey: "counterparts.vies.fetching",
+    invalidKey: "counterparts.vies.invalid",
+    filledKey: "counterparts.vies.filled",
+  },
   fields: [
     { name: "name", labelKey: "counterparts.name", type: "text", required: true },
     {
@@ -22,6 +37,7 @@ const config: CrudConfig = {
     { name: "eik", labelKey: "counterparts.eik", type: "text" },
     { name: "vat_number", labelKey: "counterparts.vat_number", type: "text" },
     { name: "address", labelKey: "counterparts.address", type: "text" },
+    { name: "vies_address", labelKey: "counterparts.vies_address", type: "textarea" },
     { name: "city", labelKey: "counterparts.city", type: "text" },
     { name: "country", labelKey: "counterparts.country", type: "text", default: "BG" },
     { name: "post_code", labelKey: "counterparts.post_code", type: "text" },
