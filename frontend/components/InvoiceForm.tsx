@@ -8,7 +8,6 @@ import {
   Invoice,
   InvoiceLine,
   PAY_METHODS,
-  UNITS,
   VAT_RATES,
   applyDiscountToLines,
   calcLine,
@@ -21,6 +20,8 @@ import {
   todayIso,
 } from "../lib/invoice";
 import { useI18n } from "./I18nProvider";
+import { UnitPicker } from "./UnitPicker";
+import { UnitOfMeasure, unitLabel } from "../lib/units";
 
 interface Counterpart {
   id: number;
@@ -74,6 +75,7 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
   const [cpOpen, setCpOpen] = useState(false);
 
   const [products, setProducts] = useState<Product[]>([]);
+  const [units, setUnits] = useState<UnitOfMeasure[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [itemOpenFor, setItemOpenFor] = useState<number | null>(null);
   const [itemQuery, setItemQuery] = useState("");
@@ -82,14 +84,16 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
 
   const loadLookups = useCallback(async () => {
     try {
-      const [cp, pr, inv] = await Promise.all([
+      const [cp, pr, inv, un] = await Promise.all([
         api.get<ListResponse<Counterpart>>("/v1/counterparts"),
         api.get<ListResponse<Product>>("/v1/products"),
         api.get<ListResponse<Invoice>>("/v1/invoices"),
+        api.get<ListResponse<UnitOfMeasure>>("/v1/units"),
       ]);
       setCounterparts(cp.items ?? []);
       setProducts(pr.items ?? []);
       setInvoices(inv.items ?? []);
+      setUnits(un.items ?? []);
     } catch {
       /* lookup failure is non-fatal */
     }
@@ -150,7 +154,7 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
           ...emptyLine(),
           ...l,
           code: l.code || "",
-          unit: l.unit || "бр.",
+          unit: l.unit || "C62",
         }));
         setLines(ls.length ? ls : [emptyLine()]);
       } catch (e) {
@@ -203,7 +207,7 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
       product_id: p.id,
       code: p.code || "",
       description: p.name,
-      unit: p.unit || "бр.",
+      unit: p.unit || "C62",
       unit_price: p.price || "0",
       vat_rate: p.vat_rate || "20",
     });
@@ -509,17 +513,12 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
                     />
                   </td>
                   <td>
-                    <select
-                      className="select"
-                      value={l.unit}
-                      onChange={(e) => setLine(i, { unit: e.target.value })}
-                    >
-                      {UNITS.map((u) => (
-                        <option key={u} value={u}>
-                          {u}
-                        </option>
-                      ))}
-                    </select>
+                    <UnitPicker
+                      compact
+                      value={l.unit || "C62"}
+                      onChange={(unit) => setLine(i, { unit })}
+                      units={units}
+                    />
                   </td>
                   <td>
                     <input
@@ -720,7 +719,7 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
                     {p.name}
                   </b>
                   <span className="muted">
-                    {p.price} / {p.unit || "бр."} · ДДС {p.vat_rate}%
+                    {p.price} / {unitLabel(p.unit || "C62", units)} · ДДС {p.vat_rate}%
                   </span>
                 </button>
               ))}

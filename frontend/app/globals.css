@@ -510,6 +510,16 @@ textarea {
   min-width: 72px;
 }
 
+.unit-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.unit-picker .select {
+  min-height: 8.5rem;
+}
+
 .lines-table td .picker-trigger {
   margin-bottom: 6px;
 }

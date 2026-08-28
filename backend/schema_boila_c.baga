@@ -46,5 +46,21 @@ fn bagabuch_boila_migrations_c() -> MigrationSet {
     set = migrate_add(set, 20260827020, "index_company_locations_company_id", "CREATE INDEX IF NOT EXISTS index_company_locations_company_id ON company_locations (company_id)", "DROP INDEX IF EXISTS index_company_locations_company_id ON company_locations")
     set = migrate_add(set, 20260827021, "index_beneficial_owners_company_id", "CREATE INDEX IF NOT EXISTS index_beneficial_owners_company_id ON beneficial_owners (company_id)", "DROP INDEX IF EXISTS index_beneficial_owners_company_id ON beneficial_owners")
     set = migrate_add(set, 20260827022, "index_ultimate_parents_company_id", "CREATE INDEX IF NOT EXISTS index_ultimate_parents_company_id ON ultimate_parents (company_id)", "DROP INDEX IF EXISTS index_ultimate_parents_company_id ON ultimate_parents")
+    set = migrate_add(set, 20260828001, "add_products_description", "ALTER TABLE products ADD COLUMN description TEXT", "ALTER TABLE products DROP COLUMN description")
+    set = migrate_add(set, 20260828002, "add_products_cost_price", "ALTER TABLE products ADD COLUMN cost_price NUMERIC", "ALTER TABLE products DROP COLUMN cost_price")
+    set = migrate_add(set, 20260828003, "add_products_inventory_account_id", "ALTER TABLE products ADD COLUMN inventory_account_id BIGINT", "ALTER TABLE products DROP COLUMN inventory_account_id")
+    set = migrate_add(set, 20260828004, "add_products_revenue_account_id", "ALTER TABLE products ADD COLUMN revenue_account_id BIGINT", "ALTER TABLE products DROP COLUMN revenue_account_id")
+    set = migrate_add(set, 20260828005, "add_products_is_inventory", "ALTER TABLE products ADD COLUMN is_inventory BIGINT", "ALTER TABLE products DROP COLUMN is_inventory")
+    set = migrate_add(set, 20260828006, "add_products_stock_quantity", "ALTER TABLE products ADD COLUMN stock_quantity NUMERIC", "ALTER TABLE products DROP COLUMN stock_quantity")
+    set = migrate_add(set, 20260828007, "add_products_stock_value", "ALTER TABLE products ADD COLUMN stock_value NUMERIC", "ALTER TABLE products DROP COLUMN stock_value")
+    set = migrate_add(set, 20260828008, "add_products_is_active", "ALTER TABLE products ADD COLUMN is_active BIGINT", "ALTER TABLE products DROP COLUMN is_active")
+    set = migrate_add(
+        set,
+        20260828009,
+        "create_inventory_lots",
+        "CREATE TABLE IF NOT EXISTS inventory_lots (id BIGINT, product_id BIGINT, invoice_id BIGINT, invoice_line_id BIGINT, received_date TEXT, quantity NUMERIC, quantity_remaining NUMERIC, unit_cost NUMERIC, PRIMARY KEY (id))",
+        "DROP TABLE IF EXISTS inventory_lots"
+    )
+    set = migrate_add(set, 20260828010, "index_inventory_lots_product_id", "CREATE INDEX IF NOT EXISTS index_inventory_lots_product_id ON inventory_lots (product_id)", "DROP INDEX IF EXISTS index_inventory_lots_product_id ON inventory_lots")
     return set
 }

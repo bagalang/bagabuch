@@ -51,7 +51,7 @@ export function docTypeIsProforma(t: string): boolean {
   return t === DOC_TYPE_PROFORMA;
 }
 
-export const UNITS = ["бр.", "кг", "л", "м", "м2", "м3", "час", "ден", "компл.", "опак.", "услуга"];
+export const UNITS = ["C62", "H87", "KGM", "LTR", "MTR", "MTK", "MTQ", "HUR", "DAY", "SET", "PK", "E48"];
 export const VAT_RATES = ["20", "9", "0"];
 export const PAY_METHODS = ["банков превод", "в брой", "карта", "компенсация", "друго"];
 export const CURRENCIES = ["EUR", "USD", "GBP", "CHF", "BGN", "RON", "PLN", "TRY", "JPY", "CNY"];
@@ -117,7 +117,7 @@ export function emptyLine(): InvoiceLine {
     code: "",
     description: "",
     quantity: "1",
-    unit: "бр.",
+    unit: "C62",
     unit_price: "0",
     vat_rate: "20",
     net_amount: "0.00",

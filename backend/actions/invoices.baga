@@ -151,7 +151,7 @@ fn act_invoices_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
             if quantity.ok == 0 {
                 return act_422_field_rb(db2, "lines[i].quantity", quantity)
             }
-            let unit = jopt_str(b.doc, elem, "unit", "бр.")
+            let unit = jopt_str(b.doc, elem, "unit", "C62")
             let unit_price = jreq_str(b.doc, elem, "unit_price")
             if unit_price.ok == 0 {
                 return act_422_field_rb(db2, "lines[i].unit_price", unit_price)
@@ -488,7 +488,7 @@ fn act_invoices_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
             if quantity.ok == 0 {
                 return act_422_field_rb(dbu, "lines[i].quantity", quantity)
             }
-            let unit = jopt_str(b.doc, elem, "unit", "бр.")
+            let unit = jopt_str(b.doc, elem, "unit", "C62")
             let unit_price = jreq_str(b.doc, elem, "unit_price")
             if unit_price.ok == 0 {
                 return act_422_field_rb(dbu, "lines[i].unit_price", unit_price)

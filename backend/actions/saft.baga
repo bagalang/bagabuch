@@ -187,12 +187,46 @@ fn act_saft_export(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         return act_err(orm_db_q(pq), 500, orm_err_q(pq))
     }
     db2 = orm_db_q(pq)
+    let uoms: Vec<str> = vec_new()
+    i = 0
+    while i < orm_nrows(pq) {
+        let mut u = orm_cell_by(pq, i, "unit")
+        if u == "" {
+            u = "C62"
+        }
+        let mut found: i64 = 0
+        let mut j: i64 = 0
+        while j < vec_len(uoms) {
+            if vec_get(uoms, j) == u {
+                found = 1
+            }
+            j = j + 1
+        }
+        if found == 0 {
+            vec_push(uoms, u)
+        }
+        i = i + 1
+    }
+    out = concat(out, sf_open("nsSAFT:UOMTable"))
+    i = 0
+    while i < vec_len(uoms) {
+        out = concat(out, sf_open("nsSAFT:UOMTableEntry"))
+        out = concat(out, sf_text("nsSAFT:UnitOfMeasure", vec_get(uoms, i)))
+        out = concat(out, xml_close("nsSAFT:UOMTableEntry"))
+        i = i + 1
+    }
+    out = concat(out, xml_close("nsSAFT:UOMTable"))
     out = concat(out, sf_open("nsSAFT:Products"))
     i = 0
     while i < orm_nrows(pq) {
+        let mut u = orm_cell_by(pq, i, "unit")
+        if u == "" {
+            u = "C62"
+        }
         out = concat(out, sf_open("nsSAFT:Product"))
         out = concat(out, sf_text("nsSAFT:ProductCode", orm_cell_by(pq, i, "code")))
         out = concat(out, sf_text("nsSAFT:ProductDescription", orm_cell_by(pq, i, "name")))
+        out = concat(out, sf_text("nsSAFT:UnitOfMeasure", u))
         out = concat(out, xml_close("nsSAFT:Product"))
         i = i + 1
     }

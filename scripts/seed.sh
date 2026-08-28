@@ -76,6 +76,7 @@ acc 4531 "Начислен данък за покупките" none
 acc 4532 "Начислен данък за продажбите" none
 acc 501 "Каса в левове/евро" none
 acc 503 "Разплащателни сметки" none
+acc 304 "Стоки" product
 acc 601 "Разходи за материали" none
 acc 602 "Разходи за външни услуги" none
 acc 603 "Разходи за амортизация" none
@@ -124,31 +125,42 @@ CP_ECONT=$(auth -X POST "$BASE/v1/counterparts" -d '{
 echo "    Ана ООД=$CP_ANA  Техномаркет=$CP_TECH  Еконт=$CP_ECONT"
 
 echo "==> стоки и услуги"
-P_ACC=$(auth -X POST "$BASE/v1/products" -d '{
-  "name": "Счетоводна услуга",
-  "code": "ACC-01",
-  "unit": "час",
-  "price": "80.00",
-  "vat_rate": "20",
-  "is_service": true
-}' | jget id)
-P_CONS=$(auth -X POST "$BASE/v1/products" -d '{
-  "name": "Консултация по ДДС",
-  "code": "VAT-01",
-  "unit": "час",
-  "price": "120.00",
-  "vat_rate": "20",
-  "is_service": true
-}' | jget id)
-P_PAPER=$(auth -X POST "$BASE/v1/products" -d '{
-  "name": "Хартия А4 80g",
-  "code": "ST-A4",
-  "unit": "пакет",
-  "price": "4.50",
-  "vat_rate": "20",
-  "is_service": false
-}' | jget id)
-echo "    продукти $P_ACC $P_CONS $P_PAPER"
+ACC_JSON=$(auth "$BASE/v1/accounts")
+ACC_304_ID=$(python3 -c 'import json,sys; items=json.load(sys.stdin)["items"];
+print(next((a["id"] for a in items if a["number"]=="304"), 0))' <<<"$ACC_JSON")
+ACC_702_ID=$(python3 -c 'import json,sys; items=json.load(sys.stdin)["items"];
+print(next((a["id"] for a in items if a["number"]=="702"), 0))' <<<"$ACC_JSON")
+P_ACC=$(auth -X POST "$BASE/v1/products" -d "{
+  \"name\": \"Счетоводна услуга\",
+  \"code\": \"ACC-01\",
+  \"unit\": \"HUR\",
+  \"price\": \"80.00\",
+  \"vat_rate\": \"20\",
+  \"is_service\": true,
+  \"revenue_account_id\": $ACC_702_ID
+}" | jget id)
+P_CONS=$(auth -X POST "$BASE/v1/products" -d "{
+  \"name\": \"Консултация по ДДС\",
+  \"code\": \"VAT-01\",
+  \"unit\": \"HUR\",
+  \"price\": \"120.00\",
+  \"vat_rate\": \"20\",
+  \"is_service\": true,
+  \"revenue_account_id\": $ACC_702_ID
+}" | jget id)
+P_PAPER=$(auth -X POST "$BASE/v1/products" -d "{
+  \"name\": \"Хартия А4 80g\",
+  \"code\": \"ST-A4\",
+  \"unit\": \"PK\",
+  \"price\": \"4.50\",
+  \"cost_price\": \"3.20\",
+  \"vat_rate\": \"20\",
+  \"is_service\": false,
+  \"is_inventory\": true,
+  \"inventory_account_id\": $ACC_304_ID,
+  \"revenue_account_id\": $ACC_702_ID
+}" | jget id)
+echo "    продукти $P_ACC $P_CONS $P_PAPER (304=$ACC_304_ID 702=$ACC_702_ID)"
 
 echo "==> фактури"
 INV_OUT=$(auth -X POST "$BASE/v1/invoices" -d "{
