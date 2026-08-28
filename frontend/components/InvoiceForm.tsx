@@ -109,6 +109,10 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
 
   const loadNumber = useCallback(
     async (dt: string, dir: string) => {
+      if (dir !== "out") {
+        setNumber("");
+        return;
+      }
       try {
         const data = await api.get<{ number: string }>(
           `/v1/invoices/next-number?document_type=${encodeURIComponent(dt)}&direction=${encodeURIComponent(dir)}`
@@ -239,6 +243,11 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
         setSaving(false);
         return;
       }
+      if (direction === "in" && !number.trim()) {
+        setFormError(t("invoices.number_in_hint"));
+        setSaving(false);
+        return;
+      }
       if (docTypeRequiresOriginal(documentType) && !originalInvoiceId) {
         setFormError(t("invoices.need_original"));
         setSaving(false);
@@ -335,11 +344,20 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
             </select>
           </div>
           <div className="field">
-            <label className="label">{t("invoices.number")}</label>
+            <label className="label">
+              {t("invoices.number")}
+              {direction === "in" ? " *" : ""}
+            </label>
             <input
               className="input"
               value={number}
               onChange={(e) => setNumber(e.target.value)}
+              required={direction === "in"}
+              placeholder={
+                direction === "in"
+                  ? t("invoices.number_in_hint")
+                  : t("invoices.number_out_hint")
+              }
             />
           </div>
           <div className="field">

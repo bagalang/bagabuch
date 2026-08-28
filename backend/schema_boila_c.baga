@@ -62,5 +62,13 @@ fn bagabuch_boila_migrations_c() -> MigrationSet {
         "DROP TABLE IF EXISTS inventory_lots"
     )
     set = migrate_add(set, 20260828010, "index_inventory_lots_product_id", "CREATE INDEX IF NOT EXISTS index_inventory_lots_product_id ON inventory_lots (product_id)", "DROP INDEX IF EXISTS index_inventory_lots_product_id ON inventory_lots")
+    set = migrate_add(
+        set,
+        20260829001,
+        "create_document_series",
+        "CREATE TABLE IF NOT EXISTS document_series (id BIGINT, company_id BIGINT, name TEXT, document_types TEXT, pad_width BIGINT, start_number BIGINT, is_active BIGINT, created_at TIMESTAMPTZ, PRIMARY KEY (id))",
+        "DROP TABLE IF EXISTS document_series"
+    )
+    set = migrate_add(set, 20260829002, "index_document_series_company_id", "CREATE INDEX IF NOT EXISTS index_document_series_company_id ON document_series (company_id)", "DROP INDEX IF EXISTS index_document_series_company_id ON document_series")
     return set
 }

@@ -510,6 +510,15 @@ textarea {
   min-width: 72px;
 }
 
+.series-types {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 16px;
+  max-height: 280px;
+  overflow: auto;
+  padding: 8px 0;
+}
+
 .unit-picker {
   display: flex;
   flex-direction: column;

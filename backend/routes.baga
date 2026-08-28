@@ -6,6 +6,7 @@ import "actions/system.baga"
 import "actions/auth.baga"
 import "actions/companies.baga"
 import "actions/company_settings.baga"
+import "actions/document_series.baga"
 import "actions/accounts.baga"
 import "actions/counterparts.baga"
 import "actions/products.baga"
@@ -104,6 +105,9 @@ fn RID_BOWN_DELETE() -> i64 { return 131 }
 fn RID_UPAR_CREATE() -> i64 { return 132 }
 fn RID_UPAR_UPDATE() -> i64 { return 133 }
 fn RID_UPAR_DELETE() -> i64 { return 134 }
+fn RID_DSER_CREATE() -> i64 { return 135 }
+fn RID_DSER_UPDATE() -> i64 { return 136 }
+fn RID_DSER_DELETE() -> i64 { return 137 }
 
 fn fmr_build_app() -> FmrApp !IO {
     let cfg = fmr_config_load()?
@@ -132,6 +136,9 @@ fn fmr_build_app() -> FmrApp !IO {
     app = fmr_route_meta(app, "POST", "/v1/companies/{id}/ultimate-parents", RID_UPAR_CREATE(), "", "companies", 0, "ParentCreate", "Parent", "201", "")
     app = fmr_route_meta(app, "PATCH", "/v1/ultimate-parents/{id}", RID_UPAR_UPDATE(), "", "companies", 0, "ParentUpdate", "Parent", "200", "")
     app = fmr_route_meta(app, "DELETE", "/v1/ultimate-parents/{id}", RID_UPAR_DELETE(), "", "companies", 0, "", "-", "204", "")
+    app = fmr_route_meta(app, "POST", "/v1/companies/{id}/document-series", RID_DSER_CREATE(), "", "companies", 0, "SeriesCreate", "Series", "201", "")
+    app = fmr_route_meta(app, "PATCH", "/v1/document-series/{id}", RID_DSER_UPDATE(), "", "companies", 0, "SeriesUpdate", "Series", "200", "")
+    app = fmr_route_meta(app, "DELETE", "/v1/document-series/{id}", RID_DSER_DELETE(), "", "companies", 0, "", "-", "204", "")
     app = fmr_route_meta(app, "GET", "/v1/accounts", RID_ACCOUNTS_INDEX(), "", "accounts", 0, "", "AccountList", "200", "limit,offset")
     app = fmr_route_meta(app, "POST", "/v1/accounts", RID_ACCOUNTS_CREATE(), "", "accounts", 0, "AccountCreate", "Account", "201", "")
     app = fmr_route_meta(app, "GET", "/v1/accounts/{id}", RID_ACCOUNTS_SHOW(), "", "accounts", 0, "", "Account", "200", "")
@@ -228,6 +235,9 @@ fn fmr_dispatch(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net !Random {
     if id == RID_UPAR_CREATE() { return act_upar_create(ctx, db)? }
     if id == RID_UPAR_UPDATE() { return act_upar_update(ctx, db)? }
     if id == RID_UPAR_DELETE() { return act_upar_delete(ctx, db)? }
+    if id == RID_DSER_CREATE() { return act_dser_create(ctx, db)? }
+    if id == RID_DSER_UPDATE() { return act_dser_update(ctx, db)? }
+    if id == RID_DSER_DELETE() { return act_dser_delete(ctx, db)? }
     if id == RID_ACCOUNTS_INDEX() { return act_accounts_index(ctx, db)? }
     if id == RID_ACCOUNTS_CREATE() { return act_accounts_create(ctx, db)? }
     if id == RID_ACCOUNTS_SHOW() { return act_accounts_show(ctx, db)? }

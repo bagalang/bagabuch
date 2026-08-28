@@ -7,6 +7,7 @@
 import { FormEvent, ReactNode, useCallback, useEffect, useState } from "react";
 import { RequireAuth } from "../../components/RequireAuth";
 import { useI18n } from "../../components/I18nProvider";
+import { DocumentSeriesTab, DocSeries } from "../../components/DocumentSeriesTab";
 import {
   ACTIVE_COMPANY_EVENT,
   Company,
@@ -51,6 +52,7 @@ interface SettingsPack {
   locations: Location[];
   beneficial_owners: Owner[];
   ultimate_parents: ParentCo[];
+  document_series?: DocSeries[];
 }
 
 type Form = Record<string, string>;
@@ -123,7 +125,7 @@ function Field({
 function SettingsInner() {
   const { t } = useI18n();
   const [activeId, setActiveId] = useState(0);
-  const [tab, setTab] = useState<0 | 1>(0);
+  const [tab, setTab] = useState<0 | 1 | 2>(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
@@ -137,6 +139,7 @@ function SettingsInner() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [owners, setOwners] = useState<Owner[]>([]);
   const [parents, setParents] = useState<ParentCo[]>([]);
+  const [series, setSeries] = useState<DocSeries[]>([]);
 
   const [showLoc, setShowLoc] = useState(false);
   const [editLocId, setEditLocId] = useState(0);
@@ -205,6 +208,7 @@ function SettingsInner() {
     setLocations(pack.locations ?? []);
     setOwners(pack.beneficial_owners ?? []);
     setParents(pack.ultimate_parents ?? []);
+    setSeries(pack.document_series ?? []);
   };
 
   const load = useCallback(async () => {
@@ -325,6 +329,7 @@ function SettingsInner() {
     setLocations(pack.locations ?? []);
     setOwners(pack.beneficial_owners ?? []);
     setParents(pack.ultimate_parents ?? []);
+    setSeries(pack.document_series ?? []);
   };
 
   const saveLoc = async (e: FormEvent) => {
@@ -489,6 +494,13 @@ function SettingsInner() {
           onClick={() => setTab(1)}
         >
           {t("settings.tab.saft")}
+        </button>
+        <button
+          type="button"
+          className={`tab${tab === 2 ? " tab-active" : ""}`}
+          onClick={() => setTab(2)}
+        >
+          {t("settings.tab.series")}
         </button>
       </div>
 
@@ -997,6 +1009,17 @@ function SettingsInner() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {tab === 2 && (
+        <div className="card card-pad" style={{ maxWidth: 760 }}>
+          <DocumentSeriesTab
+            companyId={activeId}
+            series={series}
+            onChange={reloadRelated}
+            onError={setErr}
+          />
         </div>
       )}
     </>
