@@ -6,6 +6,7 @@ import "../models/counterpart.baga"
 import "../models/company.baga"
 import "../models/setting.baga"
 import "../models/doc_type.baga"
+import "../models/vat_exemption.baga"
 import "fmrbaga/app.baga"
 import "fmrbaga/ctx.baga"
 import "fmrbaga/action.baga"
@@ -430,7 +431,11 @@ fn act_invoices_print(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         html = concat(html, concat("<p>Забележка: ", concat(inv_h(notes), "</p>")))
     }
     if vat_ex != "" {
-        html = concat(html, concat("<p>Основание за 0% ДДС: ", concat(inv_h(vat_ex), "</p>")))
+        let mut vat_label = vat_ex
+        if vatex_find_line(vat_ex) != "" {
+            vat_label = concat(vatex_name(vat_ex), concat(" — ", vatex_field(vat_ex, 3)))
+        }
+        html = concat(html, concat("<p>Основание за неначисляване на ДДС: ", concat(inv_h(vat_label), "</p>")))
     }
     html = concat(html, concat("<p>Словом: ", concat(inv_h(inv_slovom(total_amount, currency)), "</p>")))
     html = concat(html, "</body></html>")

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { numberToWordsBg } from "../lib/numberToWordsBg";
 import {
   Invoice,
@@ -7,6 +8,8 @@ import {
   docTypePrefix,
   docTypeTitle,
 } from "../lib/invoice";
+import { api, ListResponse } from "../lib/api";
+import { VatExemption, vatexDisplay } from "../lib/vatExemptions";
 import { useI18n } from "./I18nProvider";
 
 function fmt(s: string | undefined): string {
@@ -41,7 +44,14 @@ export function PrintableInvoice({
   invoice: Invoice;
   isCopy?: boolean;
 }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const [exemptions, setExemptions] = useState<VatExemption[]>([]);
+  useEffect(() => {
+    api
+      .get<ListResponse<VatExemption>>("/v1/vat-exemptions")
+      .then((d) => setExemptions(d.items ?? []))
+      .catch(() => setExemptions([]));
+  }, []);
   const company = invoice.company;
   const cp = invoice.counterpart;
   const outgoing = invoice.direction !== "in";
@@ -143,7 +153,8 @@ export function PrintableInvoice({
           )}
           {invoice.vat_exemption_reason && (
             <div>
-              <b>{t("invoices.vat_exemption")}:</b> {invoice.vat_exemption_reason}
+              <b>{t("invoices.vat_exemption")}:</b>{" "}
+              {vatexDisplay(invoice.vat_exemption_reason, exemptions, lang)}
             </div>
           )}
         </div>

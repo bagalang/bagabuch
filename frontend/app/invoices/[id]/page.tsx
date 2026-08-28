@@ -108,6 +108,20 @@ function DetailInner() {
           <button className="btn btn-sm" onClick={() => window.print()}>
             {t("invoices.print")}
           </button>
+          <button
+            className="btn btn-sm"
+            disabled={busy === "ubl"}
+            onClick={() =>
+              run("ubl", () =>
+                downloadFile(
+                  `/v1/invoices/${inv.id}/ubl`,
+                  `ubl-${docTypePrefix(inv.document_type || "01")}${inv.number}.xml`
+                )
+              )
+            }
+          >
+            {t("invoices.ubl_export")}
+          </button>
           {(["pdf", "docx", "odt"] as const).map((fmt) => (
             <button
               key={fmt}

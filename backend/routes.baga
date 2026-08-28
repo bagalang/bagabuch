@@ -11,6 +11,7 @@ import "actions/counterparts.baga"
 import "actions/products.baga"
 import "actions/invoices.baga"
 import "actions/invoices_print.baga"
+import "actions/invoices_ubl.baga"
 import "actions/invoices_post.baga"
 import "actions/journal.baga"
 import "actions/vat.baga"
@@ -55,6 +56,7 @@ fn RID_PRODUCTS_SHOW() -> i64 { return 52 }
 fn RID_PRODUCTS_UPDATE() -> i64 { return 53 }
 fn RID_PRODUCTS_DELETE() -> i64 { return 54 }
 fn RID_UNITS_INDEX() -> i64 { return 55 }
+fn RID_VAT_EXEMPTIONS() -> i64 { return 56 }
 fn RID_INVOICES_INDEX() -> i64 { return 60 }
 fn RID_INVOICES_CREATE() -> i64 { return 61 }
 fn RID_INVOICES_SHOW() -> i64 { return 62 }
@@ -63,6 +65,7 @@ fn RID_INVOICES_DELETE() -> i64 { return 64 }
 fn RID_INVOICES_POST() -> i64 { return 65 }
 fn RID_INVOICES_NEXT_NUMBER() -> i64 { return 66 }
 fn RID_INVOICES_PRINT() -> i64 { return 67 }
+fn RID_INVOICES_UBL() -> i64 { return 68 }
 fn RID_JOURNAL_INDEX() -> i64 { return 70 }
 fn RID_JOURNAL_SHOW() -> i64 { return 71 }
 fn RID_JOURNAL_CREATE() -> i64 { return 72 }
@@ -147,6 +150,7 @@ fn fmr_build_app() -> FmrApp !IO {
     app = fmr_route_meta(app, "PATCH", "/v1/products/{id}", RID_PRODUCTS_UPDATE(), "", "products", 0, "ProductUpdate", "Product", "200", "")
     app = fmr_route_meta(app, "DELETE", "/v1/products/{id}", RID_PRODUCTS_DELETE(), "", "products", 0, "", "-", "204", "")
     app = fmr_route_meta(app, "GET", "/v1/units", RID_UNITS_INDEX(), "", "products", 0, "", "UnitList", "200", "search:s")
+    app = fmr_route_meta(app, "GET", "/v1/vat-exemptions", RID_VAT_EXEMPTIONS(), "", "invoices", 0, "", "VatExemptionList", "200", "search:s")
     app = fmr_route_meta(app, "GET", "/v1/invoices", RID_INVOICES_INDEX(), "", "invoices", 0, "", "InvoiceList", "200", "limit,offset")
     app = fmr_route_meta(app, "POST", "/v1/invoices", RID_INVOICES_CREATE(), "", "invoices", 0, "InvoiceCreate", "Invoice", "201", "")
     app = fmr_route_meta(app, "GET", "/v1/invoices/next-number", RID_INVOICES_NEXT_NUMBER(), "", "invoices", 0, "", "InvoiceNumber", "200", "document_type:s,direction:s")
@@ -155,6 +159,7 @@ fn fmr_build_app() -> FmrApp !IO {
     app = fmr_route_meta(app, "DELETE", "/v1/invoices/{id}", RID_INVOICES_DELETE(), "", "invoices", 0, "", "-", "204", "")
     app = fmr_route_meta(app, "POST", "/v1/invoices/{id}/post", RID_INVOICES_POST(), "", "invoices", 0, "", "JournalEntry", "201", "")
     app = fmr_route_meta(app, "GET", "/v1/invoices/{id}/print", RID_INVOICES_PRINT(), "", "invoices", 0, "", "-", "200", "format:s,copy:s")
+    app = fmr_route_meta(app, "GET", "/v1/invoices/{id}/ubl", RID_INVOICES_UBL(), "", "invoices", 0, "", "-", "200", "")
     app = fmr_route_meta(app, "GET", "/v1/journal", RID_JOURNAL_INDEX(), "", "journal", 0, "", "JournalList", "200", "limit,offset")
     app = fmr_route_meta(app, "POST", "/v1/journal", RID_JOURNAL_CREATE(), "", "journal", 0, "JournalCreate", "JournalEntry", "201", "")
     app = fmr_route_meta(app, "GET", "/v1/journal/{id}", RID_JOURNAL_SHOW(), "", "journal", 0, "", "JournalEntry", "200", "")
@@ -241,6 +246,7 @@ fn fmr_dispatch(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net !Random {
     if id == RID_PRODUCTS_UPDATE() { return act_products_update(ctx, db)? }
     if id == RID_PRODUCTS_DELETE() { return act_products_delete(ctx, db)? }
     if id == RID_UNITS_INDEX() { return act_units_index(ctx, db)? }
+    if id == RID_VAT_EXEMPTIONS() { return act_vat_exemptions_index(ctx, db)? }
     if id == RID_INVOICES_INDEX() { return act_invoices_index(ctx, db)? }
     if id == RID_INVOICES_CREATE() { return act_invoices_create(ctx, db)? }
     if id == RID_INVOICES_SHOW() { return act_invoices_show(ctx, db)? }
@@ -249,6 +255,7 @@ fn fmr_dispatch(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net !Random {
     if id == RID_INVOICES_POST() { return act_invoices_post(ctx, db)? }
     if id == RID_INVOICES_NEXT_NUMBER() { return act_invoices_next_number(ctx, db)? }
     if id == RID_INVOICES_PRINT() { return act_invoices_print(ctx, db)? }
+    if id == RID_INVOICES_UBL() { return act_invoices_ubl(ctx, db)? }
     if id == RID_JOURNAL_INDEX() { return act_journal_index(ctx, db)? }
     if id == RID_JOURNAL_SHOW() { return act_journal_show(ctx, db)? }
     if id == RID_JOURNAL_CREATE() { return act_journal_create(ctx, db)? }

@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api, ListResponse } from "../lib/api";
+import { api, ListResponse, getActiveCompany } from "../lib/api";
 import {
   CURRENCIES,
   Invoice,
@@ -22,6 +22,7 @@ import {
 import { useI18n } from "./I18nProvider";
 import { UnitPicker } from "./UnitPicker";
 import { UnitOfMeasure, unitLabel } from "../lib/units";
+import { VatExemption, filterVatex, vatexLabel } from "../lib/vatExemptions";
 
 interface Counterpart {
   id: number;
@@ -48,7 +49,7 @@ interface Props {
 }
 
 export function InvoiceForm({ mode, invoiceId }: Props) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
@@ -76,6 +77,9 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [units, setUnits] = useState<UnitOfMeasure[]>([]);
+  const [exemptions, setExemptions] = useState<VatExemption[]>([]);
+  const [exQ, setExQ] = useState("");
+  const [vatRegistered, setVatRegistered] = useState(true);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [itemOpenFor, setItemOpenFor] = useState<number | null>(null);
   const [itemQuery, setItemQuery] = useState("");
@@ -84,16 +88,20 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
 
   const loadLookups = useCallback(async () => {
     try {
-      const [cp, pr, inv, un] = await Promise.all([
+      const [cp, pr, inv, un, ex, co] = await Promise.all([
         api.get<ListResponse<Counterpart>>("/v1/counterparts"),
         api.get<ListResponse<Product>>("/v1/products"),
         api.get<ListResponse<Invoice>>("/v1/invoices"),
         api.get<ListResponse<UnitOfMeasure>>("/v1/units"),
+        api.get<ListResponse<VatExemption>>("/v1/vat-exemptions"),
+        getActiveCompany(),
       ]);
       setCounterparts(cp.items ?? []);
       setProducts(pr.items ?? []);
       setInvoices(inv.items ?? []);
       setUnits(un.items ?? []);
+      setExemptions(ex.items ?? []);
+      setVatRegistered(Number((co as { is_vat_registered?: number }).is_vat_registered ?? 1) === 1);
     } catch {
       /* lookup failure is non-fatal */
     }
@@ -180,6 +188,12 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
   );
   const hasZeroVat = pricedLines.some((l) => num(l.vat_rate) === 0);
 
+  useEffect(() => {
+    if (hasZeroVat && !vatRegistered && !vatExemption) {
+      setVatExemption("VATEX-EU-SM");
+    }
+  }, [hasZeroVat, vatRegistered, vatExemption]);
+
   const filteredCp = counterparts.filter((c) => {
     const q = cpQuery.toLowerCase();
     if (!q) return true;
@@ -227,6 +241,11 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
       }
       if (docTypeRequiresOriginal(documentType) && !originalInvoiceId) {
         setFormError(t("invoices.need_original"));
+        setSaving(false);
+        return;
+      }
+      if (hasZeroVat && !vatExemption) {
+        setFormError(t("invoices.vat_exemption_pick"));
         setSaving(false);
         return;
       }
@@ -604,13 +623,32 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
           </div>
           {hasZeroVat && (
             <div className="field" style={{ gridColumn: "1 / -1" }}>
-              <label className="label">{t("invoices.vat_exemption")}</label>
+              <label className="label">{t("invoices.vat_exemption")} *</label>
               <input
                 className="input"
+                value={exQ}
+                onChange={(e) => setExQ(e.target.value)}
+                placeholder={t("invoices.vat_exemption_search")}
+              />
+              <select
+                className="select"
                 value={vatExemption}
                 onChange={(e) => setVatExemption(e.target.value)}
-                placeholder="чл. 113 от ЗДДС"
-              />
+                required
+                style={{ marginTop: 6 }}
+                size={6}
+              >
+                <option value="">{t("invoices.vat_exemption_pick")}</option>
+                {filterVatex(exemptions, exQ).map((e) => (
+                  <option key={e.code} value={e.code}>
+                    {vatexLabel(e, lang)}
+                  </option>
+                ))}
+                {vatExemption &&
+                  !exemptions.some((e) => e.code === vatExemption) && (
+                    <option value={vatExemption}>{vatExemption}</option>
+                  )}
+              </select>
             </div>
           )}
         </div>
