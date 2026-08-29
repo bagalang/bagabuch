@@ -46,10 +46,13 @@ float в JSON. ЕИК и фактурни номера с водещи нули 
   (подсказка при посочване)
 - основните действия остават с надпис: Създай, Запази, Осчетоводи, Потвърди
 
-## Референция
+## TLS към външни HTTPS
 
-TLS към външни HTTPS (VIES, ЕЦБ, Mistral) е с **хардкодната котва на
-издателя** (листото не стига). Env override: `BAGABUCH_*_ANCHOR_FILE`.
+Котва = **прекият издател**, не root. Хардкодната в кода; override:
+`BAGABUCH_VIES_ANCHOR_FILE`, `BAGABUCH_ECB_ANCHOR_FILE`,
+`BAGABUCH_MISTRAL_ANCHOR_FILE`. Виж [architecture.md](architecture.md).
+
+## Референция
 
 `secret/inv` и `secret/su-doxis` са образец. su-doxis има кореспонденция
 „Вътрешен трансфер“ Дт 302 / Кт 304 — **нарочно не я копираме**.

@@ -15,7 +15,7 @@ PK за таблици от преди P20: `MAX(id)+1` в приложение�
 
 | Таблица | Бележка |
 |---------|---------|
-| `companies` | Реквизити, ДДС, SAF-T полета, метод WAC/FIFO/LIFO |
+| `companies` | Реквизити, ДДС, SAF-T полета, метод WAC/FIFO/LIFO; `settings` е JSON текст (`mistral_api_key`, `zhipu_api_key`) |
 | `company_locations` | Търговски обекти и поделения |
 | `beneficial_owners` | Действителни собственици |
 | `ultimate_parents` | Крайни предприятия-майки |
@@ -32,7 +32,7 @@ PK за таблици от преди P20: `MAX(id)+1` в приложение�
 | `accounting_periods` | Месец: open/closed; липсващ ред = отворен |
 | `opening_balances` | Начално салдо за фискална година по сметка |
 | `exchange_rates` | ЕЦБ курсове по дата |
-| `settings` | Ключ/стойност (активна фирма, OCR ключове) |
+| `settings` | Ключ/стойност (активна фирма). OCR/Mistral ключът е в `companies.settings`, не тук |
 | `users` | Има таблица, няма модул |
 | `bank_accounts` / `bank_transactions` | Има таблици, няма модул |
 

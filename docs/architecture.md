@@ -44,6 +44,20 @@
 `POST /v1/auth/token` — JWT. В скелета паролата не се проверява; стига `sub`.
 Роли и права по модул още няма (таблица `users` съществува, UI за тях няма).
 
+## Външен HTTPS
+
+Клиентът пази само листото, затова котвата е **прекият издател** (DER).
+Хардкоднати в кода; при ротация — env файл с PEM:
+
+| Услуга | Env |
+|--------|-----|
+| VIES (`ec.europa.eu`) | `BAGABUCH_VIES_ANCHOR_FILE` |
+| ЕЦБ (`www.ecb.europa.eu`) | `BAGABUCH_ECB_ANCHOR_FILE` |
+| Mistral (`api.mistral.ai`) | `BAGABUCH_MISTRAL_ANCHOR_FILE` |
+
+Mistral ключът не е env — живее в `companies.settings` на активната фирма.
+Виж [ai.md](ai.md).
+
 ## Репо
 
 bagabuch е отделно репо (`bagalang/bagabuch`), submodule в baga монорепото

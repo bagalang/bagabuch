@@ -3,6 +3,25 @@
 Ключът е **по фирма**, в Настройки → Интеграции (`companies.settings.mistral_api_key`).
 Така всяка фирма си носи ключ и същото може да се предложи като услуга.
 
+Код: `backend/actions/mistral.baga` (HTTP към Mistral) + VIES в
+`backend/actions/counterparts.baga`. UI: `/settings` и `/counterparts`.
+
+## Как да пробваш (адрес от VIES)
+
+1. Ключ от https://console.mistral.ai (API Keys).
+2. Активирай фирмата → **Настройки** → таб Фирма → **Интеграции** →
+   полето Mistral → **Запази данните**.
+3. **Контрагенти** → Създай / Редактирай → ДДС номер (напр. `BG204626239`)
+   → **Извличай от VIES**.
+4. Очаквай: име, суров адрес, и попълнени улица / № сграда / град / код /
+   регион. Под бутона има бележка „Адресът е разделен за SAF-T.“
+5. Без ключ VIES пак пълни име и суров адрес; бележката казва, че няма ключ.
+
+Първата заявка към Mistral е стотинки (Ministral 3 3B, ~$0.10 / 1M токена).
+
+Ако VIES мине, а полетата за улица останат празни: ключът е грешен, няма
+кредит в Mistral, или TLS котвата е ротирана (`BAGABUCH_MISTRAL_ANCHOR_FILE`).
+
 ## Сега: адрес от VIES → SAF-T полета
 
 VIES връща един дълъг низ (`vies_address`). SAF-T иска `StreetName`,
@@ -16,11 +35,14 @@ VIES връща един дълъг низ (`vies_address`). SAF-T иска `Str
 3. попълва `street_name`, `building_number`, `city`, `post_code`, `region`
 4. суровият низ остава в `vies_address` / `address` за проверка
 
+`POST /v1/counterparts/vies` прави същото при създаване направо от ДДС номер.
+
 Без ключ VIES пак работи; полетата за SAF-T остават празни и се пишат ръчно.
 Грешка от Mistral **не** спира извличането от VIES.
 
 TLS към `api.mistral.ai` е с котва Google Trust Services WE1. При ротация:
 `BAGABUCH_MISTRAL_ANCHOR_FILE=<pem>`.
+
 
 ## После: сканиране на документи
 

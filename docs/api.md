@@ -27,9 +27,20 @@ Route id-тата в `backend/routes.baga` са стабилни — не се �
 
 ## Номенклатури
 
-`/v1/accounts`, `/v1/counterparts` (+ `/vies-lookup` дели адреса ако има
-Mistral ключ, `POST /vies`),
-`/v1/products`, `/v1/units`, `/v1/vat-exemptions`.
+`/v1/accounts`, `/v1/counterparts`, `/v1/products`, `/v1/units`,
+`/v1/vat-exemptions`.
+
+VIES (нужен JWT; ключът е на **активната** фирма):
+
+| Метод | Път | Бележка |
+|--------|-----|---------|
+| GET | `/v1/counterparts/vies-lookup?vat=` | справка, без запис |
+| POST | `/v1/counterparts/vies` | създава контрагент `{vat_number, counterpart_type?}` |
+
+Отговорът на lookup: `valid`, `name`, `address` / `vies_address` (суров),
+`street_name`, `building_number`, `city`, `post_code`, `region`,
+`country_code`, `vat_number`, `parse_ok`, `parse_note`.
+Разделянето е само ако в настройките на активната фирма има `mistral_api_key`.
 
 ## Фактури и дневник
 
