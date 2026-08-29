@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { api, ListResponse } from "../../lib/api";
 import { useI18n } from "../../components/I18nProvider";
 import { RequireAuth } from "../../components/RequireAuth";
+import { IconButton } from "../../components/IconButton";
 
 interface Account {
   id: number;
@@ -98,6 +99,7 @@ function ObInner() {
   const [productId, setProductId] = useState("");
   const [quantity, setQuantity] = useState("");
   const [description, setDescription] = useState("");
+  const [q, setQ] = useState("");
 
   const acc = accounts.find((a) => String(a.id) === accountId);
   const side = acc ? naturalSide(acc.number) : "any";
@@ -138,7 +140,16 @@ function ObInner() {
     setDescription("");
   };
 
-  const rows = data?.items ?? [];
+  const rows = useMemo(() => {
+    const all = data?.items ?? [];
+    const s = q.trim().toLowerCase();
+    if (!s) return all;
+    return all.filter((r) =>
+      `${r.account_number} ${r.account_name} ${r.counterpart_name} ${r.product_name} ${r.description}`
+        .toLowerCase()
+        .includes(s)
+    );
+  }, [data, q]);
   const diff = Number(data?.difference || "0");
   const balanced = Math.abs(diff) < 0.005;
 
@@ -261,6 +272,14 @@ function ObInner() {
       </div>
       <p className="muted">{t("ob.hint")}</p>
       {error && <div className="error-text">{error}</div>}
+      <div className="card" style={{ marginBottom: 12 }}>
+        <input
+          className="input"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder={t("common.search")}
+        />
+      </div>
 
       <div className="form-grid" style={{ marginBottom: 16 }}>
         <div className="card card-pad">
@@ -441,9 +460,12 @@ function ObInner() {
                   <td>{Number(r.quantity) ? r.quantity : ""}</td>
                   <td>{r.description}</td>
                   <td>
-                    <button className="btn btn-sm btn-danger" type="button" onClick={() => del(r.id)}>
-                      {t("common.delete")}
-                    </button>
+                    <IconButton
+                      icon="delete"
+                      title={t("common.delete")}
+                      danger
+                      onClick={() => del(r.id)}
+                    />
                   </td>
                 </tr>
               ))}

@@ -8,6 +8,7 @@ import { api, ListResponse } from "../../lib/api";
 import { useI18n } from "../../components/I18nProvider";
 import { RequireAuth } from "../../components/RequireAuth";
 import { CrudPage, CrudConfig } from "../../components/CrudPage";
+import { IconButton } from "../../components/IconButton";
 import {
   CompanyLocation,
   fetchCompanyLocations,
@@ -402,18 +403,29 @@ function FaInner() {
                         {locations.find((l) => l.id === a.location_id)?.name ?? ""}
                       </td>
                       <td>
-                        <button className="btn btn-sm" onClick={() => openAction(a)}>
-                          {t("fa.action")}
-                        </button>{" "}
-                        <button className="btn btn-sm" onClick={() => showEvents(a)}>
-                          {t("fa.events")}
-                        </button>{" "}
-                        <button className="btn btn-sm" onClick={() => openEdit(a)}>
-                          {t("common.edit")}
-                        </button>{" "}
-                        <button className="btn btn-sm btn-danger" onClick={() => handleDelete(a)}>
-                          {t("common.delete")}
-                        </button>
+                        <div className="icon-actions">
+                          <IconButton
+                            icon="action"
+                            title={t("fa.action")}
+                            onClick={() => openAction(a)}
+                          />
+                          <IconButton
+                            icon="history"
+                            title={t("fa.events")}
+                            onClick={() => showEvents(a)}
+                          />
+                          <IconButton
+                            icon="edit"
+                            title={t("common.edit")}
+                            onClick={() => openEdit(a)}
+                          />
+                          <IconButton
+                            icon="delete"
+                            title={t("common.delete")}
+                            danger
+                            onClick={() => handleDelete(a)}
+                          />
+                        </div>
                       </td>
                     </tr>
                     {eventsFor === a.id && (

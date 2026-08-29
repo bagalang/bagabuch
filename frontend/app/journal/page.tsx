@@ -4,7 +4,7 @@
 // (Покупки / Продажби / Без ДДС) — покупките и продажбите влизат в
 // дневниците за ДДС.
 
-import { useCallback, useEffect, useState, Fragment, FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, Fragment, FormEvent } from "react";
 import { api, ListResponse } from "../../lib/api";
 import { useI18n } from "../../components/I18nProvider";
 import { RequireAuth } from "../../components/RequireAuth";
@@ -63,6 +63,7 @@ function JournalInner() {
   const [counterparts, setCounterparts] = useState<Counterpart[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [q, setQ] = useState("");
   const [expanded, setExpanded] = useState<number | null>(null);
   const [linesByEntry, setLinesByEntry] = useState<Record<number, JournalLine[]>>({});
 
@@ -173,6 +174,16 @@ function JournalInner() {
     .reduce((acc, l) => acc + (parseFloat(l.amount) || 0), 0);
   const balanced = Math.abs(debitSum - creditSum) < 0.0001;
 
+  const filteredEntries = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    if (!s) return entries;
+    return entries.filter((en) =>
+      `${en.entry_date} ${en.document_type} ${en.document_id} ${en.description} ${en.counterpart_name}`
+        .toLowerCase()
+        .includes(s)
+    );
+  }, [entries, q]);
+
   const filteredCounterparts = counterparts.filter((c) => {
     if (tab === "purchase") return c.counterpart_type !== "customer";
     if (tab === "sales") return c.counterpart_type !== "supplier";
@@ -219,11 +230,19 @@ function JournalInner() {
       </div>
 
       {error && <div className="error-text">{error}</div>}
+      <div className="card" style={{ marginBottom: 12 }}>
+        <input
+          className="input"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder={t("common.search")}
+        />
+      </div>
 
       <div className="card">
         {loading ? (
           <div className="content muted">{t("common.loading")}</div>
-        ) : entries.length === 0 ? (
+        ) : filteredEntries.length === 0 ? (
           <div className="content muted">{t("common.empty")}</div>
         ) : (
           <table className="table">
@@ -237,7 +256,7 @@ function JournalInner() {
               </tr>
             </thead>
             <tbody>
-              {entries.map((en) => (
+              {filteredEntries.map((en) => (
                 <Fragment key={en.id}>
                   <tr onClick={() => toggle(en)} style={{ cursor: "pointer" }}>
                     <td>{en.entry_date}</td>

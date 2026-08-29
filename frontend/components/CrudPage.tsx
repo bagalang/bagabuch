@@ -4,9 +4,10 @@
 // Използва се за фирми, сметкоплан, контрагенти, стоки. Фактурите и дневникът
 // са специализирани (редове/кореспонденции) и са отделни страници.
 
-import { useCallback, useEffect, useState, FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, FormEvent } from "react";
 import { api, ListResponse } from "../lib/api";
 import { useI18n } from "./I18nProvider";
+import { IconButton } from "./IconButton";
 
 export interface SelectOption {
   value: string;
@@ -86,6 +87,7 @@ export function CrudPage({ config }: { config: CrudConfig }) {
   const [viesLoading, setViesLoading] = useState(false);
   const [viesError, setViesError] = useState("");
   const [viesFilled, setViesFilled] = useState(false);
+  const [q, setQ] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -219,6 +221,18 @@ export function CrudPage({ config }: { config: CrudConfig }) {
   const setField = (name: string, value: string | boolean) =>
     setForm((prev) => ({ ...prev, [name]: value }));
 
+  const filtered = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    if (!s) return rows;
+    return rows.filter((rec) =>
+      Object.values(rec)
+        .map((v) => (v == null ? "" : String(v)))
+        .join(" ")
+        .toLowerCase()
+        .includes(s)
+    );
+  }, [rows, q]);
+
   return (
     <div>
       <div className="page-head">
@@ -230,10 +244,19 @@ export function CrudPage({ config }: { config: CrudConfig }) {
 
       {error && <div className="error-text">{error}</div>}
 
+      <div className="card" style={{ marginBottom: 12 }}>
+        <input
+          className="input"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder={t("common.search")}
+        />
+      </div>
+
       <div className="card">
         {loading ? (
           <div className="content muted">{t("common.loading")}</div>
-        ) : rows.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="content muted">{t("common.empty")}</div>
         ) : (
           <table className="table">
@@ -247,7 +270,7 @@ export function CrudPage({ config }: { config: CrudConfig }) {
               </tr>
             </thead>
             <tbody>
-              {rows.map((rec) => (
+              {filtered.map((rec) => (
                 <tr key={String(rec.id)}>
                   {config.columns.map((c) => {
                     const f = config.fields.find((x) => x.name === c);
@@ -258,28 +281,26 @@ export function CrudPage({ config }: { config: CrudConfig }) {
                     );
                   })}
                   <td>
-                    {config.rowAction && (
-                      <>
-                        <button
-                          className="btn btn-sm"
+                    <div className="icon-actions">
+                      {config.rowAction && (
+                        <IconButton
+                          icon="activate"
+                          title={t(config.rowAction.labelKey)}
                           onClick={() => config.rowAction?.onClick(rec)}
-                        >
-                          {t(config.rowAction.labelKey)}
-                        </button>{" "}
-                      </>
-                    )}
-                    <button
-                      className="btn btn-sm"
-                      onClick={() => openEdit(rec)}
-                    >
-                      {t("common.edit")}
-                    </button>{" "}
-                    <button
-                      className="btn btn-sm btn-danger"
-                      onClick={() => handleDelete(rec)}
-                    >
-                      {t("common.delete")}
-                    </button>
+                        />
+                      )}
+                      <IconButton
+                        icon="edit"
+                        title={t("common.edit")}
+                        onClick={() => openEdit(rec)}
+                      />
+                      <IconButton
+                        icon="delete"
+                        title={t("common.delete")}
+                        danger
+                        onClick={() => handleDelete(rec)}
+                      />
+                    </div>
                   </td>
                 </tr>
               ))}

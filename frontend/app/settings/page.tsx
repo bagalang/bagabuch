@@ -8,6 +8,7 @@ import { FormEvent, ReactNode, useCallback, useEffect, useState } from "react";
 import { RequireAuth } from "../../components/RequireAuth";
 import { useI18n } from "../../components/I18nProvider";
 import { DocumentSeriesTab, DocSeries } from "../../components/DocumentSeriesTab";
+import { IconButton } from "../../components/IconButton";
 import {
   ACTIVE_COMPANY_EVENT,
   Company,
@@ -804,10 +805,10 @@ function SettingsInner() {
                     {loc.building_number ? ` ${loc.building_number}` : ""}
                   </div>
                 </div>
-                <div className="btn-row">
-                  <button
-                    type="button"
-                    className="btn btn-sm"
+                <div className="icon-actions">
+                  <IconButton
+                    icon="edit"
+                    title={t("common.edit")}
                     onClick={() => {
                       setEditLocId(loc.id);
                       setLocForm({
@@ -823,12 +824,13 @@ function SettingsInner() {
                       });
                       setShowLoc(true);
                     }}
-                  >
-                    {t("common.edit")}
-                  </button>
-                  <button type="button" className="btn btn-danger btn-sm" onClick={() => delLoc(loc.id)}>
-                    {t("common.delete")}
-                  </button>
+                  />
+                  <IconButton
+                    icon="delete"
+                    title={t("common.delete")}
+                    danger
+                    onClick={() => delLoc(loc.id)}
+                  />
                 </div>
               </div>
             ))}
@@ -901,10 +903,10 @@ function SettingsInner() {
                     {o.egn ? ` | ${t("settings.person.egn")}: ${o.egn}` : ""} | {o.country}
                   </div>
                 </div>
-                <div className="btn-row">
-                  <button
-                    type="button"
-                    className="btn btn-sm"
+                <div className="icon-actions">
+                  <IconButton
+                    icon="edit"
+                    title={t("common.edit")}
                     onClick={() => {
                       setEditOwnerId(o.id);
                       setOwnerForm({
@@ -918,12 +920,13 @@ function SettingsInner() {
                       });
                       setShowOwner(true);
                     }}
-                  >
-                    {t("common.edit")}
-                  </button>
-                  <button type="button" className="btn btn-danger btn-sm" onClick={() => delOwner(o.id)}>
-                    {t("common.delete")}
-                  </button>
+                  />
+                  <IconButton
+                    icon="delete"
+                    title={t("common.delete")}
+                    danger
+                    onClick={() => delOwner(o.id)}
+                  />
                 </div>
               </div>
             ))}
@@ -985,10 +988,10 @@ function SettingsInner() {
                     {p.country}
                   </div>
                 </div>
-                <div className="btn-row">
-                  <button
-                    type="button"
-                    className="btn btn-sm"
+                <div className="icon-actions">
+                  <IconButton
+                    icon="edit"
+                    title={t("common.edit")}
                     onClick={() => {
                       setEditParentId(p.id);
                       setParentForm({
@@ -999,12 +1002,13 @@ function SettingsInner() {
                       });
                       setShowParent(true);
                     }}
-                  >
-                    {t("common.edit")}
-                  </button>
-                  <button type="button" className="btn btn-danger btn-sm" onClick={() => delParent(p.id)}>
-                    {t("common.delete")}
-                  </button>
+                  />
+                  <IconButton
+                    icon="delete"
+                    title={t("common.delete")}
+                    danger
+                    onClick={() => delParent(p.id)}
+                  />
                 </div>
               </div>
             ))}

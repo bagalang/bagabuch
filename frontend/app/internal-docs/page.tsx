@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, ListResponse } from "../../lib/api";
 import { InternalDoc } from "../../lib/internalDoc";
 import { CompanyLocation, fetchCompanyLocations } from "../../lib/locations";
@@ -14,6 +14,7 @@ function Inner() {
   const [locations, setLocations] = useState<CompanyLocation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [q, setQ] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -35,6 +36,16 @@ function Inner() {
 
   const locName = (id: number) => locations.find((l) => l.id === id)?.name ?? String(id);
 
+  const filtered = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    if (!s) return rows;
+    return rows.filter((d) =>
+      `${d.number} ${d.doc_date} ${locName(d.from_location_id)} ${locName(d.to_location_id)} ${d.status}`
+        .toLowerCase()
+        .includes(s)
+    );
+  }, [rows, q, locations]);
+
   return (
     <div>
       <div className="page-head">
@@ -44,10 +55,18 @@ function Inner() {
         </Link>
       </div>
       {error && <div className="error-text">{error}</div>}
+      <div className="card" style={{ marginBottom: 12 }}>
+        <input
+          className="input"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder={t("common.search")}
+        />
+      </div>
       <div className="card">
         {loading ? (
           <div className="content muted">{t("common.loading")}</div>
-        ) : rows.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="content muted">{t("common.empty")}</div>
         ) : (
           <table className="table">
@@ -61,7 +80,7 @@ function Inner() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((d) => (
+              {filtered.map((d) => (
                 <tr key={d.id}>
                   <td>
                     <Link href={`/internal-docs/${d.id}`}>{d.number}</Link>

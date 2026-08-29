@@ -1,5 +1,8 @@
 # Състояние (към 2026-08-30)
 
+> Обновявай този файл когато качваш нещо съществено. `PLAN.md` не е истина
+> за всеки ред.
+
 ## Готово и се ползва
 
 - фирми, активна фирма, настройки + SAF-T реквизити
@@ -15,6 +18,8 @@
 - валутни курсове от ЕЦБ
 - начални салда по НСС клас и аналитичност (без запис в дневника)
 - счетоводни периоди: затваряне спира пост/ръчен запис/амортизация/confirm
+- търсачка в списъците (контрагенти, фирми, сметкоплан, стоки, дневник, …)
+- икон-бутони за редакция/изтриване и сродни действия в таблиците
 - тема, BG/EN, JWT скелет
 
 ## Нарочно отложено (куката е там)
@@ -49,5 +54,7 @@
 | UI протокол | `frontend/app/internal-docs/`, `components/InternalDocForm.tsx` |
 | UI обект на фактура | `frontend/components/InvoiceForm.tsx` |
 | i18n | `frontend/lib/i18n.ts` |
+| Икон-бутони | `frontend/components/IconButton.tsx` |
+| Генеричен CRUD + търсене | `frontend/components/CrudPage.tsx` |
 | Начални салда | `backend/actions/opening_balances.baga`, `frontend/app/opening-balances/` |
 | Периоди | `backend/actions/periods.baga`, `frontend/app/accounting-periods/` |

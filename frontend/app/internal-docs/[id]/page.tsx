@@ -8,6 +8,7 @@ import { InternalDoc } from "../../../lib/internalDoc";
 import { CompanyLocation, fetchCompanyLocations } from "../../../lib/locations";
 import { useI18n } from "../../../components/I18nProvider";
 import { RequireAuth } from "../../../components/RequireAuth";
+import { IconButton } from "../../../components/IconButton";
 
 function Inner() {
   const { t } = useI18n();
@@ -80,9 +81,7 @@ function Inner() {
             {t("common.back")}
           </Link>
           {doc.status === "draft" && (
-            <Link className="btn" href={`/internal-docs/${id}/edit`}>
-              {t("common.edit")}
-            </Link>
+            <IconButton icon="edit" title={t("common.edit")} href={`/internal-docs/${id}/edit`} />
           )}
           {doc.status === "draft" && (
             <button className="btn btn-primary" onClick={confirm} disabled={busy}>
@@ -90,14 +89,10 @@ function Inner() {
             </button>
           )}
           {doc.status === "confirmed" && (
-            <button className="btn" onClick={printDoc}>
-              {t("idoc.print")}
-            </button>
+            <IconButton icon="print" title={t("idoc.print")} onClick={printDoc} />
           )}
           {doc.status === "draft" && (
-            <button className="btn btn-danger" onClick={del}>
-              {t("common.delete")}
-            </button>
+            <IconButton icon="delete" title={t("common.delete")} danger onClick={del} />
           )}
         </div>
       </div>

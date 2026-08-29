@@ -8,6 +8,7 @@ import { Invoice, docTypePrefix } from "../../../lib/invoice";
 import { PrintableInvoice } from "../../../components/PrintableInvoice";
 import { RequireAuth } from "../../../components/RequireAuth";
 import { useI18n } from "../../../components/I18nProvider";
+import { IconButton } from "../../../components/IconButton";
 
 function DetailInner() {
   const { t } = useI18n();
@@ -72,9 +73,7 @@ function DetailInner() {
             {t("common.back")}
           </Link>
           {draft && (
-            <Link className="btn" href={`/invoices/${inv.id}/edit`}>
-              {t("common.edit")}
-            </Link>
+            <IconButton icon="edit" title={t("common.edit")} href={`/invoices/${inv.id}/edit`} />
           )}
           {draft && inv.document_type !== "proforma" && (
             <button
@@ -105,9 +104,7 @@ function DetailInner() {
             />
             {t("invoices.copy")}
           </label>
-          <button className="btn btn-sm" onClick={() => window.print()}>
-            {t("invoices.print")}
-          </button>
+          <IconButton icon="print" title={t("invoices.print")} onClick={() => window.print()} />
           <button
             className="btn btn-sm"
             disabled={busy === "ubl"}
@@ -140,8 +137,10 @@ function DetailInner() {
             </button>
           ))}
           {draft && (
-            <button
-              className="btn btn-sm btn-danger"
+            <IconButton
+              icon="delete"
+              title={t("common.delete")}
+              danger
               disabled={!!busy}
               onClick={() => {
                 if (!window.confirm(t("common.confirmDelete"))) return;
@@ -150,9 +149,7 @@ function DetailInner() {
                   router.push("/invoices");
                 });
               }}
-            >
-              {t("common.delete")}
-            </button>
+            />
           )}
         </div>
         {posted && inv.journal_entry_id ? (

@@ -22,6 +22,7 @@ const bg: Dict = {
   "common.yes": "Да",
   "common.no": "Не",
   "common.back": "Назад",
+  "common.search": "Търсене…",
   // навигация
   "nav.dashboard": "Табло",
   "nav.companies": "Фирми",
@@ -514,6 +515,7 @@ const en: Dict = {
   "common.yes": "Yes",
   "common.no": "No",
   "common.back": "Back",
+  "common.search": "Search…",
   "nav.dashboard": "Dashboard",
   "nav.companies": "Companies",
   "nav.settings": "Company settings",

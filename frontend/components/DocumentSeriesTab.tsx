@@ -4,6 +4,7 @@ import { FormEvent, useMemo, useState } from "react";
 import { api } from "../lib/api";
 import { DOC_TYPES_OUT, DOC_TYPE_PROFORMA } from "../lib/invoice";
 import { useI18n } from "./I18nProvider";
+import { IconButton } from "./IconButton";
 
 export interface DocSeries {
   id: number;
@@ -229,13 +230,9 @@ export function DocumentSeriesTab({
               {parseTypes(s.document_types).map(typeLabel).join(", ") || t("settings.series.no_types")}
             </div>
           </div>
-          <div className="btn-row">
-            <button type="button" className="btn btn-sm" onClick={() => openEdit(s)}>
-              {t("common.edit")}
-            </button>
-            <button type="button" className="btn btn-danger btn-sm" onClick={() => del(s.id)}>
-              {t("common.delete")}
-            </button>
+          <div className="icon-actions">
+            <IconButton icon="edit" title={t("common.edit")} onClick={() => openEdit(s)} />
+            <IconButton icon="delete" title={t("common.delete")} danger onClick={() => del(s.id)} />
           </div>
         </div>
       ))}

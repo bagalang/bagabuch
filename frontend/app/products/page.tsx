@@ -6,6 +6,7 @@ import { UnitPicker } from "../../components/UnitPicker";
 import { useI18n } from "../../components/I18nProvider";
 import { api, ListResponse } from "../../lib/api";
 import { UnitOfMeasure } from "../../lib/units";
+import { IconButton } from "../../components/IconButton";
 
 interface Account {
   id: number;
@@ -187,7 +188,7 @@ function ProductsInner() {
           className="input"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder={t("invoices.search")}
+          placeholder={t("common.search")}
         />
       </div>
       <div className="card">
@@ -231,15 +232,19 @@ function ProductsInner() {
                   <td>{accountName(p.revenue_account_id)}</td>
                   <td>{Number(p.is_inventory) === 1 ? p.stock_quantity : "—"}</td>
                   <td>
-                    <button className="btn btn-sm" onClick={() => openEdit(p)}>
-                      {t("common.edit")}
-                    </button>{" "}
-                    <button
-                      className="btn btn-sm btn-danger"
-                      onClick={() => handleDelete(p)}
-                    >
-                      {t("common.delete")}
-                    </button>
+                    <div className="icon-actions">
+                      <IconButton
+                        icon="edit"
+                        title={t("common.edit")}
+                        onClick={() => openEdit(p)}
+                      />
+                      <IconButton
+                        icon="delete"
+                        title={t("common.delete")}
+                        danger
+                        onClick={() => handleDelete(p)}
+                      />
+                    </div>
                   </td>
                 </tr>
               ))}
