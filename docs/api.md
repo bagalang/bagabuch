@@ -51,6 +51,17 @@ Route id-тата в `backend/routes.baga` са стабилни — не се �
 | GET | `/v1/internal-docs/{id}/print?format=` |
 | GET | `/v1/inventory/at-location?location_id=` |
 
+## Периоди и начални салда
+
+| Метод | Път |
+|--------|-----|
+| GET | `/v1/accounting-periods?year=` — 12 месеца; липсващ ред = отворен |
+| POST | `/v1/accounting-periods/close` `{year, month, notes, closed_at}` |
+| POST | `/v1/accounting-periods/reopen` `{year, month}` |
+| GET | `/v1/opening-balances?year=` |
+| POST | `/v1/opening-balances` |
+| PATCH/DELETE | `/v1/opening-balances/{id}` |
+
 ## ДДС, SAF-T, валута, ДМА
 
 | Метод | Път |

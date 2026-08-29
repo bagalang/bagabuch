@@ -89,5 +89,21 @@ fn bagabuch_migrations_c() -> MigrationSet {
         "DROP TABLE IF EXISTS internal_doc_lines"
     )
     set = migrate_add(set, 20260829109, "index_internal_doc_lines_doc_id", "CREATE INDEX IF NOT EXISTS index_internal_doc_lines_doc_id ON internal_doc_lines (doc_id)", "DROP INDEX IF EXISTS index_internal_doc_lines_doc_id")
+    set = migrate_add(
+        set,
+        20260829110,
+        "create_accounting_periods",
+        "CREATE TABLE accounting_periods (id BIGSERIAL PRIMARY KEY, year BIGINT NOT NULL, month BIGINT NOT NULL, status TEXT NOT NULL DEFAULT 'open', closed_at TEXT NOT NULL DEFAULT '', notes TEXT NOT NULL DEFAULT '')",
+        "DROP TABLE IF EXISTS accounting_periods"
+    )
+    set = migrate_add(
+        set,
+        20260829111,
+        "create_opening_balances",
+        "CREATE TABLE opening_balances (id BIGSERIAL PRIMARY KEY, fiscal_year BIGINT NOT NULL, account_id BIGINT NOT NULL, debit NUMERIC(18,2) NOT NULL DEFAULT 0, credit NUMERIC(18,2) NOT NULL DEFAULT 0, counterpart_id BIGINT NOT NULL DEFAULT 0, product_id BIGINT NOT NULL DEFAULT 0, quantity NUMERIC(18,4) NOT NULL DEFAULT 0, description TEXT NOT NULL DEFAULT '')",
+        "DROP TABLE IF EXISTS opening_balances"
+    )
+    set = migrate_add(set, 20260829112, "index_accounting_periods_year", "CREATE INDEX IF NOT EXISTS index_accounting_periods_year ON accounting_periods (year)", "DROP INDEX IF EXISTS index_accounting_periods_year")
+    set = migrate_add(set, 20260829113, "index_opening_balances_fiscal_year", "CREATE INDEX IF NOT EXISTS index_opening_balances_fiscal_year ON opening_balances (fiscal_year)", "DROP INDEX IF EXISTS index_opening_balances_fiscal_year")
     return set
 }

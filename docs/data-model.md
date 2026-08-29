@@ -29,6 +29,8 @@ PK за таблици от преди P20: `MAX(id)+1` в приложение�
 | `vat_return_lines` | Клетки на ППДДС |
 | `fixed_assets` / `fixed_asset_categories` / `fixed_asset_events` | ДМА; активът има `location_id` |
 | `internal_docs` / `internal_doc_lines` | Вътрешен протокол |
+| `accounting_periods` | Месец: open/closed; липсващ ред = отворен |
+| `opening_balances` | Начално салдо за фискална година по сметка |
 | `exchange_rates` | ЕЦБ курсове по дата |
 | `settings` | Ключ/стойност (активна фирма, OCR ключове) |
 | `users` | Има таблица, няма модул |

@@ -20,6 +20,8 @@ import "actions/saft.baga"
 import "actions/fixed_assets.baga"
 import "actions/internal_docs.baga"
 import "actions/internal_docs_confirm.baga"
+import "actions/periods.baga"
+import "actions/opening_balances.baga"
 import "actions/active_company.baga"
 import "actions/exchange_rates.baga"
 import "fmrbaga/app.baga"
@@ -119,6 +121,13 @@ fn RID_IDOC_CONFIRM() -> i64 { return 145 }
 fn RID_IDOC_PRINT() -> i64 { return 146 }
 fn RID_IDOC_NEXT() -> i64 { return 147 }
 fn RID_INV_AT_LOC() -> i64 { return 148 }
+fn RID_PERIODS_INDEX() -> i64 { return 150 }
+fn RID_PERIOD_CLOSE() -> i64 { return 151 }
+fn RID_PERIOD_REOPEN() -> i64 { return 152 }
+fn RID_OB_INDEX() -> i64 { return 153 }
+fn RID_OB_CREATE() -> i64 { return 154 }
+fn RID_OB_UPDATE() -> i64 { return 155 }
+fn RID_OB_DELETE() -> i64 { return 156 }
 
 fn fmr_build_app() -> FmrApp !IO {
     let cfg = fmr_config_load()?
@@ -215,6 +224,13 @@ fn fmr_build_app() -> FmrApp !IO {
     app = fmr_route_meta(app, "POST", "/v1/internal-docs/{id}/confirm", RID_IDOC_CONFIRM(), "", "internal-docs", 0, "", "InternalDoc", "200", "")
     app = fmr_route_meta(app, "GET", "/v1/internal-docs/{id}/print", RID_IDOC_PRINT(), "", "internal-docs", 0, "", "-", "200", "format:s")
     app = fmr_route_meta(app, "GET", "/v1/inventory/at-location", RID_INV_AT_LOC(), "", "inventory", 0, "", "StockAtLocation", "200", "location_id")
+    app = fmr_route_meta(app, "GET", "/v1/accounting-periods", RID_PERIODS_INDEX(), "", "periods", 0, "", "PeriodList", "200", "year")
+    app = fmr_route_meta(app, "POST", "/v1/accounting-periods/close", RID_PERIOD_CLOSE(), "", "periods", 0, "PeriodClose", "PeriodList", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/accounting-periods/reopen", RID_PERIOD_REOPEN(), "", "periods", 0, "PeriodReopen", "PeriodList", "200", "")
+    app = fmr_route_meta(app, "GET", "/v1/opening-balances", RID_OB_INDEX(), "", "opening-balances", 0, "", "OpeningBalanceList", "200", "year")
+    app = fmr_route_meta(app, "POST", "/v1/opening-balances", RID_OB_CREATE(), "", "opening-balances", 0, "OpeningBalanceCreate", "OpeningBalance", "201", "")
+    app = fmr_route_meta(app, "PATCH", "/v1/opening-balances/{id}", RID_OB_UPDATE(), "", "opening-balances", 0, "OpeningBalanceUpdate", "OpeningBalance", "200", "")
+    app = fmr_route_meta(app, "DELETE", "/v1/opening-balances/{id}", RID_OB_DELETE(), "", "opening-balances", 0, "", "-", "204", "")
     return app
 }
 
@@ -323,5 +339,12 @@ fn fmr_dispatch(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net !Random {
     if id == RID_IDOC_PRINT() { return act_idoc_print(ctx, db)? }
     if id == RID_IDOC_NEXT() { return act_idoc_next_number(ctx, db)? }
     if id == RID_INV_AT_LOC() { return act_inventory_at_location(ctx, db)? }
+    if id == RID_PERIODS_INDEX() { return act_periods_index(ctx, db)? }
+    if id == RID_PERIOD_CLOSE() { return act_period_close(ctx, db)? }
+    if id == RID_PERIOD_REOPEN() { return act_period_reopen(ctx, db)? }
+    if id == RID_OB_INDEX() { return act_ob_index(ctx, db)? }
+    if id == RID_OB_CREATE() { return act_ob_create(ctx, db)? }
+    if id == RID_OB_UPDATE() { return act_ob_update(ctx, db)? }
+    if id == RID_OB_DELETE() { return act_ob_delete(ctx, db)? }
     return fmr_out(fmr_500("unhandled route"), db)
 }

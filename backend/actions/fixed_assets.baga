@@ -13,6 +13,7 @@ import "fmrbaga/jsonx.baga"
 import "ormbaga/orm.baga"
 import "bagadecimal/src/decimal.baga"
 import "fixed_assets_ops.baga"
+import "periods.baga"
 import "std/str/str.baga"
 
 // ---------- категории ----------
@@ -490,9 +491,14 @@ fn act_fa_depreciation_post(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     if orm_ok_db(db) == 0 {
         return act_err(db, 503, "database unavailable")
     }
+    let pc = period_assert_open(db, period.val)?
+    if pc.ok == 0 {
+        return act_err(pc.db, 422, pc.err)
+    }
+    let mut dbp = pc.db
     // Сметки: 603 (разход) и 241 (амортизация) — по номер.
     let e_ids: Vec<i64> = vec_new()
-    let eq = account_by_number(db, "603")?
+    let eq = account_by_number(dbp, "603")?
     if orm_ok_q(eq) == 0 {
         return act_err(orm_db_q(eq), 500, orm_err_q(eq))
     }

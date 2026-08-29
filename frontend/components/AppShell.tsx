@@ -28,6 +28,8 @@ const NAV_ITEMS = [
   { href: "/invoices", key: "nav.invoices" },
   { href: "/internal-docs", key: "nav.internal_docs" },
   { href: "/journal", key: "nav.journal" },
+  { href: "/opening-balances", key: "nav.opening_balances" },
+  { href: "/accounting-periods", key: "nav.periods" },
   { href: "/vat", key: "nav.vat" },
   { href: "/exchange-rates", key: "nav.exchange_rates" },
   { href: "/saft", key: "nav.saft" },

@@ -11,6 +11,7 @@ import "../models/company.baga"
 import "../models/product.baga"
 import "../models/doc_type.baga"
 import "inventory.baga"
+import "periods.baga"
 import "txn.baga"
 import "fmrbaga/app.baga"
 import "fmrbaga/ctx.baga"
@@ -89,6 +90,11 @@ fn act_invoices_post(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         return act_404(orm_db_q(iq), "Invoice not found")
     }
     let mut db2 = orm_db_q(iq)
+    let pc = period_assert_open(db2, orm_cell_by(iq, 0, "accounting_month"))?
+    if pc.ok == 0 {
+        return act_err(pc.db, 422, pc.err)
+    }
+    db2 = pc.db
     if orm_cell_by(iq, 0, "status") == "posted" {
         return act_err(db2, 409, "фактурата е вече постната")
     }
