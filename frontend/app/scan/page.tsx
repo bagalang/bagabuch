@@ -147,6 +147,11 @@ function ScanInner() {
   const [vies, setVies] = useState<ViesLookup | null>(null);
   const [itemOpenFor, setItemOpenFor] = useState<number | null>(null);
   const [itemQuery, setItemQuery] = useState("");
+  const [addingProduct, setAddingProduct] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newCode, setNewCode] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState("");
 
   const loadLookups = useCallback(async () => {
     try {
@@ -235,6 +240,17 @@ function ScanInner() {
     const scanned = lines[i]?.description || "";
     setItemOpenFor(i);
     setItemQuery(scanned);
+    setAddingProduct(false);
+    setNewName(scanned);
+    setNewCode("");
+    setCreateError("");
+  };
+
+  const closeProductPicker = () => {
+    setItemOpenFor(null);
+    setItemQuery("");
+    setAddingProduct(false);
+    setCreateError("");
   };
 
   const pickProduct = (i: number, p: Product) => {
@@ -244,8 +260,36 @@ function ScanInner() {
       unit: p.unit || "C62",
       vat_rate: p.vat_rate || "20",
     });
-    setItemOpenFor(null);
-    setItemQuery("");
+    closeProductPicker();
+  };
+
+  const createProduct = async () => {
+    if (itemOpenFor === null) return;
+    const name = newName.trim();
+    if (!name) {
+      setCreateError(t("scan.need_product_name"));
+      return;
+    }
+    const line = lines[itemOpenFor];
+    setCreating(true);
+    setCreateError("");
+    try {
+      const created = await api.post<Product>("/v1/products", {
+        name,
+        code: newCode.trim(),
+        description: line.description || name,
+        unit: line.unit || "C62",
+        price: line.unit_price || "0",
+        vat_rate: line.vat_rate || "20",
+        is_active: true,
+      });
+      setProducts((prev) => [...prev, created]);
+      pickProduct(itemOpenFor, created);
+    } catch (e) {
+      setCreateError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setCreating(false);
+    }
   };
 
   const clearProduct = (i: number) => {
@@ -766,13 +810,7 @@ function ScanInner() {
           </div>
 
           {itemOpenFor !== null && (
-            <div
-              className="modal-backdrop"
-              onClick={() => {
-                setItemOpenFor(null);
-                setItemQuery("");
-              }}
-            >
+            <div className="modal-backdrop" onClick={closeProductPicker}>
               <div
                 className="card modal picker-modal"
                 onClick={(e) => e.stopPropagation()}
@@ -784,34 +822,99 @@ function ScanInner() {
                     ? ` — ${lines[itemOpenFor].description}`
                     : ""}
                 </p>
-                <input
-                  className="input"
-                  autoFocus
-                  value={itemQuery}
-                  onChange={(e) => setItemQuery(e.target.value)}
-                  placeholder={t("invoices.search")}
-                />
-                <div className="picker-list">
-                  {filteredProducts.map((p) => (
-                    <button
-                      type="button"
-                      key={p.id}
-                      className="picker-item"
-                      onClick={() => pickProduct(itemOpenFor, p)}
-                    >
-                      <b>
-                        {p.code ? `${p.code} — ` : ""}
-                        {p.name}
-                      </b>
-                      <span className="muted">
-                        {p.price} · ДДС {p.vat_rate}%
-                      </span>
-                    </button>
-                  ))}
-                  {filteredProducts.length === 0 && (
-                    <div className="muted">{t("common.empty")}</div>
-                  )}
-                </div>
+                {!addingProduct ? (
+                  <>
+                    <input
+                      className="input"
+                      autoFocus
+                      value={itemQuery}
+                      onChange={(e) => setItemQuery(e.target.value)}
+                      placeholder={t("invoices.search")}
+                    />
+                    <div className="picker-list">
+                      {filteredProducts.map((p) => (
+                        <button
+                          type="button"
+                          key={p.id}
+                          className="picker-item"
+                          onClick={() => pickProduct(itemOpenFor, p)}
+                        >
+                          <b>
+                            {p.code ? `${p.code} — ` : ""}
+                            {p.name}
+                          </b>
+                          <span className="muted">
+                            {p.price} · ДДС {p.vat_rate}%
+                          </span>
+                        </button>
+                      ))}
+                      {filteredProducts.length === 0 && (
+                        <div className="muted">{t("common.empty")}</div>
+                      )}
+                    </div>
+                    <div className="form-actions" style={{ marginTop: 12 }}>
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={() => {
+                          setAddingProduct(true);
+                          setNewName(
+                            itemQuery.trim() ||
+                              lines[itemOpenFor]?.description ||
+                              ""
+                          );
+                          setCreateError("");
+                        }}
+                      >
+                        + {t("scan.add_product")}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div>
+                    <p className="muted">{t("scan.add_product_hint")}</p>
+                    {createError && (
+                      <div className="error-text" style={{ marginBottom: 8 }}>
+                        {createError}
+                      </div>
+                    )}
+                    <div className="field">
+                      <label className="label">{t("products.name")}</label>
+                      <input
+                        className="input"
+                        autoFocus
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                      />
+                    </div>
+                    <div className="field">
+                      <label className="label">{t("products.code")}</label>
+                      <input
+                        className="input"
+                        value={newCode}
+                        onChange={(e) => setNewCode(e.target.value)}
+                      />
+                    </div>
+                    <div className="form-actions">
+                      <button
+                        type="button"
+                        className="btn"
+                        onClick={() => setAddingProduct(false)}
+                        disabled={creating}
+                      >
+                        {t("common.back")}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={createProduct}
+                        disabled={creating}
+                      >
+                        {creating ? t("scan.creating") : t("common.create")}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
