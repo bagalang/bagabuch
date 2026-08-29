@@ -8,6 +8,10 @@ import { api, ListResponse } from "../../lib/api";
 import { useI18n } from "../../components/I18nProvider";
 import { RequireAuth } from "../../components/RequireAuth";
 import { CrudPage, CrudConfig } from "../../components/CrudPage";
+import {
+  CompanyLocation,
+  fetchCompanyLocations,
+} from "../../lib/locations";
 
 interface Fac {
   id: number;
@@ -38,6 +42,7 @@ interface Fa {
   model: string;
   responsible_person: string;
   is_conserved: number;
+  location_id?: number;
 }
 
 interface DepItem {
@@ -80,6 +85,7 @@ function FaInner() {
 
   const [assets, setAssets] = useState<Fa[]>([]);
   const [categories, setCategories] = useState<Fac[]>([]);
+  const [locations, setLocations] = useState<CompanyLocation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -116,6 +122,7 @@ function FaInner() {
       setAssets(a.items ?? []);
       const c = await api.get<ListResponse<Fac>>("/v1/fixed-asset-categories");
       setCategories(c.items ?? []);
+      setLocations(await fetchCompanyLocations());
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -148,6 +155,7 @@ function FaInner() {
       manufacturer: "",
       model: "",
       responsible_person: "",
+      location_id: "",
       is_conserved: false,
     });
     setEditing(null);
@@ -173,6 +181,7 @@ function FaInner() {
       manufacturer: a.manufacturer,
       model: a.model,
       responsible_person: a.responsible_person,
+      location_id: a.location_id ? String(a.location_id) : "",
       is_conserved: a.is_conserved === 1,
     });
     setEditing(a);
@@ -205,6 +214,7 @@ function FaInner() {
         manufacturer: form.manufacturer,
         model: form.model,
         responsible_person: form.responsible_person,
+        location_id: Number(form.location_id) || 0,
         is_conserved: form.is_conserved ? 1 : 0,
       };
       if (editing) {
@@ -284,7 +294,7 @@ function FaInner() {
       } else if (actionType === "move") {
         await api.post(`/v1/fixed-assets/${actionModal.id}/move`, {
           ...common,
-          location: actionLocation,
+          location_id: Number(actionLocation) || 0,
         });
       } else if (actionType === "conserve") {
         await api.post(`/v1/fixed-assets/${actionModal.id}/conserve`, common);
@@ -374,6 +384,7 @@ function FaInner() {
                     <th>{t("fa.cost")}</th>
                     <th>{t("fa.accumulated")}</th>
                     <th>{t("fa.status")}</th>
+                    <th>{t("fa.location")}</th>
                     <th>{t("common.actions")}</th>
                   </tr>
                 </thead>
@@ -387,6 +398,9 @@ function FaInner() {
                       <td>{a.cost}</td>
                       <td>{a.accumulated_depreciation}</td>
                       <td>{t(`fa.status.${a.status}`)}</td>
+                      <td>
+                        {locations.find((l) => l.id === a.location_id)?.name ?? ""}
+                      </td>
                       <td>
                         <button className="btn btn-sm" onClick={() => openAction(a)}>
                           {t("fa.action")}
@@ -404,7 +418,7 @@ function FaInner() {
                     </tr>
                     {eventsFor === a.id && (
                       <tr>
-                        <td colSpan={7}>
+                        <td colSpan={8}>
                           <table className="table">
                             <thead>
                               <tr>
@@ -542,12 +556,28 @@ function FaInner() {
                 {actionType === "move" && (
                   <div className="field">
                     <label className="label">{t("fa.action.location")} *</label>
-                    <input
-                      className="input"
-                      value={actionLocation}
-                      onChange={(e) => setActionLocation(e.target.value)}
-                      required
-                    />
+                    {locations.length > 0 ? (
+                      <select
+                        className="select"
+                        value={actionLocation}
+                        onChange={(e) => setActionLocation(e.target.value)}
+                        required
+                      >
+                        <option value="">—</option>
+                        {locations.map((loc) => (
+                          <option key={loc.id} value={loc.id}>
+                            {loc.name}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        className="input"
+                        value={actionLocation}
+                        onChange={(e) => setActionLocation(e.target.value)}
+                        required
+                      />
+                    )}
                   </div>
                 )}
                 {actionType === "dispose" && (
@@ -749,6 +779,23 @@ function FaInner() {
                     onChange={(e) => setField("responsible_person", e.target.value)}
                   />
                 </div>
+                {locations.length > 0 && (
+                  <div className="field">
+                    <label className="label">{t("fa.location")}</label>
+                    <select
+                      className="select"
+                      value={String(form.location_id ?? "")}
+                      onChange={(e) => setField("location_id", e.target.value)}
+                    >
+                      <option value="">—</option>
+                      {locations.map((loc) => (
+                        <option key={loc.id} value={loc.id}>
+                          {loc.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div className="field">
                   <label className="label">{t("fa.is_conserved")}</label>
                   <input

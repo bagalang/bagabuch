@@ -46,8 +46,8 @@ fn resolve_account_id(db: OrmDb, preferred_id: i64, fallback: str, out_id: Vec<i
     return resolve_account(db, fallback, out_id)?
 }
 
-fn post_jl(db: OrmDb, entry_id: i64, account_id: i64, direction: str, amount: str, vat_amount: str, counterpart_id: i64, product_id: i64) -> InvResult !IO !Net {
-    let li = journal_line_insert(db, entry_id, account_id, direction, amount, vat_amount, counterpart_id, product_id)?
+fn post_jl(db: OrmDb, entry_id: i64, account_id: i64, direction: str, amount: str, vat_amount: str, counterpart_id: i64, product_id: i64, location_id: i64) -> InvResult !IO !Net {
+    let li = journal_line_insert(db, entry_id, account_id, direction, amount, vat_amount, counterpart_id, product_id, location_id)?
     if orm_ok(li) == 0 {
         return inv_err(orm_db_exec(li), orm_err_exec(li))
     }
@@ -103,6 +103,7 @@ fn act_invoices_post(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     let issue_date = orm_cell_by(iq, 0, "issue_date")
     let number = orm_cell_by(iq, 0, "number")
     let accounting_month = orm_cell_by(iq, 0, "accounting_month")
+    let location_id = orm_cell_by_i64(iq, 0, "location_id")
     let mut counterpart_name = ""
     let mut counterpart_vat_number = ""
     if counterpart_id > 0 {
@@ -171,7 +172,7 @@ fn act_invoices_post(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         do_stock = 1
     }
     if direction == "out" {
-        let p1 = post_jl(db2, entry_id, acc_cust, "debit", total_amount, "0", counterpart_id, 0)?
+        let p1 = post_jl(db2, entry_id, acc_cust, "debit", total_amount, "0", counterpart_id, 0, location_id)?
         if p1.ok == 0 { return act_err_rb(p1.db, 500, p1.err) }
         db2 = p1.db
         let mut i: i64 = 0
@@ -202,12 +203,12 @@ fn act_invoices_post(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
             }
             db2 = rr.db
             let revenue_id = vec_get(ids, 0)
-            let p2 = post_jl(db2, entry_id, revenue_id, "credit", net, "0", counterpart_id, pid)?
+            let p2 = post_jl(db2, entry_id, revenue_id, "credit", net, "0", counterpart_id, pid, location_id)?
             if p2.ok == 0 { return act_err_rb(p2.db, 500, p2.err) }
             db2 = p2.db
             if do_stock == 1 && is_inv == 1 {
                 let qty = orm_cell_by(lq, i, "quantity")
-                let issued = inv_issue(db2, pid, qty, method, pname)?
+                let issued = inv_issue(db2, pid, qty, method, pname, location_id)?
                 if issued.ok == 0 {
                     return act_err_rb(issued.db, 422, issued.err)
                 }
@@ -220,17 +221,17 @@ fn act_invoices_post(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
                     }
                     db2 = ri.db
                     let inventory_id = vec_get(iids, 0)
-                    let w1 = post_jl(db2, entry_id, revenue_id, "debit", issued.cost, "0", counterpart_id, pid)?
+                    let w1 = post_jl(db2, entry_id, revenue_id, "debit", issued.cost, "0", counterpart_id, pid, location_id)?
                     if w1.ok == 0 { return act_err_rb(w1.db, 500, w1.err) }
                     db2 = w1.db
-                    let w2 = post_jl(db2, entry_id, inventory_id, "credit", issued.cost, "0", counterpart_id, pid)?
+                    let w2 = post_jl(db2, entry_id, inventory_id, "credit", issued.cost, "0", counterpart_id, pid, location_id)?
                     if w2.ok == 0 { return act_err_rb(w2.db, 500, w2.err) }
                     db2 = w2.db
                 }
             }
             i = i + 1
         }
-        let p3 = post_jl(db2, entry_id, acc_vat_out, "credit", vat_amount, vat_amount, 0, 0)?
+        let p3 = post_jl(db2, entry_id, acc_vat_out, "credit", vat_amount, vat_amount, 0, 0, location_id)?
         if p3.ok == 0 { return act_err_rb(p3.db, 500, p3.err) }
         db2 = p3.db
     } else {
@@ -264,11 +265,11 @@ fn act_invoices_post(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
             }
             db2 = rr.db
             let debit_id = vec_get(ids, 0)
-            let p1 = post_jl(db2, entry_id, debit_id, "debit", net, "0", counterpart_id, pid)?
+            let p1 = post_jl(db2, entry_id, debit_id, "debit", net, "0", counterpart_id, pid, location_id)?
             if p1.ok == 0 { return act_err_rb(p1.db, 500, p1.err) }
             db2 = p1.db
             if do_stock == 1 && is_inv == 1 && pid > 0 {
-                let rec = inv_receive(db2, pid, id, orm_cell_by_i64(lq, i, "id"), issue_date, qty, unit_price)?
+                let rec = inv_receive(db2, pid, id, orm_cell_by_i64(lq, i, "id"), issue_date, qty, unit_price, location_id)?
                 if rec.ok == 0 {
                     return act_err_rb(rec.db, 422, rec.err)
                 }
@@ -276,10 +277,10 @@ fn act_invoices_post(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
             }
             i = i + 1
         }
-        let p2 = post_jl(db2, entry_id, acc_vat_in, "debit", vat_amount, vat_amount, 0, 0)?
+        let p2 = post_jl(db2, entry_id, acc_vat_in, "debit", vat_amount, vat_amount, 0, 0, location_id)?
         if p2.ok == 0 { return act_err_rb(p2.db, 500, p2.err) }
         db2 = p2.db
-        let p3 = post_jl(db2, entry_id, acc_sup, "credit", total_amount, "0", counterpart_id, 0)?
+        let p3 = post_jl(db2, entry_id, acc_sup, "credit", total_amount, "0", counterpart_id, 0, location_id)?
         if p3.ok == 0 { return act_err_rb(p3.db, 500, p3.err) }
         db2 = p3.db
     }

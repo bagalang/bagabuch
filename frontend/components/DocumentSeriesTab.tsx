@@ -14,7 +14,7 @@ export interface DocSeries {
   next_number?: string;
 }
 
-const SERIES_TYPES = [DOC_TYPE_PROFORMA, ...DOC_TYPES_OUT];
+const SERIES_TYPES = [DOC_TYPE_PROFORMA, ...DOC_TYPES_OUT, "internal"];
 
 const DEFAULTS: { nameKey: string; types: string[] }[] = [
   { nameKey: "settings.series.default.invoices", types: ["01", "02", "03"] },
@@ -23,6 +23,7 @@ const DEFAULTS: { nameKey: string; types: string[] }[] = [
   { nameKey: "settings.series.default.protocols", types: ["09", "29", "50", "91", "93", "94", "95"] },
   { nameKey: "settings.series.default.reports", types: ["81", "82", "83", "84", "85"] },
   { nameKey: "settings.series.default.goods", types: ["04"] },
+  { nameKey: "settings.series.default.internal", types: ["internal"] },
 ];
 
 function parseTypes(csv: string): string[] {

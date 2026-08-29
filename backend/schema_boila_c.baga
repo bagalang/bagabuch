@@ -70,5 +70,24 @@ fn bagabuch_boila_migrations_c() -> MigrationSet {
         "DROP TABLE IF EXISTS document_series"
     )
     set = migrate_add(set, 20260829002, "index_document_series_company_id", "CREATE INDEX IF NOT EXISTS index_document_series_company_id ON document_series (company_id)", "DROP INDEX IF EXISTS index_document_series_company_id ON document_series")
+    set = migrate_add(set, 20260829003, "add_inventory_lots_location_id", "ALTER TABLE inventory_lots ADD COLUMN location_id BIGINT", "ALTER TABLE inventory_lots DROP COLUMN location_id")
+    set = migrate_add(set, 20260829004, "add_invoices_location_id", "ALTER TABLE invoices ADD COLUMN location_id BIGINT", "ALTER TABLE invoices DROP COLUMN location_id")
+    set = migrate_add(set, 20260829005, "add_journal_lines_location_id", "ALTER TABLE journal_lines ADD COLUMN location_id BIGINT", "ALTER TABLE journal_lines DROP COLUMN location_id")
+    set = migrate_add(set, 20260829006, "add_fixed_assets_location_id", "ALTER TABLE fixed_assets ADD COLUMN location_id BIGINT", "ALTER TABLE fixed_assets DROP COLUMN location_id")
+    set = migrate_add(
+        set,
+        20260829007,
+        "create_internal_docs",
+        "CREATE TABLE IF NOT EXISTS internal_docs (id BIGINT, number TEXT, doc_date TEXT, from_location_id BIGINT, to_location_id BIGINT, status TEXT, notes TEXT, handed_by TEXT, received_by TEXT, created_at TIMESTAMPTZ, PRIMARY KEY (id))",
+        "DROP TABLE IF EXISTS internal_docs"
+    )
+    set = migrate_add(
+        set,
+        20260829008,
+        "create_internal_doc_lines",
+        "CREATE TABLE IF NOT EXISTS internal_doc_lines (id BIGINT, doc_id BIGINT, line_kind TEXT, product_id BIGINT, asset_id BIGINT, quantity NUMERIC, unit_cost NUMERIC, amount NUMERIC, description TEXT, PRIMARY KEY (id))",
+        "DROP TABLE IF EXISTS internal_doc_lines"
+    )
+    set = migrate_add(set, 20260829009, "index_internal_doc_lines_doc_id", "CREATE INDEX IF NOT EXISTS index_internal_doc_lines_doc_id ON internal_doc_lines (doc_id)", "DROP INDEX IF EXISTS index_internal_doc_lines_doc_id ON internal_doc_lines")
     return set
 }

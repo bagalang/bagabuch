@@ -7,6 +7,10 @@
 Изградена по образец на референтната програма в `secret/` (локално, не се качва
 в git).
 
+**Документация (текущо състояние на кода):** виж [`docs/`](docs/README.md) —
+архитектура, модули, документи/обекти, API, конвенции и какво още липсва.
+`PLAN.md` е старата пътна карта от референцията и не е истина за всеки ред.
+
 ## Контекст
 
 2026 година е. България е в еврозоната — основната валута на счетоводството е
@@ -108,18 +112,10 @@ bagabuch/
 
 ## API (основно)
 
-Всичко под `/v1/...`, JSON, JWT Bearer:
-
-| Група | Пътища |
-|-------|--------|
-| system | `GET /health` `/ready` `/v1/meta` `/openapi.json` `/metrics` |
-| auth | `POST /v1/auth/token`, `GET /v1/me` |
-| firms | `/v1/companies` CRUD + `PUT /v1/active-company` |
-| accounts | `/v1/accounts` CRUD |
-| counterparts | `/v1/counterparts` CRUD |
-| products | `/v1/products` CRUD |
-| invoices | `/v1/invoices` CRUD, `POST /v1/invoices/{id}/post`, `GET /v1/invoices/next-number`, print/export (`pdf`, `docx`, `odt`) |
-| journal | `GET /v1/journal`, `GET /v1/journal/{id}` |
+Всичко под `/v1/...`, JSON, JWT Bearer. Пълният списък е в
+[`docs/api.md`](docs/api.md). Накратко: фирми и настройки (обекти, кочани),
+сметкоплан, контрагенти, продукти, фактури (+ пост/печат/UBL), вътрешни
+документи (+ confirm без дневник), дневник, ДДС, SAF-T, ДМА, курсове.
 
 ## Проверки
 

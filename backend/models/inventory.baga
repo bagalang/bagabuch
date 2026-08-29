@@ -24,7 +24,7 @@ fn lot_next_id(db: OrmDb) -> OrmCount !IO !Net {
 }
 
 fn lot_select_sql() -> str {
-    return "SELECT id, product_id, invoice_id, invoice_line_id, received_date, quantity, quantity_remaining, unit_cost FROM inventory_lots"
+    return "SELECT id, product_id, invoice_id, invoice_line_id, received_date, quantity, quantity_remaining, unit_cost, location_id FROM inventory_lots"
 }
 
 fn lot_by_product(db: OrmDb, product_id: i64) -> OrmQuery !IO !Net {
@@ -35,7 +35,7 @@ fn lot_by_product(db: OrmDb, product_id: i64) -> OrmQuery !IO !Net {
     return orm_query_params(db, sql, vals, nulls)?
 }
 
-fn lot_insert(db: OrmDb, product_id: i64, invoice_id: i64, invoice_line_id: i64, received_date: str, quantity: str, quantity_remaining: str, unit_cost: str) -> OrmExec !IO !Net {
+fn lot_insert(db: OrmDb, product_id: i64, invoice_id: i64, invoice_line_id: i64, received_date: str, quantity: str, quantity_remaining: str, unit_cost: str, location_id: i64) -> OrmExec !IO !Net {
     if lot_backend_boila()? == 1 {
         let c = lot_next_id(db)?
         if orm_ok_c(c) == 0 {
@@ -52,6 +52,7 @@ fn lot_insert(db: OrmDb, product_id: i64, invoice_id: i64, invoice_line_id: i64,
         vec_push(cols, "quantity")
         vec_push(cols, "quantity_remaining")
         vec_push(cols, "unit_cost")
+        vec_push(cols, "location_id")
         let vals = vec_new()
         vec_push(vals, int_to_str(nid))
         vec_push(vals, int_to_str(product_id))
@@ -61,6 +62,7 @@ fn lot_insert(db: OrmDb, product_id: i64, invoice_id: i64, invoice_line_id: i64,
         vec_push(vals, quantity)
         vec_push(vals, quantity_remaining)
         vec_push(vals, unit_cost)
+        vec_push(vals, int_to_str(location_id))
         return orm_insert_strs(d, lot_table(), cols, vals)?
     }
     let cols = vec_new()
@@ -71,6 +73,7 @@ fn lot_insert(db: OrmDb, product_id: i64, invoice_id: i64, invoice_line_id: i64,
     vec_push(cols, "quantity")
     vec_push(cols, "quantity_remaining")
     vec_push(cols, "unit_cost")
+    vec_push(cols, "location_id")
     let vals = vec_new()
     vec_push(vals, int_to_str(product_id))
     vec_push(vals, int_to_str(invoice_id))
@@ -79,7 +82,12 @@ fn lot_insert(db: OrmDb, product_id: i64, invoice_id: i64, invoice_line_id: i64,
     vec_push(vals, quantity)
     vec_push(vals, quantity_remaining)
     vec_push(vals, unit_cost)
+    vec_push(vals, int_to_str(location_id))
     return orm_insert_strs(db, lot_table(), cols, vals)?
+}
+
+fn lot_all(db: OrmDb) -> OrmQuery !IO !Net {
+    return orm_query(db, concat(lot_select_sql(), " ORDER BY product_id, id"))?
 }
 
 fn lot_set_remaining(db: OrmDb, id: i64, remaining: str) -> OrmExec !IO !Net {

@@ -26,6 +26,7 @@ const NAV_ITEMS = [
   { href: "/counterparts", key: "nav.counterparts" },
   { href: "/products", key: "nav.products" },
   { href: "/invoices", key: "nav.invoices" },
+  { href: "/internal-docs", key: "nav.internal_docs" },
   { href: "/journal", key: "nav.journal" },
   { href: "/vat", key: "nav.vat" },
   { href: "/exchange-rates", key: "nav.exchange_rates" },

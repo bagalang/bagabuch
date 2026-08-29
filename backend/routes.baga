@@ -18,6 +18,8 @@ import "actions/journal.baga"
 import "actions/vat.baga"
 import "actions/saft.baga"
 import "actions/fixed_assets.baga"
+import "actions/internal_docs.baga"
+import "actions/internal_docs_confirm.baga"
 import "actions/active_company.baga"
 import "actions/exchange_rates.baga"
 import "fmrbaga/app.baga"
@@ -108,6 +110,15 @@ fn RID_UPAR_DELETE() -> i64 { return 134 }
 fn RID_DSER_CREATE() -> i64 { return 135 }
 fn RID_DSER_UPDATE() -> i64 { return 136 }
 fn RID_DSER_DELETE() -> i64 { return 137 }
+fn RID_IDOC_INDEX() -> i64 { return 140 }
+fn RID_IDOC_CREATE() -> i64 { return 141 }
+fn RID_IDOC_SHOW() -> i64 { return 142 }
+fn RID_IDOC_UPDATE() -> i64 { return 143 }
+fn RID_IDOC_DELETE() -> i64 { return 144 }
+fn RID_IDOC_CONFIRM() -> i64 { return 145 }
+fn RID_IDOC_PRINT() -> i64 { return 146 }
+fn RID_IDOC_NEXT() -> i64 { return 147 }
+fn RID_INV_AT_LOC() -> i64 { return 148 }
 
 fn fmr_build_app() -> FmrApp !IO {
     let cfg = fmr_config_load()?
@@ -195,6 +206,15 @@ fn fmr_build_app() -> FmrApp !IO {
     app = fmr_route_meta(app, "GET", "/v1/exchange-rates", RID_EXCHANGE_RATES_INDEX(), "", "exchange-rates", 0, "", "ExchangeRateList", "200", "date")
     app = fmr_route_meta(app, "GET", "/v1/exchange-rates/rate", RID_EXCHANGE_RATES_RATE(), "", "exchange-rates", 0, "", "ExchangeRate", "200", "currency:s,date:s")
     app = fmr_route_meta(app, "POST", "/v1/exchange-rates/import", RID_EXCHANGE_RATES_IMPORT(), "", "exchange-rates", 0, "ExchangeRateImport", "ExchangeRateImportResult", "200", "")
+    app = fmr_route_meta(app, "GET", "/v1/internal-docs", RID_IDOC_INDEX(), "", "internal-docs", 0, "", "InternalDocList", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/internal-docs", RID_IDOC_CREATE(), "", "internal-docs", 0, "InternalDocCreate", "InternalDoc", "201", "")
+    app = fmr_route_meta(app, "GET", "/v1/internal-docs/next-number", RID_IDOC_NEXT(), "", "internal-docs", 0, "", "InternalDocNumber", "200", "")
+    app = fmr_route_meta(app, "GET", "/v1/internal-docs/{id}", RID_IDOC_SHOW(), "", "internal-docs", 0, "", "InternalDoc", "200", "")
+    app = fmr_route_meta(app, "PATCH", "/v1/internal-docs/{id}", RID_IDOC_UPDATE(), "", "internal-docs", 0, "InternalDocUpdate", "InternalDoc", "200", "")
+    app = fmr_route_meta(app, "DELETE", "/v1/internal-docs/{id}", RID_IDOC_DELETE(), "", "internal-docs", 0, "", "-", "204", "")
+    app = fmr_route_meta(app, "POST", "/v1/internal-docs/{id}/confirm", RID_IDOC_CONFIRM(), "", "internal-docs", 0, "", "InternalDoc", "200", "")
+    app = fmr_route_meta(app, "GET", "/v1/internal-docs/{id}/print", RID_IDOC_PRINT(), "", "internal-docs", 0, "", "-", "200", "format:s")
+    app = fmr_route_meta(app, "GET", "/v1/inventory/at-location", RID_INV_AT_LOC(), "", "inventory", 0, "", "StockAtLocation", "200", "location_id")
     return app
 }
 
@@ -294,5 +314,14 @@ fn fmr_dispatch(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net !Random {
     if id == RID_EXCHANGE_RATES_INDEX() { return act_exchange_rates_index(ctx, db)? }
     if id == RID_EXCHANGE_RATES_RATE() { return act_exchange_rates_rate(ctx, db)? }
     if id == RID_EXCHANGE_RATES_IMPORT() { return act_exchange_rates_import(ctx, db)? }
+    if id == RID_IDOC_INDEX() { return act_idoc_index(ctx, db)? }
+    if id == RID_IDOC_CREATE() { return act_idoc_create(ctx, db)? }
+    if id == RID_IDOC_SHOW() { return act_idoc_show(ctx, db)? }
+    if id == RID_IDOC_UPDATE() { return act_idoc_update(ctx, db)? }
+    if id == RID_IDOC_DELETE() { return act_idoc_delete(ctx, db)? }
+    if id == RID_IDOC_CONFIRM() { return act_idoc_confirm(ctx, db)? }
+    if id == RID_IDOC_PRINT() { return act_idoc_print(ctx, db)? }
+    if id == RID_IDOC_NEXT() { return act_idoc_next_number(ctx, db)? }
+    if id == RID_INV_AT_LOC() { return act_inventory_at_location(ctx, db)? }
     return fmr_out(fmr_500("unhandled route"), db)
 }

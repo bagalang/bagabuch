@@ -107,6 +107,7 @@ export interface Invoice {
   vat_exemption_reason?: string;
   original_invoice_id?: number;
   journal_entry_id?: number;
+  location_id?: number;
   lines?: InvoiceLine[];
   counterpart?: InvoiceParty;
   company?: InvoiceParty;

@@ -23,6 +23,11 @@ import { useI18n } from "./I18nProvider";
 import { UnitPicker } from "./UnitPicker";
 import { UnitOfMeasure, unitLabel } from "../lib/units";
 import { VatExemption, filterVatex, vatexLabel } from "../lib/vatExemptions";
+import {
+  CompanyLocation,
+  fetchCompanyLocations,
+  mainLocationId,
+} from "../lib/locations";
 
 interface Counterpart {
   id: number;
@@ -85,6 +90,8 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
   const [itemQuery, setItemQuery] = useState("");
 
   const [lines, setLines] = useState<InvoiceLine[]>([emptyLine()]);
+  const [locations, setLocations] = useState<CompanyLocation[]>([]);
+  const [locationId, setLocationId] = useState("0");
 
   const loadLookups = useCallback(async () => {
     try {
@@ -102,6 +109,11 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
       setUnits(un.items ?? []);
       setExemptions(ex.items ?? []);
       setVatRegistered(Number((co as { is_vat_registered?: number }).is_vat_registered ?? 1) === 1);
+      const locs = await fetchCompanyLocations();
+      setLocations(locs);
+      if (mode === "create" && locs.length > 0) {
+        setLocationId(String(mainLocationId(locs)));
+      }
     } catch {
       /* lookup failure is non-fatal */
     }
@@ -155,6 +167,7 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
         setCurrency(inv.currency || "EUR");
         setCurrencyRate(inv.currency_rate || "1");
         setPaymentMethod(inv.payment_method || "");
+        setLocationId(String(inv.location_id || 0));
         setNotes(inv.notes || "");
         setDiscountPercent(inv.discount_percent || "0");
         setVatExemption(inv.vat_exemption_reason || "");
@@ -289,6 +302,7 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
         discount_amount: totals.discount,
         vat_exemption_reason: vatExemption,
         original_invoice_id: originalInvoiceId ? Number(originalInvoiceId) : 0,
+        location_id: Number(locationId) || 0,
         lines: payloadLines,
       };
       if (mode === "edit" && invoiceId) {
@@ -343,6 +357,23 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
               <option value="in">{t("invoices.direction.in")}</option>
             </select>
           </div>
+          {locations.length > 0 && (
+            <div className="field">
+              <label className="label">{t("invoices.location")}</label>
+              <select
+                className="select"
+                value={locationId}
+                onChange={(e) => setLocationId(e.target.value)}
+              >
+                {locations.map((loc) => (
+                  <option key={loc.id} value={loc.id}>
+                    {loc.name}
+                    {Number(loc.is_main) ? ` (${t("settings.is_main.yes")})` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="field">
             <label className="label">
               {t("invoices.number")}

@@ -102,6 +102,14 @@ fn act_invoices_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     let discount_percent = jopt_str(b.doc, b.root, "discount_percent", "0")
     let discount_amount = jopt_str(b.doc, b.root, "discount_amount", "0")
     let vat_exemption_reason = jopt_str(b.doc, b.root, "vat_exemption_reason", "")
+    let loc = jreq_i64(b.doc, b.root, "location_id")
+    let mut location_id: i64 = 0
+    if loc.present == 1 {
+        if loc.ok == 0 {
+            return act_422_field(db, "location_id", loc)
+        }
+        location_id = loc.num
+    }
     if orm_ok_db(db) == 0 {
         return act_err(db, 503, "database unavailable")
     }
@@ -127,6 +135,17 @@ fn act_invoices_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     }
     let new_id = orm_cell_by_i64(hq, 0, "id")
     let mut db2 = orm_db_q(hq)
+    if location_id > 0 {
+        let lcols = vec_new()
+        vec_push(lcols, "location_id")
+        let lvals = vec_new()
+        vec_push(lvals, int_to_str(location_id))
+        let lup = orm_update_by_id(db2, invoice_table(), new_id, lcols, lvals)?
+        if orm_ok(lup) == 0 {
+            return act_err_rb(orm_db_exec(lup), 500, orm_err_exec(lup))
+        }
+        db2 = orm_db_exec(lup)
+    }
     // Редове: всеки носи сумите си; тоталите се преизчисляват накрая.
     let lines_node = json_get(b.doc, b.root, "lines")
     if lines_node >= 0 && json_tag(b.doc, lines_node) == 5 {
@@ -433,6 +452,14 @@ fn act_invoices_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         }
         vec_push(cols, "vat_exemption_reason")
         vec_push(vals, vat_exemption_reason.val)
+    }
+    let locu = jreq_i64(b.doc, b.root, "location_id")
+    if locu.present == 1 {
+        if locu.ok == 0 {
+            return act_422_field(dbu, "location_id", locu)
+        }
+        vec_push(cols, "location_id")
+        vec_push(vals, int_to_str(locu.num))
     }
     let lines_node = json_get(b.doc, b.root, "lines")
     let mut has_lines: i64 = 0

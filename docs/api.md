@@ -1,0 +1,67 @@
+# API
+
+База: `http://localhost:8080`. JSON, JWT Bearer (`POST /v1/auth/token`).
+Route id-тата в `backend/routes.baga` са стабилни — не се пренареждат
+(OpenAPI operationId). Нови пътища взимат следващ свободен id (140+ са
+вътрешните документи). Статичният сегмент (`next-number`) е **преди** `{id}`.
+
+Пълен OpenAPI: `GET /openapi.json`.
+
+## Система и вход
+
+| Метод | Път |
+|--------|-----|
+| GET | `/health` `/ready` `/readyz` `/v1/meta` `/openapi.json` `/metrics` |
+| POST | `/v1/auth/token` |
+| GET | `/v1/me` |
+| GET/PUT | `/v1/active-company` |
+
+## Фирма и настройки
+
+| Метод | Път |
+|--------|-----|
+| CRUD | `/v1/companies` |
+| GET | `/v1/companies/{id}/settings` |
+| POST/PATCH/DELETE | `/v1/companies/{id}/locations`, `/v1/company-locations/{id}` |
+| също | `beneficial-owners`, `ultimate-parents`, `document-series` |
+
+## Номенклатури
+
+`/v1/accounts`, `/v1/counterparts` (+ `/vies-lookup`, `POST /vies`),
+`/v1/products`, `/v1/units`, `/v1/vat-exemptions`.
+
+## Фактури и дневник
+
+| Метод | Път |
+|--------|-----|
+| CRUD | `/v1/invoices` |
+| GET | `/v1/invoices/next-number?document_type=&direction=` |
+| POST | `/v1/invoices/{id}/post` |
+| GET | `/v1/invoices/{id}/print?format=pdf\|docx\|odt` |
+| GET | `/v1/invoices/{id}/ubl` |
+| GET/POST | `/v1/journal`, GET `/v1/journal/{id}` |
+
+## Вътрешни документи и склад
+
+| Метод | Път |
+|--------|-----|
+| CRUD | `/v1/internal-docs` |
+| GET | `/v1/internal-docs/next-number` |
+| POST | `/v1/internal-docs/{id}/confirm` — **без** journal_entries |
+| GET | `/v1/internal-docs/{id}/print?format=` |
+| GET | `/v1/inventory/at-location?location_id=` |
+
+## ДДС, SAF-T, валута, ДМА
+
+| Метод | Път |
+|--------|-----|
+| GET | `/v1/vat/registers?period=` `/v1/vat/return?period=` |
+| GET | `/v1/saft/export?period=&mode=monthly\|ondemand\|annual` |
+| GET | `/v1/exchange-rates`, `/v1/exchange-rates/rate?currency=&date=` |
+| POST | `/v1/exchange-rates/import` |
+| CRUD | `/v1/fixed-asset-categories`, `/v1/fixed-assets` |
+| POST | `/v1/fixed-assets/depreciation/preview` и `/post` |
+| POST | `/v1/fixed-assets/{id}/revalue\|move\|conserve\|end-conserve\|dispose` |
+| GET | `/v1/fixed-assets/{id}/events` |
+
+`move` приема JSON `{ "location_id": N, "event_date", "reason" }`.

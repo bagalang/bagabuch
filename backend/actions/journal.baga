@@ -206,7 +206,7 @@ fn act_journal_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     db2 = orm_db_q(eq)
     i = 0
     while i < n {
-        let li = journal_line_insert(db2, entry_id, vec_get(line_accs, i), vec_get(line_dirs, i), vec_get(line_amounts, i), vec_get(line_vats, i), counterpart_id, 0)?
+        let li = journal_line_insert(db2, entry_id, vec_get(line_accs, i), vec_get(line_dirs, i), vec_get(line_amounts, i), vec_get(line_vats, i), counterpart_id, 0, 0)?
         if orm_ok(li) == 0 {
             return act_err_rb(orm_db_exec(li), 500, orm_err_exec(li))
         }

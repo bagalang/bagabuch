@@ -56,6 +56,7 @@ fn invoice_to_json(q: OrmQuery, row: i64) -> JObj {
     o = jobj_str(o, "discount_percent", orm_cell_by(q, row, "discount_percent"))
     o = jobj_str(o, "discount_amount", orm_cell_by(q, row, "discount_amount"))
     o = jobj_str(o, "vat_exemption_reason", orm_cell_by(q, row, "vat_exemption_reason"))
+    o = jobj_i64(o, "location_id", orm_cell_by_i64(q, row, "location_id"))
     let oid = orm_cell_by_i64(q, row, "original_invoice_id")
     if oid > 0 {
         o = jobj_i64(o, "original_invoice_id", oid)
@@ -98,7 +99,7 @@ fn invoice_line_to_json(q: OrmQuery, row: i64) -> JObj {
 }
 
 fn invoice_select_cols() -> str {
-    return "id, direction, number, document_type, original_invoice_id, issue_date, due_date, tax_event_date, accounting_month, counterpart_id, currency, currency_rate, net_amount, vat_amount, total_amount, status, payment_method, notes, discount_percent, discount_amount, vat_exemption_reason, journal_entry_id, created_at"
+    return "id, direction, number, document_type, original_invoice_id, issue_date, due_date, tax_event_date, accounting_month, counterpart_id, currency, currency_rate, net_amount, vat_amount, total_amount, status, payment_method, notes, discount_percent, discount_amount, vat_exemption_reason, journal_entry_id, location_id, created_at"
 }
 
 fn invoice_select_sql() -> str {

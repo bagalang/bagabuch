@@ -70,5 +70,24 @@ fn bagabuch_migrations_c() -> MigrationSet {
         "DROP TABLE IF EXISTS document_series"
     )
     set = migrate_add(set, 20260829102, "index_document_series_company_id", "CREATE INDEX IF NOT EXISTS index_document_series_company_id ON document_series (company_id)", "DROP INDEX IF EXISTS index_document_series_company_id")
+    set = migrate_add(set, 20260829103, "add_inventory_lots_location_id", "ALTER TABLE inventory_lots ADD COLUMN location_id BIGINT NOT NULL DEFAULT 0", "ALTER TABLE inventory_lots DROP COLUMN location_id")
+    set = migrate_add(set, 20260829104, "add_invoices_location_id", "ALTER TABLE invoices ADD COLUMN location_id BIGINT NOT NULL DEFAULT 0", "ALTER TABLE invoices DROP COLUMN location_id")
+    set = migrate_add(set, 20260829105, "add_journal_lines_location_id", "ALTER TABLE journal_lines ADD COLUMN location_id BIGINT NOT NULL DEFAULT 0", "ALTER TABLE journal_lines DROP COLUMN location_id")
+    set = migrate_add(set, 20260829106, "add_fixed_assets_location_id", "ALTER TABLE fixed_assets ADD COLUMN location_id BIGINT NOT NULL DEFAULT 0", "ALTER TABLE fixed_assets DROP COLUMN location_id")
+    set = migrate_add(
+        set,
+        20260829107,
+        "create_internal_docs",
+        "CREATE TABLE internal_docs (id BIGSERIAL PRIMARY KEY, number TEXT NOT NULL DEFAULT '', doc_date TEXT NOT NULL DEFAULT '', from_location_id BIGINT NOT NULL DEFAULT 0, to_location_id BIGINT NOT NULL DEFAULT 0, status TEXT NOT NULL DEFAULT 'draft', notes TEXT NOT NULL DEFAULT '', handed_by TEXT NOT NULL DEFAULT '', received_by TEXT NOT NULL DEFAULT '', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())",
+        "DROP TABLE IF EXISTS internal_docs"
+    )
+    set = migrate_add(
+        set,
+        20260829108,
+        "create_internal_doc_lines",
+        "CREATE TABLE internal_doc_lines (id BIGSERIAL PRIMARY KEY, doc_id BIGINT NOT NULL REFERENCES internal_docs(id) ON DELETE CASCADE, line_kind TEXT NOT NULL DEFAULT 'product', product_id BIGINT NOT NULL DEFAULT 0, asset_id BIGINT NOT NULL DEFAULT 0, quantity NUMERIC(18,4) NOT NULL DEFAULT 0, unit_cost NUMERIC(18,4) NOT NULL DEFAULT 0, amount NUMERIC(18,2) NOT NULL DEFAULT 0, description TEXT NOT NULL DEFAULT '')",
+        "DROP TABLE IF EXISTS internal_doc_lines"
+    )
+    set = migrate_add(set, 20260829109, "index_internal_doc_lines_doc_id", "CREATE INDEX IF NOT EXISTS index_internal_doc_lines_doc_id ON internal_doc_lines (doc_id)", "DROP INDEX IF EXISTS index_internal_doc_lines_doc_id")
     return set
 }

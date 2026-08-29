@@ -171,7 +171,7 @@ fn act_products_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     if is_inventory == 1 {
         let qp = dec_parse(stock_quantity.val)
         if qp.ok == 1 && dec_cmp(qp.value, dec_zero()) > 0 {
-            let lot = lot_insert(db2, new_id, 0, 0, "", stock_quantity.val, stock_quantity.val, cost_price.val)?
+            let lot = lot_insert(db2, new_id, 0, 0, "", stock_quantity.val, stock_quantity.val, cost_price.val, 0)?
             if orm_ok(lot) == 0 {
                 return act_err(orm_db_exec(lot), 500, orm_err_exec(lot))
             }

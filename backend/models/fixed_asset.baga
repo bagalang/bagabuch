@@ -180,11 +180,12 @@ fn fa_to_json(q: OrmQuery, row: i64) -> JObj {
     o = jobj_str(o, "model", orm_cell_by(q, row, "model"))
     o = jobj_str(o, "responsible_person", orm_cell_by(q, row, "responsible_person"))
     o = jobj_i64(o, "is_conserved", orm_cell_by_i64(q, row, "is_conserved"))
+    o = jobj_i64(o, "location_id", orm_cell_by_i64(q, row, "location_id"))
     return o
 }
 
 fn fa_select_sql() -> str {
-    return "SELECT id, name, inventory_number, category_id, acquisition_date, put_into_service_date, cost, salvage_value, useful_life_months, depreciation_method, accounting_depreciation_rate, tax_depreciation_rate, accumulated_depreciation, tax_accumulated_depreciation, status, serial_number, manufacturer, model, responsible_person, is_conserved FROM fixed_assets"
+    return "SELECT id, name, inventory_number, category_id, acquisition_date, put_into_service_date, cost, salvage_value, useful_life_months, depreciation_method, accounting_depreciation_rate, tax_depreciation_rate, accumulated_depreciation, tax_accumulated_depreciation, status, serial_number, manufacturer, model, responsible_person, is_conserved, location_id FROM fixed_assets"
 }
 
 fn fa_find(db: OrmDb, id: i64) -> OrmQuery !IO !Net {
