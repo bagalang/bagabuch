@@ -32,12 +32,24 @@ async function request<T>(
   const token = getToken();
   if (token) headers["Authorization"] = `Bearer ${token}`;
   if (body !== undefined) headers["Content-Type"] = "application/json";
-  const res = await fetch(`${API_BASE}${path}`, {
-    method,
-    headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
-    cache: "no-store",
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      method,
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+      cache: "no-store",
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg === "Failed to fetch" || msg === "Load failed" || msg === "NetworkError when attempting to fetch resource.") {
+      throw new ApiError(
+        0,
+        "Връзката със сървъра се скъса. Рестартирай backend-а (./scripts/stop.sh && ./scripts/dev.sh) и опитай пак."
+      );
+    }
+    throw e;
+  }
   if (res.status === 204) return undefined as T;
   let data: unknown = null;
   const text = await res.text();
