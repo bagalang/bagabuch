@@ -72,11 +72,19 @@ fn jflex_str(d: JsonDoc, obj: i64, key: str, default_val: str) -> str {
     return default_val
 }
 
+// Клиентът праща гол base64 (без data:...;base64,). Ако все пак има data:
+// префикс, той е в първите ~64 байта — не обхождай целия (голям) низ.
 fn scan_strip_b64(s: str) -> str {
-    let c = str_find(s, ",")
+    let n = len(s)
+    let mut hn = n
+    if hn > 64 {
+        hn = 64
+    }
+    let head = substr(s, 0, hn)
+    let c = str_find(head, ",")
     if c >= 0 {
-        if str_find(s, "base64") >= 0 {
-            return substr(s, c + 1, len(s))
+        if str_find(head, "base64") >= 0 {
+            return substr(s, c + 1, n)
         }
     }
     return s
