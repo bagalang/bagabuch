@@ -105,5 +105,8 @@ fn bagabuch_migrations_c() -> MigrationSet {
     )
     set = migrate_add(set, 20260829112, "index_accounting_periods_year", "CREATE INDEX IF NOT EXISTS index_accounting_periods_year ON accounting_periods (year)", "DROP INDEX IF EXISTS index_accounting_periods_year")
     set = migrate_add(set, 20260829113, "index_opening_balances_fiscal_year", "CREATE INDEX IF NOT EXISTS index_opening_balances_fiscal_year ON opening_balances (fiscal_year)", "DROP INDEX IF EXISTS index_opening_balances_fiscal_year")
+    set = migrate_add(set, 20260829114, "add_counterparts_street_name", "ALTER TABLE counterparts ADD COLUMN street_name TEXT NOT NULL DEFAULT ''", "ALTER TABLE counterparts DROP COLUMN street_name")
+    set = migrate_add(set, 20260829115, "add_counterparts_building_number", "ALTER TABLE counterparts ADD COLUMN building_number TEXT NOT NULL DEFAULT ''", "ALTER TABLE counterparts DROP COLUMN building_number")
+    set = migrate_add(set, 20260829116, "add_counterparts_region", "ALTER TABLE counterparts ADD COLUMN region TEXT NOT NULL DEFAULT ''", "ALTER TABLE counterparts DROP COLUMN region")
     return set
 }

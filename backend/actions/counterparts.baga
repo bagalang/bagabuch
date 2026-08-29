@@ -1,6 +1,7 @@
 // actions/counterparts.baga — контрагенти: CRUD handlers.
 
 import "../models/counterpart.baga"
+import "mistral.baga"
 import "fmrbaga/app.baga"
 import "fmrbaga/ctx.baga"
 import "fmrbaga/action.baga"
@@ -66,13 +67,16 @@ fn act_counterparts_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     let city = jopt_str(b.doc, b.root, "city", "")
     let country = jopt_str(b.doc, b.root, "country", "BG")
     let post_code = jopt_str(b.doc, b.root, "post_code", "")
+    let street_name = jopt_str(b.doc, b.root, "street_name", "")
+    let building_number = jopt_str(b.doc, b.root, "building_number", "")
+    let region = jopt_str(b.doc, b.root, "region", "")
     let contact_person = jopt_str(b.doc, b.root, "contact_person", "")
     let email = jopt_str(b.doc, b.root, "email", "")
     let phone = jopt_str(b.doc, b.root, "phone", "")
     if orm_ok_db(db) == 0 {
         return act_err(db, 503, "database unavailable")
     }
-    let ins = counterpart_create(db, name.val, counterpart_type.val, eik.val, vat_number.val, address.val, vies_address.val, city.val, country.val, post_code.val, contact_person.val, email.val, phone.val)?
+    let ins = counterpart_create(db, name.val, counterpart_type.val, eik.val, vat_number.val, address.val, vies_address.val, city.val, country.val, post_code.val, street_name.val, building_number.val, region.val, contact_person.val, email.val, phone.val)?
     if orm_ok(ins) == 0 {
         return act_err(orm_db_exec(ins), 409, orm_err_exec(ins))
     }
@@ -202,6 +206,30 @@ fn act_counterparts_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         vec_push(cols, "post_code")
         vec_push(vals, post_code.val)
     }
+    let street_name = jreq_str(b.doc, b.root, "street_name")
+    if street_name.present == 1 {
+        if street_name.ok == 0 {
+            return act_422_field(db, "street_name", street_name)
+        }
+        vec_push(cols, "street_name")
+        vec_push(vals, street_name.val)
+    }
+    let building_number = jreq_str(b.doc, b.root, "building_number")
+    if building_number.present == 1 {
+        if building_number.ok == 0 {
+            return act_422_field(db, "building_number", building_number)
+        }
+        vec_push(cols, "building_number")
+        vec_push(vals, building_number.val)
+    }
+    let region = jreq_str(b.doc, b.root, "region")
+    if region.present == 1 {
+        if region.ok == 0 {
+            return act_422_field(db, "region", region)
+        }
+        vec_push(cols, "region")
+        vec_push(vals, region.val)
+    }
     let contact_person = jreq_str(b.doc, b.root, "contact_person")
     if contact_person.present == 1 {
         if contact_person.ok == 0 {
@@ -271,8 +299,9 @@ fn act_counterparts_delete(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
 
 // --- VIES (ЕК) извличане на контрагент по ЕС ДДС номер ---
 // Същият подход като secret/inv (ViesService): REST API на ЕК, нормализация
-// на номера, дългият суров адрес се пази в отделно TEXT поле (vies_address),
-// за да се парсне после по SAF-T BG в структурираните клетки.
+// на номера, дългият суров адрес се пази в vies_address. Ако фирмата има
+// Mistral ключ, адресът се разделя към street_name/building_number/city/
+// post_code/region за SAF-T BG.
 
 struct ViesResult {
     ok: i64,          // 1 = HTTP+JSON ок (валидността е в .valid)
@@ -394,25 +423,36 @@ fn act_counterparts_vies_lookup(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net !Rand
     if vies_vat_shape_ok(vat) == 0 {
         return act_err(db, 422, "vat трябва да е ЕС ДДС номер (напр. BG123456789)")
     }
+    let mk = company_mistral_key(db, auth.ctx.user_sub)?
     let r = vies_fetch(vat)?
     if r.ok == 0 {
-        return act_err(db, 502, r.err)
+        return act_err(mk.db, 502, r.err)
+    }
+    let mut parts = addr_parts_empty()
+    if mk.key != "" && r.address != "" && r.address != "---" {
+        parts = mistral_parse_address(mk.key, r.address, substr(vat, 0, 2))?
     }
     let mut o = jobj_new()
     o = jobj_bool(o, "valid", r.valid)
     o = jobj_str(o, "name", r.name)
     o = jobj_str(o, "address", r.address)
     o = jobj_str(o, "vies_address", r.address)
+    o = jobj_str(o, "street_name", parts.street_name)
+    o = jobj_str(o, "building_number", parts.building_number)
+    o = jobj_str(o, "city", parts.city)
+    o = jobj_str(o, "post_code", parts.post_code)
+    o = jobj_str(o, "region", parts.region)
     o = jobj_str(o, "user_error", r.user_error)
     o = jobj_str(o, "request_date", r.request_date)
     o = jobj_str(o, "vat_number", vat)
     o = jobj_str(o, "country_code", substr(vat, 0, 2))
-    return act_ok(db, o)
+    o = jobj_bool(o, "parse_ok", parts.ok)
+    o = jobj_str(o, "parse_note", vies_parse_note(mk.key, parts))
+    return act_ok(mk.db, o)
 }
 
 // POST /v1/counterparts/vies — създава контрагент от VIES данни.
-// Дългият адрес отива в vies_address (TEXT) и в address; city/post_code
-// остават за парсването по SAF-T BG.
+// Дългият адрес отива в vies_address и address; split полетата — от Mistral.
 fn act_counterparts_vies_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net !Random {
     let auth = act_require_auth(ctx, db)
     if auth.ok == 0 {
@@ -441,12 +481,13 @@ fn act_counterparts_vies_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net !Rand
     if orm_ok_db(db) == 0 {
         return act_err(db, 503, "database unavailable")
     }
+    let mk = company_mistral_key(db, auth.ctx.user_sub)?
     let r = vies_fetch(vat)?
     if r.ok == 0 {
-        return act_err(db, 502, r.err)
+        return act_err(mk.db, 502, r.err)
     }
     if r.valid == 0 {
-        return act_err(db, 422, "ДДС номерът не е намерен във VIES")
+        return act_err(mk.db, 422, "ДДС номерът не е намерен във VIES")
     }
     // name е NOT NULL; някои държави (DE) не връзат име/адрес → "---".
     let mut name = r.name
@@ -462,7 +503,17 @@ fn act_counterparts_vies_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net !Rand
     if cc == "BG" {
         eik = substr(vat, 2, len(vat))
     }
-    let ins = counterpart_create(db, name, counterpart_type.val, eik, vat, addr, addr, "", cc, "", "", "", "")?
+    let mut parts = addr_parts_empty()
+    if mk.key != "" && addr != "" {
+        parts = mistral_parse_address(mk.key, addr, cc)?
+    }
+    let mut city = parts.city
+    let mut post = parts.post_code
+    let mut country = cc
+    if parts.country != "" {
+        country = parts.country
+    }
+    let ins = counterpart_create(mk.db, name, counterpart_type.val, eik, vat, addr, addr, city, country, post, parts.street_name, parts.building_number, parts.region, "", "", "")?
     if orm_ok(ins) == 0 {
         return act_err(orm_db_exec(ins), 409, orm_err_exec(ins))
     }

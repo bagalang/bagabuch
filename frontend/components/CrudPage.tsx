@@ -46,10 +46,17 @@ export interface ViesLookupResponse {
   name: string;
   address: string;
   vies_address: string;
+  street_name?: string;
+  building_number?: string;
+  city?: string;
+  post_code?: string;
+  region?: string;
   user_error: string;
   request_date: string;
   vat_number: string;
   country_code: string;
+  parse_ok?: boolean;
+  parse_note?: string;
 }
 
 export interface CrudConfig {
@@ -87,6 +94,7 @@ export function CrudPage({ config }: { config: CrudConfig }) {
   const [viesLoading, setViesLoading] = useState(false);
   const [viesError, setViesError] = useState("");
   const [viesFilled, setViesFilled] = useState(false);
+  const [viesNote, setViesNote] = useState("");
   const [q, setQ] = useState("");
 
   const load = useCallback(async () => {
@@ -119,6 +127,7 @@ export function CrudPage({ config }: { config: CrudConfig }) {
     setFormError("");
     setViesError("");
     setViesFilled(false);
+    setViesNote("");
     setModalOpen(true);
   };
 
@@ -134,6 +143,7 @@ export function CrudPage({ config }: { config: CrudConfig }) {
     setFormError("");
     setViesError("");
     setViesFilled(false);
+    setViesNote("");
     setModalOpen(true);
   };
 
@@ -143,6 +153,7 @@ export function CrudPage({ config }: { config: CrudConfig }) {
     if (!v) return;
     const vat = String(form[v.vatField] ?? "").trim();
     setViesFilled(false);
+    setViesNote("");
     if (!vat) {
       setViesError(t(v.invalidKey));
       return;
@@ -171,6 +182,7 @@ export function CrudPage({ config }: { config: CrudConfig }) {
         return next;
       });
       setViesFilled(true);
+      setViesNote(data.parse_note ?? "");
     } catch (err) {
       setViesError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -330,6 +342,9 @@ export function CrudPage({ config }: { config: CrudConfig }) {
                   </button>
                   {viesFilled && !viesError && (
                     <span className="muted">{t(config.vies.filledKey)}</span>
+                  )}
+                  {viesNote && !viesError && (
+                    <span className="muted">{viesNote}</span>
                   )}
                   {viesError && <span className="error-text">{viesError}</span>}
                 </div>

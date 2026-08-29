@@ -638,7 +638,7 @@ function SettingsInner() {
           </h3>
           <div className="form-grid">
             <Field label={t("settings.mistral_key")} span={2}>
-              <input className="input" value={keys.mistral_api_key} onChange={(e) => setKeys((k) => ({ ...k, mistral_api_key: e.target.value }))} />
+              <input className="input" type="password" autoComplete="off" value={keys.mistral_api_key} onChange={(e) => setKeys((k) => ({ ...k, mistral_api_key: e.target.value }))} />
               <p className="muted" style={{ fontSize: 12, margin: "4px 0 0" }}>
                 {t("settings.mistral_hint")}
               </p>

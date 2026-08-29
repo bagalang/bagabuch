@@ -21,7 +21,7 @@ PK за таблици от преди P20: `MAX(id)+1` в приложение�
 | `ultimate_parents` | Крайни предприятия-майки |
 | `document_series` | Кочани; `document_types` е CSV от кодове |
 | `accounts` | Сметкоплан; `analytic_type`: none / counterpart / product |
-| `counterparts` | Клиент / доставчик |
+| `counterparts` | Клиент / доставчик; `vies_address` суров, `street_name` / `building_number` / `region` за SAF-T |
 | `products` | Стоки/услуги; складов флаг, сметки, фирмена наличност |
 | `inventory_lots` | Партиди + `location_id` |
 | `invoices` / `invoice_lines` | Данъчни документи + `location_id` |

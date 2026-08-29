@@ -27,7 +27,8 @@ Route id-тата в `backend/routes.baga` са стабилни — не се �
 
 ## Номенклатури
 
-`/v1/accounts`, `/v1/counterparts` (+ `/vies-lookup`, `POST /vies`),
+`/v1/accounts`, `/v1/counterparts` (+ `/vies-lookup` дели адреса ако има
+Mistral ключ, `POST /vies`),
 `/v1/products`, `/v1/units`, `/v1/vat-exemptions`.
 
 ## Фактури и дневник
