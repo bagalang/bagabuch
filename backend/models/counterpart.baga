@@ -94,6 +94,24 @@ fn counterpart_all(db: OrmDb) -> OrmQuery !IO !Net {
     return orm_query(db, concat(counterpart_select_sql(), " ORDER BY id"))?
 }
 
+fn counterpart_by_vat(db: OrmDb, vat_number: str) -> OrmQuery !IO !Net {
+    let sql = concat(counterpart_select_sql(), " WHERE vat_number = $1")
+    let vals = vec_new()
+    vec_push(vals, vat_number)
+    let nulls = vec_new()
+    vec_push(nulls, 0)
+    return orm_query_params(db, sql, vals, nulls)?
+}
+
+fn counterpart_by_eik(db: OrmDb, eik: str) -> OrmQuery !IO !Net {
+    let sql = concat(counterpart_select_sql(), " WHERE eik = $1")
+    let vals = vec_new()
+    vec_push(vals, eik)
+    let nulls = vec_new()
+    vec_push(nulls, 0)
+    return orm_query_params(db, sql, vals, nulls)?
+}
+
 fn counterpart_create(db: OrmDb, name: str, counterpart_type: str, eik: str, vat_number: str, address: str, vies_address: str, city: str, country: str, post_code: str, street_name: str, building_number: str, region: str, contact_person: str, email: str, phone: str) -> OrmExec !IO !Net {
     let ic = counterpart_is_client(counterpart_type)
     let is_ = counterpart_is_supplier(counterpart_type)

@@ -508,6 +508,7 @@ textarea {
   justify-content: flex-start;
   text-align: left;
   margin-bottom: 8px;
+  white-space: normal;
 }
 
 .picker-empty {
@@ -821,8 +822,76 @@ textarea {
   color: var(--danger);
 }
 
+.scan-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.scan-toggle {
+  display: flex;
+  gap: 8px;
+}
+
+.scan-toggle .btn {
+  flex: 1;
+}
+
+.drop-zone {
+  display: block;
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  padding: 36px 16px;
+  text-align: center;
+  cursor: pointer;
+  background: var(--surface-2);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.drop-zone:hover,
+.drop-zone-active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.drop-zone-icon {
+  font-size: 40px;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.scan-suggest {
+  position: absolute;
+  z-index: 5;
+  margin-top: 4px;
+  max-height: 180px;
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  min-width: 220px;
+}
+
+.scan-suggest-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  padding: 8px 12px;
+  color: inherit;
+}
+
+.scan-suggest-item:hover {
+  background: var(--surface-2);
+}
+
 @media (max-width: 800px) {
   .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .scan-grid {
     grid-template-columns: 1fr;
   }
   .form-grid-3 {

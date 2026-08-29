@@ -88,3 +88,14 @@ VIES (нужен JWT; ключът е на **активната** фирма):
 | GET | `/v1/fixed-assets/{id}/events` |
 
 `move` приема JSON `{ "location_id": N, "event_date", "reason" }`.
+
+## Сканиране
+
+| Метод | Път | Бележка |
+|--------|-----|---------|
+| POST | `/v1/scans/extract` | `{filename, mime, content_base64, direction: in\|out}` → JSON на фактура с редове |
+| GET | `/v1/product-name-mappings?counterpart_id=` | запомнени имена от документи |
+| POST | `/v1/product-name-mappings` | `{counterpart_id, items: [{scanned_name, product_id}]}` |
+
+Черновата се записва с обикновения `POST /v1/invoices`. Без ключ extract връща 422.
+Модели: OCR `mistral-ocr-latest`, JSON `mistral-small-latest` (евтиният път).

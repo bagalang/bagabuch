@@ -24,6 +24,7 @@ import "actions/periods.baga"
 import "actions/opening_balances.baga"
 import "actions/active_company.baga"
 import "actions/exchange_rates.baga"
+import "actions/scans.baga"
 import "fmrbaga/app.baga"
 import "fmrbaga/ctx.baga"
 import "fmrbaga/deps.baga"
@@ -128,6 +129,9 @@ fn RID_OB_INDEX() -> i64 { return 153 }
 fn RID_OB_CREATE() -> i64 { return 154 }
 fn RID_OB_UPDATE() -> i64 { return 155 }
 fn RID_OB_DELETE() -> i64 { return 156 }
+fn RID_SCANS_EXTRACT() -> i64 { return 160 }
+fn RID_PNMAP_INDEX() -> i64 { return 161 }
+fn RID_PNMAP_SAVE() -> i64 { return 162 }
 
 fn fmr_build_app() -> FmrApp !IO {
     let cfg = fmr_config_load()?
@@ -231,6 +235,9 @@ fn fmr_build_app() -> FmrApp !IO {
     app = fmr_route_meta(app, "POST", "/v1/opening-balances", RID_OB_CREATE(), "", "opening-balances", 0, "OpeningBalanceCreate", "OpeningBalance", "201", "")
     app = fmr_route_meta(app, "PATCH", "/v1/opening-balances/{id}", RID_OB_UPDATE(), "", "opening-balances", 0, "OpeningBalanceUpdate", "OpeningBalance", "200", "")
     app = fmr_route_meta(app, "DELETE", "/v1/opening-balances/{id}", RID_OB_DELETE(), "", "opening-balances", 0, "", "-", "204", "")
+    app = fmr_route_meta(app, "POST", "/v1/scans/extract", RID_SCANS_EXTRACT(), "", "scans", 0, "ScanExtract", "ScanResult", "200", "")
+    app = fmr_route_meta(app, "GET", "/v1/product-name-mappings", RID_PNMAP_INDEX(), "", "scans", 0, "", "MappingList", "200", "counterpart_id")
+    app = fmr_route_meta(app, "POST", "/v1/product-name-mappings", RID_PNMAP_SAVE(), "", "scans", 0, "MappingSave", "MappingList", "200", "")
     return app
 }
 
@@ -346,5 +353,8 @@ fn fmr_dispatch(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net !Random {
     if id == RID_OB_CREATE() { return act_ob_create(ctx, db)? }
     if id == RID_OB_UPDATE() { return act_ob_update(ctx, db)? }
     if id == RID_OB_DELETE() { return act_ob_delete(ctx, db)? }
+    if id == RID_SCANS_EXTRACT() { return act_scans_extract(ctx, db)? }
+    if id == RID_PNMAP_INDEX() { return act_pnmap_index(ctx, db)? }
+    if id == RID_PNMAP_SAVE() { return act_pnmap_save(ctx, db)? }
     return fmr_out(fmr_500("unhandled route"), db)
 }

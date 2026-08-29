@@ -56,7 +56,8 @@
 | Mistral (`api.mistral.ai`) | `BAGABUCH_MISTRAL_ANCHOR_FILE` |
 
 Mistral ключът не е env — живее в `companies.settings` на активната фирма.
-Виж [ai.md](ai.md).
+Виж [ai.md](ai.md). Голям HTTPS POST (OCR PDF като base64) изисква TLS
+записи на парчета — това е в baga `std/net` (`tls_conn_write`, ≤16 KB).
 
 ## Репо
 

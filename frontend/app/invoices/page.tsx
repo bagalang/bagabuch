@@ -73,9 +73,14 @@ function InvoicesInner() {
     <div>
       <div className="page-head">
         <h1 className="page-title">{t("invoices.title")}</h1>
-        <Link className="btn btn-primary" href="/invoices/new">
-          {t("invoices.new")}
-        </Link>
+        <div style={{ display: "flex", gap: 8 }}>
+          <Link className="btn" href="/scan">
+            {t("invoices.scan")}
+          </Link>
+          <Link className="btn btn-primary" href="/invoices/new">
+            {t("invoices.new")}
+          </Link>
+        </div>
       </div>
 
       {error && <div className="error-text">{error}</div>}

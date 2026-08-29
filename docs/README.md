@@ -19,7 +19,7 @@
 | [data-model.md](data-model.md) | Таблици и ключови колони |
 | [api.md](api.md) | HTTP пътища |
 | [conventions.md](conventions.md) | Baga/Boila ограничения, които не бива да се забравят |
-| [ai.md](ai.md) | Mistral ключ по фирма, как да пробваш VIES→SAF-T, бъдещо сканиране |
+| [ai.md](ai.md) | Mistral ключ по фирма, VIES→SAF-T, сканиране на фактури |
 | [status.md](status.md) | Направено / нарочно отложено / липсва |
 
 ## Стартиране

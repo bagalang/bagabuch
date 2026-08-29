@@ -108,5 +108,13 @@ fn bagabuch_migrations_c() -> MigrationSet {
     set = migrate_add(set, 20260829114, "add_counterparts_street_name", "ALTER TABLE counterparts ADD COLUMN street_name TEXT NOT NULL DEFAULT ''", "ALTER TABLE counterparts DROP COLUMN street_name")
     set = migrate_add(set, 20260829115, "add_counterparts_building_number", "ALTER TABLE counterparts ADD COLUMN building_number TEXT NOT NULL DEFAULT ''", "ALTER TABLE counterparts DROP COLUMN building_number")
     set = migrate_add(set, 20260829116, "add_counterparts_region", "ALTER TABLE counterparts ADD COLUMN region TEXT NOT NULL DEFAULT ''", "ALTER TABLE counterparts DROP COLUMN region")
+    set = migrate_add(
+        set,
+        20260829117,
+        "create_product_name_mappings",
+        "CREATE TABLE product_name_mappings (id BIGSERIAL PRIMARY KEY, counterpart_id BIGINT NOT NULL, scanned_name TEXT NOT NULL, product_id BIGINT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())",
+        "DROP TABLE IF EXISTS product_name_mappings"
+    )
+    set = migrate_add(set, 20260829118, "index_product_name_mappings_cp", "CREATE UNIQUE INDEX product_name_mappings_cp_name_idx ON product_name_mappings (counterpart_id, scanned_name)", "DROP INDEX IF EXISTS product_name_mappings_cp_name_idx")
     return set
 }
