@@ -229,6 +229,22 @@ textarea {
   background: var(--surface-2);
 }
 
+.table th.num,
+.table td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.table tfoot td {
+  font-weight: 700;
+}
+
+.report-account {
+  background: var(--surface-2);
+  font-weight: 650;
+}
+
 .badge {
   display: inline-flex;
   align-items: center;
@@ -937,6 +953,10 @@ textarea {
   .no-print,
   .page-head {
     display: none !important;
+  }
+  .table th.num,
+  .table td.num {
+    text-align: right;
   }
   .shell,
   .shell-main,

@@ -29,6 +29,7 @@ const NAV_ITEMS = [
   { href: "/scan", key: "nav.scan" },
   { href: "/internal-docs", key: "nav.internal_docs" },
   { href: "/journal", key: "nav.journal" },
+  { href: "/reports", key: "nav.reports" },
   { href: "/opening-balances", key: "nav.opening_balances" },
   { href: "/accounting-periods", key: "nav.periods" },
   { href: "/vat", key: "nav.vat" },

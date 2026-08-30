@@ -75,6 +75,20 @@ VIES (нужен JWT; ключът е на **активната** фирма):
 | POST | `/v1/opening-balances` |
 | PATCH/DELETE | `/v1/opening-balances/{id}` |
 
+## Справки
+
+JSON на екрана; файлът е XHTML таблица → reportbaga (`report_from_html_io`),
+като печата на фактури. Формати: `pdf`, `xlsx`, `ods`.
+
+| Метод | Път |
+|--------|-----|
+| GET | `/v1/reports?kind=&from=&to=&account=&counterpart_id=` |
+| GET | `/v1/reports/export?kind=&from=&to=&account=&counterpart_id=&format=` |
+
+`kind`: `trial_balance`, `general_ledger`, `chronological`,
+`counterpart_trial`, `counterpart_chrono`. Датите са ISO `YYYY-MM-DD`.
+`account` е префикс на номера. По контрагент `counterpart_id` е задължителен.
+
 ## ДДС, SAF-T, валута, ДМА
 
 | Метод | Път |

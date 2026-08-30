@@ -31,6 +31,10 @@
 - икон-бутони за редакция/изтриване и сродни действия в таблиците
 - тема, BG/EN, JWT скелет
 - глобални настройки (SMTP/S3 през Python sidecar :5050), потребители, роли
+- справки: оборотна ведомост (6 колони), главна книга, хронологичен журнал
+  (FIFO двойки), по контрагент (оборотна + хронологична); екран `/reports`;
+  експорт PDF / Excel / ODS като таблица през reportbaga (същият път като
+  печата на фактури)
 
 ## Нарочно отложено (куката е там)
 
@@ -44,8 +48,8 @@
 
 - банки и импорт на извлечения
 - Controlisy XML импорт
-- потребители, роли, права
-- отчети: главна книга, оборотна ведомост, баланс по сметка (салдата вече се пазят)
+- проверка на права върху API
+- баланс / ОПР / ДМА справки / складови справки
 - `company_id` върху фактури/продукти/дневник (мултитенантът е само
   „активна фирма“ в settings)
 - статуси платена / анулирана фактура в поста
@@ -69,4 +73,5 @@
 | Mistral / VIES адрес | `backend/actions/mistral.baga`, `docs/ai.md` |
 | Сканиране на фактури | `backend/actions/scans.baga`, `mistral_ocr.baga`, `frontend/app/scan/` |
 | Начални салда | `backend/actions/opening_balances.baga`, `frontend/app/opening-balances/` |
+| Справки | `backend/actions/reports.baga` (+ `_util` `_trial` `_book`), `frontend/app/reports/` |
 | Периоди | `backend/actions/periods.baga`, `frontend/app/accounting-periods/` |

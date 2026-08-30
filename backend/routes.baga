@@ -30,6 +30,7 @@ import "actions/scans.baga"
 import "actions/admin_settings.baga"
 import "actions/users.baga"
 import "actions/roles.baga"
+import "actions/reports.baga"
 import "fmrbaga/app.baga"
 import "fmrbaga/ctx.baga"
 import "fmrbaga/deps.baga"
@@ -154,6 +155,8 @@ fn RID_ROLES_INDEX() -> i64 { return 190 }
 fn RID_ROLES_CREATE() -> i64 { return 191 }
 fn RID_ROLES_UPDATE() -> i64 { return 192 }
 fn RID_ROLES_DELETE() -> i64 { return 193 }
+fn RID_REPORTS() -> i64 { return 200 }
+fn RID_REPORTS_EXPORT() -> i64 { return 201 }
 
 fn fmr_build_app() -> FmrApp !IO {
     let cfg = fmr_config_load()?
@@ -277,6 +280,8 @@ fn fmr_build_app() -> FmrApp !IO {
     app = fmr_route_meta(app, "POST", "/v1/roles", RID_ROLES_CREATE(), "", "roles", 0, "RoleCreate", "Role", "201", "")
     app = fmr_route_meta(app, "PATCH", "/v1/roles/{id}", RID_ROLES_UPDATE(), "", "roles", 0, "RoleUpdate", "Role", "200", "")
     app = fmr_route_meta(app, "DELETE", "/v1/roles/{id}", RID_ROLES_DELETE(), "", "roles", 0, "", "-", "204", "")
+    app = fmr_route_meta(app, "GET", "/v1/reports", RID_REPORTS(), "", "reports", 0, "", "Report", "200", "kind:s,from:s,to:s,account:s,counterpart_id")
+    app = fmr_route_meta(app, "GET", "/v1/reports/export", RID_REPORTS_EXPORT(), "", "reports", 0, "", "-", "200", "kind:s,from:s,to:s,account:s,counterpart_id,format:s")
     return app
 }
 
@@ -412,5 +417,7 @@ fn fmr_dispatch(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net !Random {
     if id == RID_ROLES_CREATE() { return act_roles_create(ctx, db)? }
     if id == RID_ROLES_UPDATE() { return act_roles_update(ctx, db)? }
     if id == RID_ROLES_DELETE() { return act_roles_delete(ctx, db)? }
+    if id == RID_REPORTS() { return act_reports(ctx, db)? }
+    if id == RID_REPORTS_EXPORT() { return act_reports_export(ctx, db)? }
     return fmr_out(fmr_500("unhandled route"), db)
 }

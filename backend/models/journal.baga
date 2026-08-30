@@ -109,6 +109,14 @@ fn journal_all(db: OrmDb) -> OrmQuery !IO !Net {
     return orm_query(db, concat(journal_select_sql(), " ORDER BY id"))?
 }
 
+fn journal_all_dated(db: OrmDb) -> OrmQuery !IO !Net {
+    return orm_query(db, concat(journal_select_sql(), " ORDER BY entry_date, id"))?
+}
+
+fn journal_lines_all(db: OrmDb) -> OrmQuery !IO !Net {
+    return orm_query(db, "SELECT id, entry_id, account_id, direction, amount, vat_amount, counterpart_id, product_id, location_id FROM journal_lines ORDER BY id")?
+}
+
 fn journal_lines_by_entry(db: OrmDb, entry_id: i64) -> OrmQuery !IO !Net {
     let sql = "SELECT id, entry_id, account_id, direction, amount, vat_amount, counterpart_id, product_id, location_id, number, name FROM journal_lines LEFT JOIN accounts ON account_id = id WHERE entry_id = $1 ORDER BY id"
     let vals = vec_new()
