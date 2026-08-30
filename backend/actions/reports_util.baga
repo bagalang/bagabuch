@@ -254,3 +254,7 @@ fn rpt_format_ok(format: str) -> i64 {
 fn rpt_period(from: str, to: str) -> str {
     return concat(from, concat(" — ", to))
 }
+
+fn rpt_bg_num(s: str) -> str {
+    return str_replace(s, ".", ",")
+}

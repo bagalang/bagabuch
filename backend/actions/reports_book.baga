@@ -33,8 +33,8 @@ fn rpt_chrono_row(n: str, date: str, doc: str, desc: str, cp: str, da: str, ca: 
     r = concat(r, rpt_cell("td", cp))
     r = concat(r, rpt_cell("td", da))
     r = concat(r, rpt_cell("td", ca))
-    r = concat(r, rpt_cell("td", dam))
-    r = concat(r, rpt_cell("td", cam))
+    r = concat(r, rpt_cell("td", rpt_bg_num(dam)))
+    r = concat(r, rpt_cell("td", rpt_bg_num(cam)))
     r = concat(r, "</tr>")
     return r
 }
@@ -182,8 +182,8 @@ fn rpt_gl_row(acc: str, date: str, doc: str, desc: str, d: str, c: str) -> str {
     r = concat(r, rpt_cell("td", date))
     r = concat(r, rpt_cell("td", doc))
     r = concat(r, rpt_cell("td", desc))
-    r = concat(r, rpt_cell("td", d))
-    r = concat(r, rpt_cell("td", c))
+    r = concat(r, rpt_cell("td", rpt_bg_num(d)))
+    r = concat(r, rpt_cell("td", rpt_bg_num(c)))
     r = concat(r, "</tr>")
     return r
 }

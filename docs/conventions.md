@@ -5,7 +5,8 @@
 `.baga` файл над ~600 реда не минава. Затова схемата е `schema_pg_a/b/c`
 (+ boila близнаци), а големите action файлове се цепят
 (`fixed_assets` / `fixed_assets_ops`, `internal_docs` / `internal_docs_confirm`,
-`invoices` / `invoices_post` / `invoices_print`).
+`invoices` / `invoices_post` / `invoices_print`,
+`reports` / `reports_util` / `reports_trial` / `reports_book`).
 
 Преди да надуеш файл — `wc -l`. `invoices.baga` вече е на ръба.
 
@@ -26,6 +27,11 @@
 float в JSON. ЕИК и фактурни номера с водещи нули са TEXT — не ги пращай
 като числа.
 
+Excel/ODS през officebaga: клетката е **число** (`t="n"` / `office:value-type="float"`),
+XML стойността е с точка. Excel и Google Sheets я показват със запетая при
+български локал. Номера с водещи нули остават текст. В HTML на справката
+сумите са със запетая (`rpt_bg_num`).
+
 ## Дати (`chronobaga`)
 
 Съхранение и JSON са само ISO `YYYY-MM-DD` или финансов `YYYYMMDD`.
@@ -33,6 +39,10 @@ float в JSON. ЕИК и фактурни номера с водещи нули 
 дневник на екрана са български `dd.mm.yyyy` (`dt_to_bg` / `formatBgDate`).
 Не пиши `30/08/2026` и не гадай locale. OCR на фактура: `dt_parse_invoice`,
 после пак ISO в базата.
+
+Baga `<` `>` `<=` `>=` върху `str` сравняват **указатели**, не текста.
+`==` / `!=` са стойностни. За ISO дати в справки ползвай `xml_str_lt`
+(`rpt_in_range`). Иначе оборотната ведомост излиза празна при пълни записи.
 
 ## Route id
 

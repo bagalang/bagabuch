@@ -24,12 +24,12 @@ fn rpt_trial_row(num: str, name: str, od: str, oc: str, td: str, tc: str, cd: st
     let mut r = "<tr>"
     r = concat(r, rpt_cell("td", num))
     r = concat(r, rpt_cell("td", name))
-    r = concat(r, rpt_cell("td", od))
-    r = concat(r, rpt_cell("td", oc))
-    r = concat(r, rpt_cell("td", td))
-    r = concat(r, rpt_cell("td", tc))
-    r = concat(r, rpt_cell("td", cd))
-    r = concat(r, rpt_cell("td", cc))
+    r = concat(r, rpt_cell("td", rpt_bg_num(od)))
+    r = concat(r, rpt_cell("td", rpt_bg_num(oc)))
+    r = concat(r, rpt_cell("td", rpt_bg_num(td)))
+    r = concat(r, rpt_cell("td", rpt_bg_num(tc)))
+    r = concat(r, rpt_cell("td", rpt_bg_num(cd)))
+    r = concat(r, rpt_cell("td", rpt_bg_num(cc)))
     r = concat(r, "</tr>")
     return r
 }
