@@ -11,6 +11,7 @@ import "fmrbaga/action.baga"
 import "fmrbaga/jsonx.baga"
 import "ormbaga/orm.baga"
 import "bagadecimal/src/decimal.baga"
+import "chronobaga/src/chrono.baga"
 import "std/str/str.baga"
 
 fn vat_row_json(q: OrmQuery, row: i64) -> JObj {
@@ -56,9 +57,11 @@ fn act_vat_registers(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     if period == "" {
         return act_err(db, 400, "period е задължителен (YYYY-MM)")
     }
-    if len(period) > 7 {
-        period = substr(period, 0, 7)
+    let per_reg = dt_period_parse(period)
+    if per_reg.ok == 0 {
+        return act_err(db, 400, "period трябва да е YYYY-MM или YYYYMM")
     }
+    period = dt_period_to_iso(per_reg.value)
     if orm_ok_db(db) == 0 {
         return act_err(db, 503, "database unavailable")
     }
@@ -98,9 +101,11 @@ fn act_vat_return(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     if period == "" {
         return act_err(db, 400, "period е задължителен (YYYY-MM)")
     }
-    if len(period) > 7 {
-        period = substr(period, 0, 7)
+    let per_ret = dt_period_parse(period)
+    if per_ret.ok == 0 {
+        return act_err(db, 400, "period трябва да е YYYY-MM или YYYYMM")
     }
+    period = dt_period_to_iso(per_ret.value)
     if orm_ok_db(db) == 0 {
         return act_err(db, 503, "database unavailable")
     }

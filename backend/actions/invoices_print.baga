@@ -16,6 +16,7 @@ import "ormbaga/orm.baga"
 import "httpdbaga/http.baga"
 import "xmlbaga/xml.baga"
 import "reportbaga/report.baga"
+import "chronobaga/src/chrono.baga"
 import "std/str/str.baga"
 
 fn inv_type_title(t: str) -> str {
@@ -28,6 +29,10 @@ fn inv_type_prefix(t: str) -> str {
 
 fn inv_h(s: str) -> str {
     return xml_escape_text(s)
+}
+
+fn inv_date(s: str) -> str {
+    return xml_escape_text(dt_to_bg_or(s))
 }
 
 fn inv_cell(tag: str, s: str) -> str {
@@ -391,9 +396,9 @@ fn act_invoices_print(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     html = concat(html, concat("<h1>", concat(inv_h(title), "</h1>")))
     html = concat(html, concat("<p>( ", concat(inv_h(copy_label), " )</p>")))
     html = concat(html, concat("<p>№ ", concat(inv_h(full_no), "</p>")))
-    html = concat(html, concat("<p>Дата: ", concat(inv_h(issue_date), "</p>")))
+    html = concat(html, concat("<p>Дата: ", concat(inv_date(issue_date), "</p>")))
     if tax_event_date != "" {
-        html = concat(html, concat("<p>Дан. дата: ", concat(inv_h(tax_event_date), "</p>")))
+        html = concat(html, concat("<p>Дан. дата: ", concat(inv_date(tax_event_date), "</p>")))
     }
     html = concat(html, "<table>")
     html = concat(html, inv_row2("th", "ПОЛУЧАТЕЛ", "ДОСТАВЧИК"))

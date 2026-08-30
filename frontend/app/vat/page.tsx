@@ -5,6 +5,7 @@
 
 import { useCallback, useState } from "react";
 import { api } from "../../lib/api";
+import { formatBgDate } from "../../lib/dates";
 import { useI18n } from "../../components/I18nProvider";
 import { RequireAuth } from "../../components/RequireAuth";
 
@@ -66,7 +67,7 @@ function RegistersTable({
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id}>
-                  <td>{r.entry_date}</td>
+                  <td>{formatBgDate(r.entry_date)}</td>
                   <td title={t(`invoices.document_type.${r.document_type}`)}>
                     {r.document_type}
                   </td>

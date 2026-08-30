@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, ListResponse } from "../../lib/api";
-import { Invoice, docTypesFor } from "../../lib/invoice";
+import { Invoice, docTypesFor, formatBgDate } from "../../lib/invoice";
 import { useI18n } from "../../components/I18nProvider";
 import { RequireAuth } from "../../components/RequireAuth";
 
@@ -152,7 +152,7 @@ function InvoicesInner() {
                   <td>
                     <Link href={`/invoices/${inv.id}`}>{inv.number}</Link>
                   </td>
-                  <td>{inv.issue_date}</td>
+                  <td>{formatBgDate(inv.issue_date)}</td>
                   <td>{cpName(inv)}</td>
                   <td>
                     {inv.total_amount} {inv.currency}

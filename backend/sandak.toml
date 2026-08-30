@@ -8,6 +8,7 @@ kind = "bin"
 fmrbaga = { path = "../../../app-product/fmrbaga" }
 ormbaga = { path = "../../../app-product/ormbaga" }
 bagadecimal = { path = "../../../app-product/bagadecimal" }
+chronobaga = { path = "../../../app-product/chronobaga" }
 xmlbaga = { path = "../../../app-product/xmlbaga" }
 reportbaga = { path = "../../../app-product/reportbaga" }
 std = { path = "../../../std" }

@@ -7,6 +7,7 @@ import {
   InvoiceParty,
   docTypePrefix,
   docTypeTitle,
+  formatBgDate,
 } from "../lib/invoice";
 import { api, ListResponse } from "../lib/api";
 import { VatExemption, vatexDisplay } from "../lib/vatExemptions";
@@ -77,11 +78,11 @@ export function PrintableInvoice({
         </div>
         <div className="print-dates">
           <div>
-            {t("invoices.issue_date")}: {invoice.issue_date}
+            {t("invoices.issue_date")}: {formatBgDate(invoice.issue_date)}
           </div>
           {invoice.tax_event_date && (
             <div>
-              {t("invoices.tax_event_date")}: {invoice.tax_event_date}
+              {t("invoices.tax_event_date")}: {formatBgDate(invoice.tax_event_date)}
             </div>
           )}
         </div>

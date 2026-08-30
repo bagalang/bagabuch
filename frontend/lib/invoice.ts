@@ -127,9 +127,7 @@ export function emptyLine(): InvoiceLine {
   };
 }
 
-export function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
+export { todayIso, formatBgDate } from "./dates";
 
 export function round2(n: number): string {
   return (Math.round(n * 100) / 100).toFixed(2);

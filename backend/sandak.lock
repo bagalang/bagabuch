@@ -25,6 +25,12 @@ source = "path+/home/ziko/z-git/baga/app-product/bufbaga"
 rev = "-"
 
 [[package]]
+name = "chronobaga"
+version = "0.1.0"
+source = "path+/home/ziko/z-git/baga/app-product/chronobaga"
+rev = "-"
+
+[[package]]
 name = "csvbaga"
 version = "0.3.0"
 source = "path+/home/ziko/z-git/baga/app-product/csvbaga"
