@@ -116,5 +116,15 @@ fn bagabuch_boila_migrations_c() -> MigrationSet {
         "DROP TABLE IF EXISTS product_name_mappings"
     )
     set = migrate_add(set, 20260829018, "index_product_name_mappings_cp", "CREATE UNIQUE INDEX IF NOT EXISTS product_name_mappings_cp_name_idx ON product_name_mappings (counterpart_id, scanned_name)", "DROP INDEX IF EXISTS product_name_mappings_cp_name_idx ON product_name_mappings")
+    set = migrate_add(set, 20260830001, "add_users_is_active", "ALTER TABLE users ADD COLUMN is_active BIGINT", "ALTER TABLE users DROP COLUMN is_active")
+    set = migrate_add(set, 20260830002, "add_users_is_super_admin", "ALTER TABLE users ADD COLUMN is_super_admin BIGINT", "ALTER TABLE users DROP COLUMN is_super_admin")
+    set = migrate_add(set, 20260830003, "add_users_role_id", "ALTER TABLE users ADD COLUMN role_id BIGINT", "ALTER TABLE users DROP COLUMN role_id")
+    set = migrate_add(
+        set,
+        20260830004,
+        "create_roles",
+        "CREATE TABLE IF NOT EXISTS roles (id BIGINT, name TEXT, description TEXT, permissions TEXT, created_at TIMESTAMPTZ, PRIMARY KEY (id))",
+        "DROP TABLE IF EXISTS roles"
+    )
     return set
 }

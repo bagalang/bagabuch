@@ -277,6 +277,8 @@ textarea {
   display: flex;
   flex-direction: column;
   padding: 16px 12px;
+  max-height: 100vh;
+  overflow-y: auto;
 }
 
 .sidebar-brand {
@@ -755,6 +757,22 @@ textarea {
   gap: 4px;
   border-bottom: 2px solid var(--primary);
   margin-bottom: 20px;
+}
+
+.tabs-wrap {
+  flex-wrap: wrap;
+  border-bottom-color: var(--border);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.table-wrap {
+  overflow-x: auto;
 }
 
 .tab {

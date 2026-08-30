@@ -34,7 +34,11 @@ const NAV_ITEMS = [
   { href: "/vat", key: "nav.vat" },
   { href: "/exchange-rates", key: "nav.exchange_rates" },
   { href: "/saft", key: "nav.saft" },
+  { href: "/nomenclatures", key: "nav.nomenclatures" },
   { href: "/fixed-assets", key: "nav.fixed_assets" },
+  { href: "/admin", key: "nav.admin" },
+  { href: "/users", key: "nav.users" },
+  { href: "/roles", key: "nav.roles" },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {

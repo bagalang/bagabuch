@@ -6,6 +6,8 @@ import "pgbaga/pg.baga"
 import "std/str/str.baga"
 import "std/os/os.baga"
 
+import "fmrbaga/jsonx.baga"
+
 fn setting_table() -> str {
     return "settings"
 }
@@ -70,4 +72,40 @@ fn setting_set_by_key(db: OrmDb, key: str, value: str) -> OrmExec !IO !Net {
     vec_push(vals, key)
     vec_push(vals, value)
     return orm_insert_strs(d, setting_table(), cols, vals)?
+}
+
+fn setting_all(db: OrmDb) -> OrmQuery !IO !Net {
+    return orm_query(db, "SELECT id, key, value FROM settings ORDER BY key")?
+}
+
+fn setting_to_json(q: OrmQuery, row: i64) -> JObj {
+    let mut o = jobj_new()
+    o = jobj_i64(o, "id", orm_cell_by_i64(q, row, "id"))
+    o = jobj_str(o, "key", orm_cell_by(q, row, "key"))
+    o = jobj_str(o, "value", orm_cell_by(q, row, "value"))
+    return o
+}
+
+fn setting_list_json(q: OrmQuery) -> JObj {
+    let mut arr = jarr_new()
+    let mut i: i64 = 0
+    while i < orm_nrows(q) {
+        arr = jarr_obj(arr, setting_to_json(q, i))
+        i = i + 1
+    }
+    let mut o = jobj_new()
+    o = jobj_raw(o, "items", jarr_encode(arr))
+    o = jobj_i64(o, "count", orm_nrows(q))
+    return o
+}
+
+fn setting_map_get(q: OrmQuery, key: str) -> str {
+    let mut i: i64 = 0
+    while i < orm_nrows(q) {
+        if orm_cell_by(q, i, "key") == key {
+            return orm_cell_by(q, i, "value")
+        }
+        i = i + 1
+    }
+    return ""
 }

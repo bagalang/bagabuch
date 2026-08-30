@@ -60,6 +60,18 @@ float в JSON. ЕИК и фактурни номера с водещи нули 
 `BAGABUCH_VIES_ANCHOR_FILE`, `BAGABUCH_ECB_ANCHOR_FILE`,
 `BAGABUCH_MISTRAL_ANCHOR_FILE`. Виж [architecture.md](architecture.md).
 
+## SMTP и S3
+
+Не се пишат Baga пакети за поща и object storage. Същото като su-doxis:
+Python sidecar `scripts/py/sidecar.py` на `:5050` (Flask + boto3). Backend-ът
+говори HTTP (`BAGABUCH_SIDECAR`). `dev.sh` го пуска.
+
+## SAF-T номенклатури
+
+Официалните кодове на НАП (движения, фактури, данъци, области, сметки)
+са **каталог в кода**, не таблица. Същото като мерки и основания за 0% ДДС.
+Не ги правим CRUD — подаването към НАП иска точно тези кодове.
+
 ## Референция
 
 `secret/inv` и `secret/su-doxis` са образец. su-doxis има кореспонденция

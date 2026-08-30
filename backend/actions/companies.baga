@@ -1,6 +1,7 @@
 // actions/companies.baga — фирми: CRUD handlers.
 
 import "../models/company.baga"
+import "accounts_seed.baga"
 import "fmrbaga/app.baga"
 import "fmrbaga/ctx.baga"
 import "fmrbaga/action.baga"
@@ -92,7 +93,10 @@ fn act_companies_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     if orm_ok_q(q) == 0 || orm_nrows(q) < 1 {
         return act_err(orm_db_q(q), 500, "insert ok but row missing")
     }
-    return act_created(orm_db_q(q), company_to_json(q, orm_nrows(q) - 1))
+    let mut o = company_to_json(q, orm_nrows(q) - 1)
+    let s = account_seed_from_saft(orm_db_q(q))?
+    o = jobj_i64(o, "saft_accounts_seeded", s.created)
+    return act_created(s.db, o)
 }
 
 fn act_companies_show(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {

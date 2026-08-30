@@ -8,6 +8,7 @@ import "actions/companies.baga"
 import "actions/company_settings.baga"
 import "actions/document_series.baga"
 import "actions/accounts.baga"
+import "actions/accounts_seed.baga"
 import "actions/counterparts.baga"
 import "actions/products.baga"
 import "actions/invoices.baga"
@@ -17,6 +18,7 @@ import "actions/invoices_post.baga"
 import "actions/journal.baga"
 import "actions/vat.baga"
 import "actions/saft.baga"
+import "actions/saft_noms.baga"
 import "actions/fixed_assets.baga"
 import "actions/internal_docs.baga"
 import "actions/internal_docs_confirm.baga"
@@ -25,6 +27,9 @@ import "actions/opening_balances.baga"
 import "actions/active_company.baga"
 import "actions/exchange_rates.baga"
 import "actions/scans.baga"
+import "actions/admin_settings.baga"
+import "actions/users.baga"
+import "actions/roles.baga"
 import "fmrbaga/app.baga"
 import "fmrbaga/ctx.baga"
 import "fmrbaga/deps.baga"
@@ -49,6 +54,7 @@ fn RID_ACCOUNTS_CREATE() -> i64 { return 31 }
 fn RID_ACCOUNTS_SHOW() -> i64 { return 32 }
 fn RID_ACCOUNTS_UPDATE() -> i64 { return 33 }
 fn RID_ACCOUNTS_DELETE() -> i64 { return 34 }
+fn RID_ACCOUNTS_SEED_SAFT() -> i64 { return 35 }
 fn RID_COUNTERPARTS_INDEX() -> i64 { return 40 }
 fn RID_COUNTERPARTS_CREATE() -> i64 { return 41 }
 fn RID_COUNTERPARTS_SHOW() -> i64 { return 42 }
@@ -132,6 +138,22 @@ fn RID_OB_DELETE() -> i64 { return 156 }
 fn RID_SCANS_EXTRACT() -> i64 { return 160 }
 fn RID_PNMAP_INDEX() -> i64 { return 161 }
 fn RID_PNMAP_SAVE() -> i64 { return 162 }
+fn RID_SAFT_NOMS() -> i64 { return 163 }
+fn RID_SYSSET_GET() -> i64 { return 170 }
+fn RID_SYSSET_PUT() -> i64 { return 171 }
+fn RID_SMTP_TEST() -> i64 { return 172 }
+fn RID_S3_TEST() -> i64 { return 173 }
+fn RID_S3_BACKUP() -> i64 { return 174 }
+fn RID_S3_LIST() -> i64 { return 175 }
+fn RID_S3_DELETE() -> i64 { return 176 }
+fn RID_USERS_INDEX() -> i64 { return 180 }
+fn RID_USERS_CREATE() -> i64 { return 181 }
+fn RID_USERS_UPDATE() -> i64 { return 182 }
+fn RID_USERS_DELETE() -> i64 { return 183 }
+fn RID_ROLES_INDEX() -> i64 { return 190 }
+fn RID_ROLES_CREATE() -> i64 { return 191 }
+fn RID_ROLES_UPDATE() -> i64 { return 192 }
+fn RID_ROLES_DELETE() -> i64 { return 193 }
 
 fn fmr_build_app() -> FmrApp !IO {
     let cfg = fmr_config_load()?
@@ -165,6 +187,7 @@ fn fmr_build_app() -> FmrApp !IO {
     app = fmr_route_meta(app, "DELETE", "/v1/document-series/{id}", RID_DSER_DELETE(), "", "companies", 0, "", "-", "204", "")
     app = fmr_route_meta(app, "GET", "/v1/accounts", RID_ACCOUNTS_INDEX(), "", "accounts", 0, "", "AccountList", "200", "limit,offset")
     app = fmr_route_meta(app, "POST", "/v1/accounts", RID_ACCOUNTS_CREATE(), "", "accounts", 0, "AccountCreate", "Account", "201", "")
+    app = fmr_route_meta(app, "POST", "/v1/accounts/seed-saft", RID_ACCOUNTS_SEED_SAFT(), "", "accounts", 0, "", "AccountSeed", "200", "")
     app = fmr_route_meta(app, "GET", "/v1/accounts/{id}", RID_ACCOUNTS_SHOW(), "", "accounts", 0, "", "Account", "200", "")
     app = fmr_route_meta(app, "PATCH", "/v1/accounts/{id}", RID_ACCOUNTS_UPDATE(), "", "accounts", 0, "AccountUpdate", "Account", "200", "")
     app = fmr_route_meta(app, "DELETE", "/v1/accounts/{id}", RID_ACCOUNTS_DELETE(), "", "accounts", 0, "", "-", "204", "")
@@ -197,6 +220,7 @@ fn fmr_build_app() -> FmrApp !IO {
     app = fmr_route_meta(app, "GET", "/v1/vat/registers", RID_VAT_REGISTERS(), "", "vat", 0, "", "VatRegisters", "200", "period")
     app = fmr_route_meta(app, "GET", "/v1/vat/return", RID_VAT_RETURN(), "", "vat", 0, "", "VatReturn", "200", "period")
     app = fmr_route_meta(app, "GET", "/v1/saft/export", RID_SAFT_EXPORT(), "", "saft", 0, "", "-", "200", "period,mode")
+    app = fmr_route_meta(app, "GET", "/v1/saft/nomenclatures", RID_SAFT_NOMS(), "", "saft", 0, "", "SaftNomenclatureList", "200", "kind:s,search:s")
     app = fmr_route_meta(app, "GET", "/v1/fixed-asset-categories", RID_FA_CATEGORIES_INDEX(), "", "fixed-assets", 0, "", "FacList", "200", "")
     app = fmr_route_meta(app, "POST", "/v1/fixed-asset-categories", RID_FA_CATEGORIES_CREATE(), "", "fixed-assets", 0, "FacCreate", "Fac", "201", "")
     app = fmr_route_meta(app, "PATCH", "/v1/fixed-asset-categories/{id}", RID_FA_CATEGORIES_UPDATE(), "", "fixed-assets", 0, "FacUpdate", "Fac", "200", "")
@@ -238,6 +262,21 @@ fn fmr_build_app() -> FmrApp !IO {
     app = fmr_route_meta(app, "POST", "/v1/scans/extract", RID_SCANS_EXTRACT(), "", "scans", 0, "ScanExtract", "ScanResult", "200", "")
     app = fmr_route_meta(app, "GET", "/v1/product-name-mappings", RID_PNMAP_INDEX(), "", "scans", 0, "", "MappingList", "200", "counterpart_id")
     app = fmr_route_meta(app, "POST", "/v1/product-name-mappings", RID_PNMAP_SAVE(), "", "scans", 0, "MappingSave", "MappingList", "200", "")
+    app = fmr_route_meta(app, "GET", "/v1/system-settings", RID_SYSSET_GET(), "", "admin", 0, "", "SettingList", "200", "")
+    app = fmr_route_meta(app, "PUT", "/v1/system-settings", RID_SYSSET_PUT(), "", "admin", 0, "SettingBatch", "SettingList", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/system-settings/smtp-test", RID_SMTP_TEST(), "", "admin", 0, "SmtpTest", "SidecarResult", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/system-settings/s3-test", RID_S3_TEST(), "", "admin", 0, "", "SidecarResult", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/system-settings/s3-backup", RID_S3_BACKUP(), "", "admin", 0, "", "SidecarResult", "200", "")
+    app = fmr_route_meta(app, "GET", "/v1/system-settings/s3-backups", RID_S3_LIST(), "", "admin", 0, "", "BackupList", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/system-settings/s3-delete", RID_S3_DELETE(), "", "admin", 0, "S3Delete", "SidecarResult", "200", "")
+    app = fmr_route_meta(app, "GET", "/v1/users", RID_USERS_INDEX(), "", "users", 0, "", "UserList", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/users", RID_USERS_CREATE(), "", "users", 0, "UserCreate", "User", "201", "")
+    app = fmr_route_meta(app, "PATCH", "/v1/users/{id}", RID_USERS_UPDATE(), "", "users", 0, "UserUpdate", "User", "200", "")
+    app = fmr_route_meta(app, "DELETE", "/v1/users/{id}", RID_USERS_DELETE(), "", "users", 0, "", "-", "204", "")
+    app = fmr_route_meta(app, "GET", "/v1/roles", RID_ROLES_INDEX(), "", "roles", 0, "", "RoleList", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/roles", RID_ROLES_CREATE(), "", "roles", 0, "RoleCreate", "Role", "201", "")
+    app = fmr_route_meta(app, "PATCH", "/v1/roles/{id}", RID_ROLES_UPDATE(), "", "roles", 0, "RoleUpdate", "Role", "200", "")
+    app = fmr_route_meta(app, "DELETE", "/v1/roles/{id}", RID_ROLES_DELETE(), "", "roles", 0, "", "-", "204", "")
     return app
 }
 
@@ -283,6 +322,7 @@ fn fmr_dispatch(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net !Random {
     if id == RID_DSER_DELETE() { return act_dser_delete(ctx, db)? }
     if id == RID_ACCOUNTS_INDEX() { return act_accounts_index(ctx, db)? }
     if id == RID_ACCOUNTS_CREATE() { return act_accounts_create(ctx, db)? }
+    if id == RID_ACCOUNTS_SEED_SAFT() { return act_accounts_seed_saft(ctx, db)? }
     if id == RID_ACCOUNTS_SHOW() { return act_accounts_show(ctx, db)? }
     if id == RID_ACCOUNTS_UPDATE() { return act_accounts_update(ctx, db)? }
     if id == RID_ACCOUNTS_DELETE() { return act_accounts_delete(ctx, db)? }
@@ -315,6 +355,7 @@ fn fmr_dispatch(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net !Random {
     if id == RID_VAT_REGISTERS() { return act_vat_registers(ctx, db)? }
     if id == RID_VAT_RETURN() { return act_vat_return(ctx, db)? }
     if id == RID_SAFT_EXPORT() { return act_saft_export(ctx, db)? }
+    if id == RID_SAFT_NOMS() { return act_saft_nomenclatures(ctx, db)? }
     if id == RID_FA_CATEGORIES_INDEX() { return act_fa_categories_index(ctx, db)? }
     if id == RID_FA_CATEGORIES_CREATE() { return act_fa_categories_create(ctx, db)? }
     if id == RID_FA_CATEGORIES_UPDATE() { return act_fa_categories_update(ctx, db)? }
@@ -356,5 +397,20 @@ fn fmr_dispatch(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net !Random {
     if id == RID_SCANS_EXTRACT() { return act_scans_extract(ctx, db)? }
     if id == RID_PNMAP_INDEX() { return act_pnmap_index(ctx, db)? }
     if id == RID_PNMAP_SAVE() { return act_pnmap_save(ctx, db)? }
+    if id == RID_SYSSET_GET() { return act_system_settings_get(ctx, db)? }
+    if id == RID_SYSSET_PUT() { return act_system_settings_put(ctx, db)? }
+    if id == RID_SMTP_TEST() { return act_smtp_test(ctx, db)? }
+    if id == RID_S3_TEST() { return act_s3_test(ctx, db)? }
+    if id == RID_S3_BACKUP() { return act_s3_backup(ctx, db)? }
+    if id == RID_S3_LIST() { return act_s3_list(ctx, db)? }
+    if id == RID_S3_DELETE() { return act_s3_delete(ctx, db)? }
+    if id == RID_USERS_INDEX() { return act_users_index(ctx, db)? }
+    if id == RID_USERS_CREATE() { return act_users_create(ctx, db)? }
+    if id == RID_USERS_UPDATE() { return act_users_update(ctx, db)? }
+    if id == RID_USERS_DELETE() { return act_users_delete(ctx, db)? }
+    if id == RID_ROLES_INDEX() { return act_roles_index(ctx, db)? }
+    if id == RID_ROLES_CREATE() { return act_roles_create(ctx, db)? }
+    if id == RID_ROLES_UPDATE() { return act_roles_update(ctx, db)? }
+    if id == RID_ROLES_DELETE() { return act_roles_delete(ctx, db)? }
     return fmr_out(fmr_500("unhandled route"), db)
 }

@@ -3,6 +3,7 @@
 // SAF-T BG експорт — изтегляне на XML за периода (месечен/при поискване/годишен).
 
 import { useState } from "react";
+import Link from "next/link";
 import { API_BASE, getToken } from "../../lib/api";
 import { useI18n } from "../../components/I18nProvider";
 import { RequireAuth } from "../../components/RequireAuth";
@@ -49,6 +50,10 @@ function SaftInner() {
       <div className="page-head">
         <h1 className="page-title">{t("saft.title")}</h1>
       </div>
+
+      <p className="muted" style={{ margin: "0 0 16px" }}>
+        <Link href="/nomenclatures">{t("saft.link.noms")}</Link>
+      </p>
 
       <div className="card content">
         <div className="form-grid">

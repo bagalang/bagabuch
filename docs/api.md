@@ -28,7 +28,8 @@ Route id-тата в `backend/routes.baga` са стабилни — не се �
 ## Номенклатури
 
 `/v1/accounts`, `/v1/counterparts`, `/v1/products`, `/v1/units`,
-`/v1/vat-exemptions`.
+`/v1/vat-exemptions`. `POST /v1/accounts/seed-saft` пълни липсващите
+сметки от NRA_Nom_Accounts (същото става при създаване на фирма).
 
 VIES (нужен JWT; ключът е на **активната** фирма):
 
@@ -80,6 +81,7 @@ VIES (нужен JWT; ключът е на **активната** фирма):
 |--------|-----|
 | GET | `/v1/vat/registers?period=` `/v1/vat/return?period=` |
 | GET | `/v1/saft/export?period=&mode=monthly\|ondemand\|annual` |
+| GET | `/v1/saft/nomenclatures?kind=&search=` |
 | GET | `/v1/exchange-rates`, `/v1/exchange-rates/rate?currency=&date=` |
 | POST | `/v1/exchange-rates/import` |
 | CRUD | `/v1/fixed-asset-categories`, `/v1/fixed-assets` |
@@ -88,6 +90,25 @@ VIES (нужен JWT; ключът е на **активната** фирма):
 | GET | `/v1/fixed-assets/{id}/events` |
 
 `move` приема JSON `{ "location_id": N, "event_date", "reason" }`.
+
+## Админ, SMTP, S3, потребители
+
+SMTP и S3 **не са Baga пакети**. Python sidecar `:5050` (`scripts/py/sidecar.py`).
+Backend-ът му говори HTTP.
+
+| Метод | Път |
+|--------|-----|
+| GET/PUT | `/v1/system-settings` `{items:[{key,value}]}` |
+| POST | `/v1/system-settings/smtp-test` `{to}` |
+| POST | `/v1/system-settings/s3-test` `/s3-backup` `/s3-delete` `{s3_key}` |
+| GET | `/v1/system-settings/s3-backups` |
+| CRUD | `/v1/users`, `/v1/roles` |
+
+`GET /v1/saft/nomenclatures` без `kind` връща списъка номенклатури. С `kind=`
+връща `{kind, items, count}` (официални кодове на НАП, без CRUD):
+`stock_movements`, `asset_movements`, `tax_regimes`, `payment_methods`,
+`invoice_types`, `tax_types`, `tax_codes`, `product_types`, `units`,
+`regions`, `accounts`. `search` филтрира по подниз.
 
 ## Сканиране
 

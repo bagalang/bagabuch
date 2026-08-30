@@ -9,6 +9,7 @@ PIDFILE="$ROOT/.dev.pids"
 BOILA_PGPORT="${BOILA_PGPORT:-6575}"
 PORT="${PORT:-8080}"
 FRONTEND_PORT="${FRONTEND_PORT:-3000}"
+SIDECAR_PORT="${BAGABUCH_SIDECAR_PORT:-5050}"
 
 killed=()
 
@@ -70,7 +71,7 @@ if [ -f "$PIDFILE" ]; then
   rm -f "$PIDFILE"
 fi
 
-for spec in "boilaDB:$BOILA_PGPORT" "backend:$PORT" "frontend:$FRONTEND_PORT"; do
+for spec in "boilaDB:$BOILA_PGPORT" "backend:$PORT" "frontend:$FRONTEND_PORT" "sidecar:$SIDECAR_PORT"; do
   name="${spec%%:*}"
   port="${spec##*:}"
   for pid in $(pids_on_port "$port"); do
@@ -90,7 +91,7 @@ for pid in "${killed[@]:-}"; do
     still=1
   fi
 done
-for spec in "$BOILA_PGPORT" "$PORT" "$FRONTEND_PORT"; do
+for spec in "$BOILA_PGPORT" "$PORT" "$FRONTEND_PORT" "$SIDECAR_PORT"; do
   for pid in $(pids_on_port "$spec"); do
     if have_pid "$pid"; then
       kill -KILL "$pid" 2>/dev/null || true
@@ -104,7 +105,7 @@ if [ "$still" = 1 ]; then
 fi
 
 up=()
-for spec in "boilaDB:$BOILA_PGPORT" "backend:$PORT" "frontend:$FRONTEND_PORT"; do
+for spec in "boilaDB:$BOILA_PGPORT" "backend:$PORT" "frontend:$FRONTEND_PORT" "sidecar:$SIDECAR_PORT"; do
   name="${spec%%:*}"
   port="${spec##*:}"
   if (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null; then
@@ -121,4 +122,4 @@ if [ "${#up[@]}" -gt 0 ]; then
   exit 1
 fi
 
-echo "    спряно (6575 / 8080 / 3000 са свободни, ако не са презаписани с env)"
+echo "    спряно (6575 / 8080 / 3000 / 5050 са свободни, ако не са презаписани с env)"

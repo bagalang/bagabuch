@@ -91,6 +91,20 @@ echo "==> backend на :$PORT (ORM_BACKEND=boila)"
 ) &
 record_pid $!
 
+SIDECAR_PORT="${BAGABUCH_SIDECAR_PORT:-5050}"
+echo "==> Python sidecar SMTP+S3 на :$SIDECAR_PORT"
+(
+  cd "$ROOT/scripts/py"
+  export BAGABUCH_SIDECAR_PORT="$SIDECAR_PORT"
+  export BAGABUCH_DB_PATH="${BOILA_PATH}"
+  if [ -n "$STDBUF" ]; then
+    exec stdbuf -oL -eL python3 sidecar.py
+  else
+    exec python3 sidecar.py
+  fi
+) &
+record_pid $!
+
 echo "==> frontend на :$FRONTEND_PORT"
 (cd "$ROOT/frontend" && exec npm run dev -- --port "$FRONTEND_PORT") &
 record_pid $!
@@ -99,6 +113,7 @@ echo
 echo "Стартирани (универсални приложения, само през портове):"
 echo "  boilaDB  : PostgreSQL v3 wire на :$BOILA_PGPORT"
 echo "  backend  : HTTP/JSON на :$PORT          (/health /ready /v1/meta /openapi.json)"
+echo "  sidecar  : SMTP+S3 Python на :$SIDECAR_PORT"
 echo "  frontend : Next.js на :$FRONTEND_PORT"
 echo "Ctrl+C спира всичко. От друг терминал: ./scripts/stop.sh"
 wait || true

@@ -37,6 +37,25 @@ PK за таблици от преди P20: `MAX(id)+1` в приложение�
 | `bank_accounts` / `bank_transactions` | Има таблици, няма модул |
 | `product_name_mappings` | Име от сканиран документ → наш артикул, по контрагент |
 
+## SAF-T номенклатури (без таблица)
+
+Кодовете са стандарт на НАП (`secret/su-doxis/.../SAFT_BG/Structure_Definition_V_1.0.1.xlsx`).
+Няма CRUD: същото като `/v1/units` и `/v1/vat-exemptions`. Каталозите са в
+`backend/models/saft_nom_*.baga`.
+
+| `kind` | Какво |
+|--------|--------|
+| `stock_movements` | Движения на запаси (`MovementType`) |
+| `asset_movements` | Движения на активи (`AssetTransactionType`) |
+| `tax_regimes` | ДДС режим в `TaxIDStructure` (100010/100020/100030) |
+| `payment_methods` | `PaymentMethod` + `PaymentMechanism` |
+| `invoice_types` | Вид документ по ППДДС (`InvoiceType`) |
+| `tax_types` / `tax_codes` | TAX-IMP (вид данък + код) |
+| `product_types` | Вид запас (`ProductType`) |
+| `units` | UN/ECE Rec 20 + Rec 21 (същият каталог като `/v1/units`) |
+| `regions` | ISO 3166-2:BG |
+| `accounts` | NRA_Nom_Accounts — `AccountID` в XML |
+
 ## Вътрешен документ
 
 ```
