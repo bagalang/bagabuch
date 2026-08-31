@@ -23,9 +23,11 @@ fn bank_account_backend_boila() -> i64 !IO {
 fn bank_account_next_id(db: OrmDb) -> OrmCount !IO !Net {
     return orm_count_sql(db, "SELECT MAX(id) AS count FROM bank_accounts")?
 }
-// Списък с имената на свързаните сметки (ГЛ и буферна) — LEFT JOIN accounts.
+// Без table alias и без `.` qualifier — BoilaSQL ги отказва в SELECT
+// (`неочакван токен '.'`). Двоен JOIN към accounts също иска alias.
+// Кодовете на ГЛ/буфер се слагат в UI от вече заредения сметкоплан.
 fn bank_account_select_sql() -> str {
-    return "SELECT ba.id, ba.iban, ba.bic, ba.bank_name, ba.currency, ba.name, ba.account_number, ba.gl_account_id, ba.buffer_account_id, ba.balance, ba.company_id, ba.created_at, a1.number AS gl_code, a2.number AS buffer_code FROM bank_accounts ba LEFT JOIN accounts a1 ON a1.id = ba.gl_account_id LEFT JOIN accounts a2 ON a2.id = ba.buffer_account_id"
+    return "SELECT id, iban, bic, bank_name, currency, name, account_number, gl_account_id, buffer_account_id, balance, company_id, created_at FROM bank_accounts"
 }
 fn bank_account_to_json(q: OrmQuery, row: i64) -> JObj {
     let mut o = jobj_new()
@@ -55,21 +57,21 @@ fn bank_account_to_json(q: OrmQuery, row: i64) -> JObj {
     return o
 }
 fn bank_account_find(db: OrmDb, id: i64) -> OrmQuery !IO !Net {
-    let sql = concat(bank_account_select_sql(), " WHERE ba.id = $1")
+    let sql = concat(bank_account_select_sql(), " WHERE id = $1")
     let vals = vec_new()
     let nulls = vec_new()
     pg_param_i64(vals, nulls, id)
     return orm_query_params(db, sql, vals, nulls)?
 }
 fn bank_account_by_company(db: OrmDb, company_id: i64) -> OrmQuery !IO !Net {
-    let sql = concat(bank_account_select_sql(), " WHERE ba.company_id = $1 ORDER BY ba.name, ba.id")
+    let sql = concat(bank_account_select_sql(), " WHERE company_id = $1 ORDER BY name, id")
     let vals = vec_new()
     let nulls = vec_new()
     pg_param_i64(vals, nulls, company_id)
     return orm_query_params(db, sql, vals, nulls)?
 }
 fn bank_account_all(db: OrmDb) -> OrmQuery !IO !Net {
-    return orm_query(db, concat(bank_account_select_sql(), " ORDER BY ba.name, ba.id"))?
+    return orm_query(db, concat(bank_account_select_sql(), " ORDER BY name, id"))?
 }
 // Вмъква и връща реда през RETURNING (id вътре).
 fn bank_account_create(db: OrmDb, company_id: i64, iban: str, bic: str, bank_name: str, currency: str, name: str, account_number: str, gl_account_id: i64, buffer_account_id: i64, balance: str) -> OrmQuery !IO !Net {

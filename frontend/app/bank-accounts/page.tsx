@@ -150,6 +150,12 @@ function BankAccountsInner() {
     );
   }, [rows, q]);
 
+  const accountCode = (id: number) => {
+    if (!id) return "-";
+    const a = accounts.find((x) => x.id === id);
+    return a?.number || "-";
+  };
+
   const accountOptions = (value: number, onChange: (v: number) => void) => (
     <select
       className="select"
@@ -215,10 +221,10 @@ function BankAccountsInner() {
                     {b.iban}
                   </td>
                   <td style={{ fontFamily: "ui-monospace, monospace" }}>
-                    {b.gl_account_code || "-"}
+                    {accountCode(b.gl_account_id)}
                   </td>
                   <td style={{ fontFamily: "ui-monospace, monospace" }}>
-                    {b.buffer_account_code || "-"}
+                    {accountCode(b.buffer_account_id)}
                   </td>
                   <td style={{ textAlign: "right", fontWeight: 500 }}>
                     {b.balance} {b.currency}

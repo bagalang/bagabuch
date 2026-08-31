@@ -24,8 +24,9 @@ export default function LoginPage() {
     try {
       await login(username);
       router.push("/");
-    } catch {
-      setError(t("login.error"));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      setError(msg || t("login.error"));
     } finally {
       setBusy(false);
     }
