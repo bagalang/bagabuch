@@ -25,6 +25,8 @@ const NAV_ITEMS = [
   { href: "/accounts", key: "nav.accounts" },
   { href: "/counterparts", key: "nav.counterparts" },
   { href: "/products", key: "nav.products" },
+  { href: "/bank-accounts", key: "nav.bank_accounts" },
+  { href: "/bank-transactions", key: "nav.bank_transactions" },
   { href: "/invoices", key: "nav.invoices" },
   { href: "/scan", key: "nav.scan" },
   { href: "/internal-docs", key: "nav.internal_docs" },

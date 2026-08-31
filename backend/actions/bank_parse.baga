@@ -1,0 +1,972 @@
+// actions/bank_parse.baga — парсинг на банкови извлечения (OBB XML,
+// ISO camt.053, PostBank XML, MT-940, CSV). Порт на secret/su-doxis
+// bank_transactions.rs. Сумите са десимални (bagadecimal) като стрингове —
+// никога f64. Чисти функции (без IO), диспечерът избира формата по съдържание.
+import "bagadecimal/src/decimal.baga"
+import "xmlbaga/xml.baga"
+import "csvbaga/csv.baga"
+import "fmrbaga/jsonx.baga"
+import "std/str/str.baga"
+// ─── Модели на парснатите данни ───
+struct ParsedTx {
+    date: str,
+    amount: str,      // десимален стринг, може да е отрицателен
+    currency: str,
+    description: str,
+    contra_name: str,
+    contra_iban: str,
+    reference: str,
+    is_duplicate: i64
+}
+struct ParseResult {
+    format_name: str,
+    account_iban: str,
+    account_currency: str,
+    txs: Vec<ParsedTx>,
+    total_count: i64,
+    duplicate_count: i64,
+    new_count: i64
+}
+fn parsed_tx_new() -> ParsedTx {
+    return ParsedTx { date: "", amount: "", currency: "", description: "", contra_name: "", contra_iban: "", reference: "", is_duplicate: 0 }
+}
+fn parse_result_new(format_name: str) -> ParseResult {
+    return ParseResult { format_name: format_name, account_iban: "", account_currency: "", txs: vec_new(), total_count: 0, duplicate_count: 0, new_count: 0 }
+}
+// ─── Общи помощници ───
+fn bp_lower(s: str) -> str {
+    let mut out = ""
+    for i in 0..len(s) {
+        let c = char_at(s, i)
+        if c >= 65 && c <= 90 {
+            out = concat(out, chr(c + 32))
+        } else {
+            out = concat(out, chr(c))
+        }
+    }
+    return out
+}
+fn bp_is_digit(c: i64) -> i64 {
+    if c >= 48 && c <= 57 {
+        return 1
+    }
+    return 0
+}
+fn bp_is_alpha(c: i64) -> i64 {
+    if (c >= 65 && c <= 90) || (c >= 97 && c <= 122) {
+        return 1
+    }
+    return 0
+}
+// "DD/MM/YYYY" или "DD.MM.YYYY" → "YYYY-MM-DD".
+fn bp_date_dmy(s: str) -> str {
+    let parts = str_split(s, "/")
+    if vec_len(parts) == 3 && len(vec_get(parts, 2)) == 4 {
+        return concat(concat(concat(vec_get(parts, 2), "-"), vec_get(parts, 1)), concat("-", vec_get(parts, 0)))
+    }
+    let parts2 = str_split(s, ".")
+    if vec_len(parts2) == 3 && len(vec_get(parts2, 2)) == 4 {
+        return concat(concat(concat(vec_get(parts2, 2), "-"), vec_get(parts2, 1)), concat("-", vec_get(parts2, 0)))
+    }
+    return s
+}
+// Гъвкава дата → "YYYY-MM-DD"; "" при неуспех.
+fn bp_flex_date(s: str) -> str {
+    let t = str_trim(s)
+    if t == "" {
+        return ""
+    }
+    if len(t) == 10 && char_at(t, 4) == 45 {
+        return t
+    }
+    let parts = str_split(t, "/")
+    if vec_len(parts) == 3 && len(vec_get(parts, 2)) == 4 {
+        return concat(concat(concat(vec_get(parts, 2), "-"), vec_get(parts, 1)), concat("-", vec_get(parts, 0)))
+    }
+    let parts2 = str_split(t, ".")
+    if vec_len(parts2) == 3 && len(vec_get(parts2, 2)) == 4 {
+        return concat(concat(concat(vec_get(parts2, 2), "-"), vec_get(parts2, 1)), concat("-", vec_get(parts2, 0)))
+    }
+    let parts3 = str_split(t, "-")
+    if vec_len(parts3) == 3 && len(vec_get(parts3, 0)) == 2 && len(vec_get(parts3, 2)) == 4 {
+        return concat(concat(concat(vec_get(parts3, 2), "-"), vec_get(parts3, 1)), concat("-", vec_get(parts3, 0)))
+    }
+    return ""
+}
+// Оставя само цифри, точка, запетая и минус.
+fn bp_amt_clean(s: str) -> str {
+    let mut out = ""
+    for i in 0..len(s) {
+        let c = char_at(s, i)
+        if (c >= 48 && c <= 57) || c == 46 || c == 44 || c == 45 {
+            out = concat(out, chr(c))
+        }
+    }
+    return out
+}
+// Нормализира сумата към "1234.56" (запетая = десетична или хилядна).
+fn bp_amt_norm(s: str) -> str {
+    let c = bp_amt_clean(s)
+    if c == "" {
+        return ""
+    }
+    let has_comma = str_find(c, ",") >= 0
+    let has_dot = str_find(c, ".") >= 0
+    if has_comma != 0 && has_dot != 0 {
+        return str_replace(c, ",", "")
+    }
+    if has_comma != 0 {
+        return str_replace(c, ",", ".")
+    }
+    return c
+}
+// Сума → каноничен десимален стринг с 2 знака; "" при неуспех.
+fn bp_money(s: str) -> str {
+    let n = bp_amt_norm(s)
+    if n == "" {
+        return ""
+    }
+    let p = dec_parse(n)
+    if p.ok == 0 {
+        return ""
+    }
+    let r = dec_round_dp(p.value, 2)
+    if r.ok == 0 {
+        return ""
+    }
+    return dec_to_string(r.value)
+}
+// ─── OBB XML ───
+fn bp_parse_obb(content: str) -> ParseResult {
+    let mut result = parse_result_new("OBB XML")
+    let p = xml_parser(content)
+    let mut current_tag = ""
+    let mut in_tx: i64 = 0
+    let mut tx_date = ""
+    let mut amount_d = ""
+    let mut amount_c = ""
+    let mut tr_name = ""
+    let mut rem_i = ""
+    let mut rem_ii = ""
+    let mut reference = ""
+    let mut name_r = ""
+    let mut iban_r = ""
+    let mut running: i64 = 1
+    while running == 1 {
+        let ev = xml_next(p)
+        if ev.kind == 1 {
+            current_tag = ev.name
+            if current_tag == "TRANSACTION" {
+                in_tx = 1
+                tx_date = ""
+                amount_d = ""
+                amount_c = ""
+                tr_name = ""
+                rem_i = ""
+                rem_ii = ""
+                reference = ""
+                name_r = ""
+                iban_r = ""
+            }
+        } else {
+            if ev.kind == 3 {
+                if in_tx == 1 {
+                    if current_tag == "POST_DATE" {
+                        tx_date = ev.text
+                    } else {
+                        if current_tag == "AMOUNT_D" {
+                            amount_d = ev.text
+                        } else {
+                            if current_tag == "AMOUNT_C" {
+                                amount_c = ev.text
+                            } else {
+                                if current_tag == "TR_NAME" {
+                                    tr_name = ev.text
+                                } else {
+                                    if current_tag == "REM_I" {
+                                        rem_i = ev.text
+                                    } else {
+                                        if current_tag == "REM_II" {
+                                            rem_ii = ev.text
+                                        } else {
+                                            if current_tag == "REFERENCE" {
+                                                reference = ev.text
+                                            } else {
+                                                if current_tag == "NAME_R" {
+                                                    name_r = ev.text
+                                                } else {
+                                                    if current_tag == "IBAN_R" {
+                                                        let t = str_trim(ev.text)
+                                                        if str_starts_with(t, "BG") || str_starts_with(t, "LT") || str_starts_with(t, "DE") {
+                                                            iban_r = t
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    if current_tag == "IBAN_S" {
+                        result.account_iban = ev.text
+                    }
+                }
+            } else {
+                if ev.kind == 2 {
+                    if ev.name == "TRANSACTION" && in_tx == 1 {
+                        in_tx = 0
+                        if tx_date != "" {
+                            let date = bp_date_dmy(tx_date)
+                            let mut amount = ""
+                            if amount_d != "" {
+                                amount = bp_money(concat("-", amount_d))
+                            } else {
+                                if amount_c != "" {
+                                    amount = bp_money(amount_c)
+                                }
+                            }
+                            if amount != "" && amount != "0" && amount != "0.00" {
+                                let mut desc = ""
+                                if tr_name != "" {
+                                    desc = tr_name
+                                }
+                                if rem_i != "" {
+                                    if desc != "" {
+                                        desc = concat(desc, " - ")
+                                    }
+                                    desc = concat(desc, rem_i)
+                                }
+                                if rem_ii != "" {
+                                    if desc != "" {
+                                        desc = concat(desc, " - ")
+                                    }
+                                    desc = concat(desc, rem_ii)
+                                }
+                                let mut tx = parsed_tx_new()
+                                tx.date = date
+                                tx.amount = amount
+                                tx.currency = "EUR"
+                                tx.description = desc
+                                tx.contra_name = name_r
+                                tx.contra_iban = iban_r
+                                tx.reference = reference
+                                vec_push(result.txs, tx)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if ev.kind <= 0 {
+            running = 0
+        }
+    }
+    result.account_currency = "EUR"
+    return result
+}
+// ─── ISO camt.053 ───
+fn bp_parse_camt(content: str) -> ParseResult {
+    let mut result = parse_result_new("ISO camt.053")
+    let p = xml_parser(content)
+    let stack: Vec<str> = vec_new()
+    let mut depth: i64 = 0
+    let mut in_ntry: i64 = 0
+    let mut in_bal: i64 = 0
+    let mut in_rltd: i64 = 0
+    let mut ntry_amt = ""
+    let mut ntry_ccy = ""
+    let mut ntry_cd = ""
+    let mut ntry_date = ""
+    let mut ntry_desc = ""
+    let mut ntry_contra = ""
+    let mut ntry_iban = ""
+    let mut ntry_ref = ""
+    let mut ntry_e2e = ""
+    let mut running: i64 = 1
+    while running == 1 {
+        let ev = xml_next(p)
+        let local = xml_local_name(ev.name)
+        if ev.kind == 1 {
+            if local == "Ntry" {
+                in_ntry = 1
+                ntry_amt = ""
+                ntry_ccy = ""
+                ntry_cd = ""
+                ntry_date = ""
+                ntry_desc = ""
+                ntry_contra = ""
+                ntry_iban = ""
+                ntry_ref = ""
+                ntry_e2e = ""
+            }
+            if local == "Bal" {
+                in_bal = 1
+            }
+            if local == "RltdPties" {
+                in_rltd = 1
+            }
+            if local == "Amt" && (in_ntry == 1 || in_bal == 1) {
+                if map_has(ev.attrs, "Ccy") == 1 {
+                    let ccy = map_get(ev.attrs, "Ccy")
+                    if in_ntry == 1 && in_bal == 0 && ntry_ccy == "" {
+                        ntry_ccy = ccy
+                    }
+                    if result.account_currency == "" {
+                        result.account_currency = ccy
+                    }
+                }
+            }
+            if depth < vec_len(stack) {
+                vec_set(stack, depth, local)
+            } else {
+                vec_push(stack, local)
+            }
+            depth = depth + 1
+        } else {
+            if ev.kind == 3 {
+                let text = str_trim(ev.text)
+                if text != "" {
+                    let current = local
+                    let mut parent = ""
+                    if depth >= 2 {
+                        parent = vec_get(stack, depth - 2)
+                    }
+                    if in_ntry == 1 {
+                        if current == "Amt" && ntry_amt == "" {
+                            ntry_amt = text
+                        } else {
+                            if current == "CdtDbtInd" && ntry_cd == "" {
+                                ntry_cd = text
+                            } else {
+                                if current == "Dt" && (parent == "BookgDt" || parent == "ValDt") && ntry_date == "" {
+                                    ntry_date = text
+                                } else {
+                                    if current == "DtTm" && (parent == "BookgDt" || parent == "ValDt") && ntry_date == "" {
+                                        let ti = str_find(text, "T")
+                                        if ti >= 0 {
+                                            ntry_date = substr(text, 0, ti)
+                                        } else {
+                                            ntry_date = text
+                                        }
+                                    } else {
+                                        if current == "Ustrd" || current == "AddtlNtryInf" {
+                                            if ntry_desc == "" {
+                                                ntry_desc = text
+                                            } else {
+                                                ntry_desc = concat(concat(ntry_desc, " | "), text)
+                                            }
+                                        } else {
+                                            if current == "NtryRef" {
+                                                ntry_ref = text
+                                            } else {
+                                                if current == "EndToEndId" {
+                                                    if ntry_e2e == "" {
+                                                        ntry_e2e = text
+                                                    }
+                                                } else {
+                                                    if current == "AcctSvcrRef" {
+                                                        ntry_e2e = text
+                                                    } else {
+                                                        if current == "Nm" && in_rltd == 1 && ntry_contra == "" {
+                                                            ntry_contra = text
+                                                        } else {
+                                                            if current == "IBAN" && in_rltd == 1 && ntry_iban == "" {
+                                                                ntry_iban = text
+                                                            } else {
+                                                                if current == "IBAN" && in_rltd == 0 && result.account_iban == "" {
+                                                                    result.account_iban = text
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        if current == "IBAN" && result.account_iban == "" {
+                            result.account_iban = text
+                        }
+                    }
+                }
+            } else {
+                if ev.kind == 2 {
+                    if local == "Bal" && in_bal == 1 {
+                        in_bal = 0
+                    }
+                    if local == "RltdPties" {
+                        in_rltd = 0
+                    }
+                    if local == "Ntry" && in_ntry == 1 {
+                        in_ntry = 0
+                        let amt = bp_money(ntry_amt)
+                        if amt != "" && amt != "0" && amt != "0.00" && ntry_date != "" {
+                            let mut amount = amt
+                            if ntry_cd == "DBIT" {
+                                amount = concat("-", amt)
+                            }
+                            let mut reference = ntry_ref
+                            if reference == "" {
+                                reference = ntry_e2e
+                            }
+                            let mut ccy = ntry_ccy
+                            if ccy == "" {
+                                ccy = result.account_currency
+                            }
+                            if ccy == "" {
+                                ccy = "EUR"
+                            }
+                            let mut tx = parsed_tx_new()
+                            tx.date = ntry_date
+                            tx.amount = amount
+                            tx.currency = ccy
+                            tx.description = ntry_desc
+                            tx.contra_name = ntry_contra
+                            tx.contra_iban = ntry_iban
+                            tx.reference = reference
+                            vec_push(result.txs, tx)
+                        }
+                    }
+                    if depth > 0 {
+                        depth = depth - 1
+                    }
+                }
+            }
+        }
+        if ev.kind <= 0 {
+            running = 0
+        }
+    }
+    return result
+}
+// ─── PostBank XML ───
+fn bp_parse_postbank(content: str) -> ParseResult {
+    let mut result = parse_result_new("PostBank XML")
+    let p = xml_parser(content)
+    let stack: Vec<str> = vec_new()
+    let mut depth: i64 = 0
+    let mut in_model: i64 = 0
+    let mut account_number = ""
+    let mut account_currency = ""
+    let mut flow_direction = ""
+    let mut tx_amount = ""
+    let mut tx_currency = ""
+    let mut booking_date = ""
+    let mut counterparty = ""
+    let mut from_to_account = ""
+    let mut remittance = ""
+    let mut bordero = ""
+    let mut type_op = ""
+    let mut running: i64 = 1
+    while running == 1 {
+        let ev = xml_next(p)
+        if ev.kind == 1 {
+            if ev.name == "MultipleAccountTransactionItemAPIOutputModel" {
+                in_model = 1
+                account_number = ""
+                account_currency = ""
+                flow_direction = ""
+                tx_amount = ""
+                tx_currency = ""
+                booking_date = ""
+                counterparty = ""
+                from_to_account = ""
+                remittance = ""
+                bordero = ""
+                type_op = ""
+            }
+            if depth < vec_len(stack) {
+                vec_set(stack, depth, ev.name)
+            } else {
+                vec_push(stack, ev.name)
+            }
+            depth = depth + 1
+        } else {
+            if ev.kind == 3 {
+                let text = str_trim(ev.text)
+                if text != "" && in_model == 1 {
+                    let current = ev.name
+                    let mut parent = ""
+                    if depth >= 2 {
+                        parent = vec_get(stack, depth - 2)
+                    }
+                    if current == "AccountNumber" {
+                        account_number = text
+                        if result.account_iban == "" {
+                            result.account_iban = text
+                        }
+                    } else {
+                        if current == "AccountCurrency" {
+                            account_currency = text
+                            if result.account_currency == "" {
+                                result.account_currency = text
+                            }
+                        } else {
+                            if current == "FlowDirection" {
+                                flow_direction = text
+                            } else {
+                                if current == "TypeOperation" {
+                                    type_op = text
+                                } else {
+                                    if current == "Counterparty" {
+                                        counterparty = text
+                                    } else {
+                                        if current == "FromToAccount" {
+                                            from_to_account = text
+                                        } else {
+                                            if current == "RemittanceInformation" {
+                                                remittance = text
+                                            } else {
+                                                if current == "BorderoNumber" {
+                                                    bordero = text
+                                                } else {
+                                                    if current == "Value" && parent == "TransactionAmount" {
+                                                        tx_amount = text
+                                                    } else {
+                                                        if current == "Code" && parent == "CurrencyCode" && tx_currency == "" {
+                                                            tx_currency = text
+                                                        } else {
+                                                            if current == "DateTimeValue" && parent == "BookingDate" {
+                                                                let ti = str_find(text, "T")
+                                                                if ti >= 0 {
+                                                                    booking_date = substr(text, 0, ti)
+                                                                } else {
+                                                                    booking_date = text
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                if ev.kind == 2 {
+                    if ev.name == "MultipleAccountTransactionItemAPIOutputModel" && in_model == 1 {
+                        in_model = 0
+                        let amt = bp_money(tx_amount)
+                        if amt != "" && amt != "0" && amt != "0.00" && booking_date != "" {
+                            let mut amount = amt
+                            if flow_direction == "Outbound" {
+                                amount = concat("-", amt)
+                            }
+                            let mut desc = type_op
+                            if remittance != "" {
+                                if desc == "" {
+                                    desc = remittance
+                                } else {
+                                    desc = concat(concat(desc, " - "), remittance)
+                                }
+                            }
+                            let mut ccy = tx_currency
+                            if ccy == "" {
+                                ccy = account_currency
+                            }
+                            let mut tx = parsed_tx_new()
+                            tx.date = booking_date
+                            tx.amount = amount
+                            tx.currency = ccy
+                            tx.description = desc
+                            tx.contra_name = counterparty
+                            tx.contra_iban = from_to_account
+                            tx.reference = bordero
+                            vec_push(result.txs, tx)
+                        }
+                    }
+                    if depth > 0 {
+                        depth = depth - 1
+                    }
+                }
+            }
+        }
+        if ev.kind <= 0 {
+            running = 0
+        }
+    }
+    return result
+}
+// ─── MT-940 ───
+fn bp_parse_mt940(content: str) -> ParseResult {
+    let mut result = parse_result_new("MT-940")
+    let lines = str_split(content, "\n")
+    let mut cur_amount = ""
+    let mut cur_date = ""
+    let mut cur_ref = ""
+    let mut cur_desc = ""
+    let mut cur_contra = ""
+    let mut cur_iban = ""
+    let mut i: i64 = 0
+    while i < vec_len(lines) {
+        let line = str_trim(vec_get(lines, i))
+        if line != "" && line != "-" {
+            if str_starts_with(line, ":25:") {
+                result.account_iban = str_trim(substr(line, 4, len(line)))
+            } else {
+                if str_starts_with(line, ":60F:") {
+                    let rest = substr(line, 5, len(line))
+                    if len(rest) >= 10 {
+                        result.account_currency = substr(rest, 7, 10)
+                    }
+                } else {
+                    if str_starts_with(line, ":61:") {
+                        if cur_amount != "" {
+                            let mut tx = parsed_tx_new()
+                            tx.date = cur_date
+                            tx.amount = cur_amount
+                            tx.currency = result.account_currency
+                            tx.description = cur_desc
+                            tx.contra_name = cur_contra
+                            tx.contra_iban = cur_iban
+                            tx.reference = cur_ref
+                            vec_push(result.txs, tx)
+                        }
+                        cur_amount = ""
+                        cur_date = ""
+                        cur_ref = ""
+                        cur_desc = ""
+                        cur_contra = ""
+                        cur_iban = ""
+                        let rest = substr(line, 4, len(line))
+                        if len(rest) >= 10 {
+                            let date_part = substr(rest, 0, 6)
+                            cur_date = concat(concat(concat("20", substr(date_part, 0, 2)), concat("-", substr(date_part, 2, 4))), concat("-", substr(date_part, 4, 6)))
+                            let mut pos: i64 = 6
+                            if len(rest) > pos + 4 {
+                                let mut all_digits: i64 = 1
+                                let mut k: i64 = 0
+                                while k < 4 {
+                                    if bp_is_digit(char_at(rest, pos + k)) == 0 {
+                                        all_digits = 0
+                                    }
+                                    k = k + 1
+                                }
+                                if all_digits == 1 {
+                                    pos = pos + 4
+                                }
+                            }
+                            let mut is_credit: i64 = 1
+                            let tail = substr(rest, pos, len(rest))
+                            if str_starts_with(tail, "RC") {
+                                pos = pos + 2
+                            } else {
+                                if str_starts_with(tail, "RD") {
+                                    is_credit = 0
+                                    pos = pos + 2
+                                } else {
+                                    if str_starts_with(tail, "C") {
+                                        pos = pos + 1
+                                    } else {
+                                        if str_starts_with(tail, "D") {
+                                            is_credit = 0
+                                            pos = pos + 1
+                                        }
+                                    }
+                                }
+                            }
+                            let amount_start = pos
+                            let mut amount_end = pos
+                            while amount_end < len(rest) {
+                                if bp_is_alpha(char_at(rest, amount_end)) == 1 {
+                                    break
+                                }
+                                amount_end = amount_end + 1
+                            }
+                            let amt_raw = substr(rest, amount_start, amount_end)
+                            let amt_str = str_replace(amt_raw, ",", ".")
+                            let mut amt = bp_money(amt_str)
+                            if amt != "" && is_credit == 0 {
+                                amt = concat("-", amt)
+                            }
+                            cur_amount = amt
+                            let remainder = substr(rest, amount_end, len(rest))
+                            let sl = str_find(remainder, "//")
+                            if sl >= 0 {
+                                cur_ref = substr(remainder, sl + 2, len(remainder))
+                            }
+                        }
+                    } else {
+                        if str_starts_with(line, ":86:") {
+                            if cur_amount != "" {
+                                let detail = substr(line, 4, len(line))
+                                let segs = str_split(detail, "+")
+                                let mut desc_parts = ""
+                                let mut contra_name = ""
+                                let mut contra_iban = ""
+                                let mut s: i64 = 0
+                                while s < vec_len(segs) {
+                                    let seg = vec_get(segs, s)
+                                    if str_starts_with(seg, "00") {
+                                        let part = substr(seg, 2, len(seg))
+                                        if desc_parts == "" {
+                                            desc_parts = part
+                                        } else {
+                                            desc_parts = concat(concat(desc_parts, " | "), part)
+                                        }
+                                    } else {
+                                        if str_starts_with(seg, "21") {
+                                            let part = substr(seg, 2, len(seg))
+                                            if desc_parts == "" {
+                                                desc_parts = part
+                                            } else {
+                                                desc_parts = concat(concat(desc_parts, " | "), part)
+                                            }
+                                        } else {
+                                            if str_starts_with(seg, "31") {
+                                                contra_iban = substr(seg, 2, len(seg))
+                                            } else {
+                                                if str_starts_with(seg, "32") {
+                                                    contra_name = substr(seg, 2, len(seg))
+                                                }
+                                            }
+                                        }
+                                    }
+                                    s = s + 1
+                                }
+                                if desc_parts == "" {
+                                    cur_desc = detail
+                                } else {
+                                    cur_desc = desc_parts
+                                }
+                                if contra_name != "" {
+                                    cur_contra = contra_name
+                                }
+                                if contra_iban != "" {
+                                    cur_iban = contra_iban
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        i = i + 1
+    }
+    if cur_amount != "" {
+        let mut tx = parsed_tx_new()
+        tx.date = cur_date
+        tx.amount = cur_amount
+        tx.currency = result.account_currency
+        tx.description = cur_desc
+        tx.contra_name = cur_contra
+        tx.contra_iban = cur_iban
+        tx.reference = cur_ref
+        vec_push(result.txs, tx)
+    }
+    if result.account_currency == "" {
+        result.account_currency = "EUR"
+    }
+    return result
+}
+// ─── CSV ───
+fn bp_parse_csv(content: str) -> ParseResult {
+    let mut result = parse_result_new("CSV")
+    let lines = str_split(content, "\n")
+    let mut delim: i64 = 44
+    if str_find(content, ";") >= 0 {
+        delim = 59
+    }
+    // Преамбула: IBAN и валута.
+    let mut i: i64 = 0
+    while i < vec_len(lines) {
+        let line = vec_get(lines, i)
+        if str_find(line, "IBAN:") >= 0 || str_find(line, "IBAN;") >= 0 || str_find(line, "IBAN,") >= 0 {
+            let parts = str_split(line, ":")
+            let mut k: i64 = 0
+            while k < vec_len(parts) {
+                let t = str_trim(vec_get(parts, k))
+                if str_starts_with(t, "BG") || str_starts_with(t, "LT") {
+                    result.account_iban = t
+                }
+                k = k + 1
+            }
+        }
+        if str_find(line, "Валута:") >= 0 || str_find(line, "Currency:") >= 0 {
+            let parts = str_split(line, ":")
+            let mut k: i64 = 0
+            while k < vec_len(parts) {
+                let t = str_trim(vec_get(parts, k))
+                if len(t) == 3 {
+                    result.account_currency = t
+                }
+                k = k + 1
+            }
+        }
+        i = i + 1
+    }
+    // Заглавен ред.
+    let mut header_idx: i64 = -1
+    i = 0
+    while i < vec_len(lines) {
+        let lower = bp_lower(vec_get(lines, i))
+        let has_date = str_find(lower, "дата") >= 0 || str_find(lower, "date") >= 0
+        let has_amt = str_find(lower, "дебит") >= 0 || str_find(lower, "кредит") >= 0 || str_find(lower, "сума") >= 0 || str_find(lower, "amount") >= 0
+        if has_date != 0 && has_amt != 0 {
+            header_idx = i
+            i = vec_len(lines)
+        } else {
+            i = i + 1
+        }
+    }
+    if header_idx < 0 {
+        return result
+    }
+    let header_cells = str_split(vec_get(lines, header_idx), chr(delim))
+    let mut date_col: i64 = 0
+    let mut debit_col: i64 = -1
+    let mut credit_col: i64 = -1
+    let mut amount_col: i64 = -1
+    let mut desc_col: i64 = -1
+    let mut ref_col: i64 = -1
+    let mut c: i64 = 0
+    while c < vec_len(header_cells) {
+        let h = bp_lower(str_trim(vec_get(header_cells, c)))
+        if date_col == 0 && (str_find(h, "дата") >= 0 || str_find(h, "date") >= 0) {
+            date_col = c
+        }
+        if str_find(h, "дебит") >= 0 || str_find(h, "debit") >= 0 {
+            debit_col = c
+        }
+        if str_find(h, "кредит") >= 0 || str_find(h, "credit") >= 0 {
+            credit_col = c
+        }
+        if str_find(h, "сума") >= 0 || str_find(h, "amount") >= 0 {
+            amount_col = c
+        }
+        if str_find(h, "описание") >= 0 || str_find(h, "description") >= 0 || str_find(h, "основание") >= 0 || len(h) > 15 {
+            if desc_col < 0 {
+                desc_col = c
+            }
+        }
+        if str_find(h, "референ") >= 0 || str_find(h, "reference") >= 0 || str_find(h, "id") >= 0 {
+            if ref_col < 0 {
+                ref_col = c
+            }
+        }
+        c = c + 1
+    }
+    if desc_col < 0 && vec_len(header_cells) > 0 {
+        desc_col = vec_len(header_cells) - 1
+    }
+    // Редове с данни.
+    i = header_idx + 1
+    while i < vec_len(lines) {
+        let line = str_trim(vec_get(lines, i))
+        if line != "" {
+            let cols = str_split(line, chr(delim))
+            if vec_len(cols) > date_col {
+                let date = bp_flex_date(vec_get(cols, date_col))
+                if date != "" {
+                    let mut amount = ""
+                    if debit_col >= 0 && credit_col >= 0 {
+                        let mut debit = ""
+                        let mut credit = ""
+                        if debit_col < vec_len(cols) {
+                            debit = bp_money(vec_get(cols, debit_col))
+                        }
+                        if credit_col < vec_len(cols) {
+                            credit = bp_money(vec_get(cols, credit_col))
+                        }
+                        if credit != "" && credit != "0" && credit != "0.00" {
+                            amount = credit
+                        } else {
+                            if debit != "" && debit != "0" && debit != "0.00" {
+                                amount = concat("-", debit)
+                            }
+                        }
+                    } else {
+                        if amount_col >= 0 && amount_col < vec_len(cols) {
+                            amount = bp_money(vec_get(cols, amount_col))
+                        }
+                    }
+                    if amount != "" && amount != "0" && amount != "0.00" {
+                        let mut description = ""
+                        if desc_col >= 0 && desc_col < vec_len(cols) {
+                            description = vec_get(cols, desc_col)
+                        }
+                        let mut reference = ""
+                        if ref_col >= 0 && ref_col < vec_len(cols) {
+                            reference = vec_get(cols, ref_col)
+                        }
+                        let mut tx = parsed_tx_new()
+                        tx.date = date
+                        tx.amount = amount
+                        tx.currency = result.account_currency
+                        tx.description = description
+                        tx.reference = reference
+                        vec_push(result.txs, tx)
+                    }
+                }
+            }
+        }
+        i = i + 1
+    }
+    if result.account_currency == "" {
+        result.account_currency = "EUR"
+    }
+    return result
+}
+// ─── Диспечер ───
+// Разпознава формата и връща парснат резултат. err != "" при непознат формат.
+fn bp_detect_and_parse(content: str) -> ParseResult {
+    let trimmed = str_trim(content)
+    if str_find(trimmed, "<STATEMENT>") >= 0 && str_find(trimmed, "<POST_DATE>") >= 0 {
+        return bp_parse_obb(trimmed)
+    }
+    if str_find(trimmed, "camt.053") >= 0 || str_find(trimmed, "BkToCstmrStmt") >= 0 {
+        return bp_parse_camt(trimmed)
+    }
+    if str_find(trimmed, "<CustomerReportAccountsTransactionsHistory") >= 0 || str_find(trimmed, "<MultipleAccountTransactionItemAPIOutputModel") >= 0 {
+        return bp_parse_postbank(trimmed)
+    }
+    if str_starts_with(trimmed, ":20:") || str_find(trimmed, ":60F:") >= 0 || str_find(trimmed, ":61:") >= 0 {
+        return bp_parse_mt940(trimmed)
+    }
+    if (str_find(trimmed, ";") >= 0 || str_find(trimmed, ",") >= 0) {
+        let lower = bp_lower(trimmed)
+        if str_find(lower, "iban") >= 0 || str_find(lower, "дата") >= 0 || str_find(lower, "date") >= 0 {
+            return bp_parse_csv(trimmed)
+        }
+    }
+    return parse_result_new("")
+}
+// ─── JSON сериализация ───
+fn bp_tx_to_json(tx: ParsedTx) -> JObj {
+    let mut o = jobj_new()
+    o = jobj_str(o, "date", tx.date)
+    o = jobj_str(o, "amount", tx.amount)
+    o = jobj_str(o, "currency", tx.currency)
+    o = jobj_str(o, "description", tx.description)
+    o = jobj_str(o, "contra_name", tx.contra_name)
+    o = jobj_str(o, "contra_iban", tx.contra_iban)
+    o = jobj_str(o, "reference", tx.reference)
+    o = jobj_bool(o, "is_duplicate", tx.is_duplicate)
+    return o
+}
+fn bp_result_to_json(r: ParseResult) -> JObj {
+    let mut arr = jarr_new()
+    let mut i: i64 = 0
+    while i < vec_len(r.txs) {
+        arr = jarr_obj(arr, bp_tx_to_json(vec_get(r.txs, i)))
+        i = i + 1
+    }
+    let mut o = jobj_new()
+    o = jobj_str(o, "format_name", r.format_name)
+    o = jobj_str(o, "account_iban", r.account_iban)
+    o = jobj_str(o, "account_currency", r.account_currency)
+    o = jobj_arr(o, "transactions", arr)
+    o = jobj_i64(o, "total_count", r.total_count)
+    o = jobj_i64(o, "duplicate_count", r.duplicate_count)
+    o = jobj_i64(o, "new_count", r.new_count)
+    return o
+}

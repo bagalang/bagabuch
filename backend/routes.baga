@@ -26,6 +26,8 @@ import "actions/periods.baga"
 import "actions/opening_balances.baga"
 import "actions/active_company.baga"
 import "actions/exchange_rates.baga"
+import "actions/bank_accounts.baga"
+import "actions/bank_transactions.baga"
 import "actions/scans.baga"
 import "actions/admin_settings.baga"
 import "actions/users.baga"
@@ -157,6 +159,17 @@ fn RID_ROLES_UPDATE() -> i64 { return 192 }
 fn RID_ROLES_DELETE() -> i64 { return 193 }
 fn RID_REPORTS() -> i64 { return 200 }
 fn RID_REPORTS_EXPORT() -> i64 { return 201 }
+fn RID_BANK_ACCOUNTS_INDEX() -> i64 { return 210 }
+fn RID_BANK_ACCOUNTS_CREATE() -> i64 { return 211 }
+fn RID_BANK_ACCOUNTS_SHOW() -> i64 { return 212 }
+fn RID_BANK_ACCOUNTS_UPDATE() -> i64 { return 213 }
+fn RID_BANK_ACCOUNTS_DELETE() -> i64 { return 214 }
+fn RID_BANK_TRANSACTIONS_INDEX() -> i64 { return 220 }
+fn RID_BANK_TRANSACTIONS_PREVIEW() -> i64 { return 221 }
+fn RID_BANK_TRANSACTIONS_IMPORT() -> i64 { return 222 }
+fn RID_BANK_TRANSACTIONS_BOOK() -> i64 { return 223 }
+fn RID_BANK_TRANSACTIONS_REALLOCATE() -> i64 { return 224 }
+fn RID_BANK_TRANSACTIONS_DELETE() -> i64 { return 225 }
 
 fn fmr_build_app() -> FmrApp !IO {
     let cfg = fmr_config_load()?
@@ -282,6 +295,17 @@ fn fmr_build_app() -> FmrApp !IO {
     app = fmr_route_meta(app, "DELETE", "/v1/roles/{id}", RID_ROLES_DELETE(), "", "roles", 0, "", "-", "204", "")
     app = fmr_route_meta(app, "GET", "/v1/reports", RID_REPORTS(), "", "reports", 0, "", "Report", "200", "kind:s,from:s,to:s,account:s,counterpart_id")
     app = fmr_route_meta(app, "GET", "/v1/reports/export", RID_REPORTS_EXPORT(), "", "reports", 0, "", "-", "200", "kind:s,from:s,to:s,account:s,counterpart_id,format:s")
+    app = fmr_route_meta(app, "GET", "/v1/bank-accounts", RID_BANK_ACCOUNTS_INDEX(), "", "bank-accounts", 0, "", "BankAccountList", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/bank-accounts", RID_BANK_ACCOUNTS_CREATE(), "", "bank-accounts", 0, "BankAccountCreate", "BankAccount", "201", "")
+    app = fmr_route_meta(app, "GET", "/v1/bank-accounts/{id}", RID_BANK_ACCOUNTS_SHOW(), "", "bank-accounts", 0, "", "BankAccount", "200", "")
+    app = fmr_route_meta(app, "PATCH", "/v1/bank-accounts/{id}", RID_BANK_ACCOUNTS_UPDATE(), "", "bank-accounts", 0, "BankAccountUpdate", "BankAccount", "200", "")
+    app = fmr_route_meta(app, "DELETE", "/v1/bank-accounts/{id}", RID_BANK_ACCOUNTS_DELETE(), "", "bank-accounts", 0, "", "-", "204", "")
+    app = fmr_route_meta(app, "GET", "/v1/bank-transactions", RID_BANK_TRANSACTIONS_INDEX(), "", "bank-transactions", 0, "", "BankTransactionList", "200", "bank_account_id,status")
+    app = fmr_route_meta(app, "POST", "/v1/bank-transactions/preview", RID_BANK_TRANSACTIONS_PREVIEW(), "", "bank-transactions", 0, "BankPreviewRequest", "BankPreview", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/bank-transactions/import", RID_BANK_TRANSACTIONS_IMPORT(), "", "bank-transactions", 0, "BankImportRequest", "BankImportResult", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/bank-transactions/{id}/book", RID_BANK_TRANSACTIONS_BOOK(), "", "bank-transactions", 0, "BankBookRequest", "BankBookResult", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/bank-transactions/{id}/reallocate", RID_BANK_TRANSACTIONS_REALLOCATE(), "", "bank-transactions", 0, "BankReallocateRequest", "BankReallocateResult", "200", "")
+    app = fmr_route_meta(app, "DELETE", "/v1/bank-transactions/{id}", RID_BANK_TRANSACTIONS_DELETE(), "", "bank-transactions", 0, "", "-", "204", "")
     return app
 }
 
@@ -419,5 +443,16 @@ fn fmr_dispatch(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net !Random {
     if id == RID_ROLES_DELETE() { return act_roles_delete(ctx, db)? }
     if id == RID_REPORTS() { return act_reports(ctx, db)? }
     if id == RID_REPORTS_EXPORT() { return act_reports_export(ctx, db)? }
+    if id == RID_BANK_ACCOUNTS_INDEX() { return act_bank_accounts_index(ctx, db)? }
+    if id == RID_BANK_ACCOUNTS_CREATE() { return act_bank_accounts_create(ctx, db)? }
+    if id == RID_BANK_ACCOUNTS_SHOW() { return act_bank_accounts_show(ctx, db)? }
+    if id == RID_BANK_ACCOUNTS_UPDATE() { return act_bank_accounts_update(ctx, db)? }
+    if id == RID_BANK_ACCOUNTS_DELETE() { return act_bank_accounts_delete(ctx, db)? }
+    if id == RID_BANK_TRANSACTIONS_INDEX() { return act_bank_transactions_index(ctx, db)? }
+    if id == RID_BANK_TRANSACTIONS_PREVIEW() { return act_bank_transactions_preview(ctx, db)? }
+    if id == RID_BANK_TRANSACTIONS_IMPORT() { return act_bank_transactions_import(ctx, db)? }
+    if id == RID_BANK_TRANSACTIONS_BOOK() { return act_bank_transactions_book(ctx, db)? }
+    if id == RID_BANK_TRANSACTIONS_REALLOCATE() { return act_bank_transactions_reallocate(ctx, db)? }
+    if id == RID_BANK_TRANSACTIONS_DELETE() { return act_bank_transactions_delete(ctx, db)? }
     return fmr_out(fmr_500("unhandled route"), db)
 }

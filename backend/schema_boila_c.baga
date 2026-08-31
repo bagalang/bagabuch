@@ -126,5 +126,20 @@ fn bagabuch_boila_migrations_c() -> MigrationSet {
         "CREATE TABLE IF NOT EXISTS roles (id BIGINT, name TEXT, description TEXT, permissions TEXT, created_at TIMESTAMPTZ, PRIMARY KEY (id))",
         "DROP TABLE IF EXISTS roles"
     )
+    // Банков модул: обогатяване на bank_accounts (име, номер, ГЛ/буферна сметка).
+    set = migrate_add(set, 20260831101, "add_bank_accounts_name", "ALTER TABLE bank_accounts ADD COLUMN name TEXT", "ALTER TABLE bank_accounts DROP COLUMN name")
+    set = migrate_add(set, 20260831102, "add_bank_accounts_account_number", "ALTER TABLE bank_accounts ADD COLUMN account_number TEXT", "ALTER TABLE bank_accounts DROP COLUMN account_number")
+    set = migrate_add(set, 20260831103, "add_bank_accounts_gl_account_id", "ALTER TABLE bank_accounts ADD COLUMN gl_account_id BIGINT", "ALTER TABLE bank_accounts DROP COLUMN gl_account_id")
+    set = migrate_add(set, 20260831104, "add_bank_accounts_buffer_account_id", "ALTER TABLE bank_accounts ADD COLUMN buffer_account_id BIGINT", "ALTER TABLE bank_accounts DROP COLUMN buffer_account_id")
+    set = migrate_add(set, 20260831109, "add_bank_accounts_balance", "ALTER TABLE bank_accounts ADD COLUMN balance TEXT", "ALTER TABLE bank_accounts DROP COLUMN balance")
+    set = migrate_add(set, 20260831110, "add_bank_accounts_company_id", "ALTER TABLE bank_accounts ADD COLUMN company_id BIGINT", "ALTER TABLE bank_accounts DROP COLUMN company_id")
+    set = migrate_add(set, 20260831112, "bank_accounts_company_id_index", "CREATE INDEX IF NOT EXISTS bank_accounts_company_id_idx ON bank_accounts (company_id)", "DROP INDEX IF EXISTS bank_accounts_company_id_idx ON bank_accounts")
+    // Банков модул: състояние на транзакциите.
+    set = migrate_add(set, 20260831105, "add_bank_transactions_transaction_type", "ALTER TABLE bank_transactions ADD COLUMN transaction_type TEXT", "ALTER TABLE bank_transactions DROP COLUMN transaction_type")
+    set = migrate_add(set, 20260831106, "add_bank_transactions_is_booked", "ALTER TABLE bank_transactions ADD COLUMN is_booked BIGINT", "ALTER TABLE bank_transactions DROP COLUMN is_booked")
+    set = migrate_add(set, 20260831107, "add_bank_transactions_is_allocated", "ALTER TABLE bank_transactions ADD COLUMN is_allocated BIGINT", "ALTER TABLE bank_transactions DROP COLUMN is_allocated")
+    set = migrate_add(set, 20260831108, "add_bank_transactions_journal_entry_id", "ALTER TABLE bank_transactions ADD COLUMN journal_entry_id BIGINT", "ALTER TABLE bank_transactions DROP COLUMN journal_entry_id")
+    set = migrate_add(set, 20260831111, "add_bank_transactions_company_id", "ALTER TABLE bank_transactions ADD COLUMN company_id BIGINT", "ALTER TABLE bank_transactions DROP COLUMN company_id")
+    set = migrate_add(set, 20260831113, "bank_transactions_company_id_index", "CREATE INDEX IF NOT EXISTS bank_transactions_company_id_idx ON bank_transactions (company_id)", "DROP INDEX IF EXISTS bank_transactions_company_id_idx ON bank_transactions")
     return set
 }

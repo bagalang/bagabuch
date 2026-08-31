@@ -14,6 +14,23 @@ fn active_company_key(sub: str) -> str {
     return concat("активна_фирма:", sub)
 }
 
+// Активната фирма на потребителя (id или 0). db се предава напред.
+struct ActiveCompany {
+    id: i64,
+    db: OrmDb
+}
+
+fn active_company_id(db: OrmDb, sub: str) -> ActiveCompany !IO !Net {
+    let key = active_company_key(sub)
+    let q = setting_get_by_key(db, key)?
+    if orm_ok_q(q) == 0 || orm_nrows(q) < 1 {
+        return ActiveCompany { id: 0, db: orm_db_q(q) }
+    }
+    let val = orm_cell_by(q, 0, "value")
+    let cid = parse_int(val)
+    return ActiveCompany { id: cid, db: orm_db_q(q) }
+}
+
 fn act_active_company_get(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     let auth = act_require_auth(ctx, db)
     if auth.ok == 0 {
