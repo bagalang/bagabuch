@@ -81,7 +81,9 @@ echo "==> backend на :$PORT (ORM_BACKEND=boila)"
   cd "$BAGA_ROOT"
   export PORT ORM_BACKEND=boila BOILA_PGHOST=127.0.0.1 BOILA_PGPORT
   export BOILA_PGUSER="${BOILA_PGUSER:-boila}" BOILA_PGDATABASE="${BOILA_PGDATABASE:-boila}"
-  export FMR_WORKERS="${FMR_WORKERS:-4}" FMR_LOG="${FMR_LOG:-1}" FMR_CORS="${FMR_CORS:-*}"
+  # 8 workers: Next.js + React Strict Mode fire many parallel GETs per page;
+  # 4 pinned on keep-alive and new pages (and /health) hung.
+  export FMR_WORKERS="${FMR_WORKERS:-8}" FMR_LOG="${FMR_LOG:-1}" FMR_CORS="${FMR_CORS:-*}"
   export FMR_JWT_SECRET="${FMR_JWT_SECRET:-dev-secret}" FMR_TITLE=bagabuch FMR_VERSION=0.1.0
   if [ -n "$STDBUF" ]; then
     exec stdbuf -oL -eL ./baga -I . -I app-product app-product/bagabuch/backend/start.baga
