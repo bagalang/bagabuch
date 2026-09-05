@@ -30,6 +30,9 @@ import "actions/bank_accounts.baga"
 import "actions/bank_transactions.baga"
 import "actions/dividends.baga"
 import "actions/dividends_ops.baga"
+import "actions/recipes.baga"
+import "actions/production.baga"
+import "actions/production_confirm.baga"
 import "actions/scans.baga"
 import "actions/admin_settings.baga"
 import "actions/users.baga"
@@ -179,6 +182,16 @@ fn RID_DDIST_SHOW() -> i64 { return 232 }
 fn RID_DDIST_UPDATE() -> i64 { return 233 }
 fn RID_DDIST_DELETE() -> i64 { return 234 }
 fn RID_DIV_PAY() -> i64 { return 235 }
+fn RID_RECIPES_INDEX() -> i64 { return 240 }
+fn RID_RECIPES_CREATE() -> i64 { return 241 }
+fn RID_RECIPES_SHOW() -> i64 { return 242 }
+fn RID_RECIPES_UPDATE() -> i64 { return 243 }
+fn RID_RECIPES_DELETE() -> i64 { return 244 }
+fn RID_PORD_INDEX() -> i64 { return 245 }
+fn RID_PORD_CREATE() -> i64 { return 246 }
+fn RID_PORD_SHOW() -> i64 { return 247 }
+fn RID_PORD_DELETE() -> i64 { return 248 }
+fn RID_PORD_CONFIRM() -> i64 { return 249 }
 
 fn fmr_build_app() -> FmrApp !IO {
     let cfg = fmr_config_load()?
@@ -322,6 +335,16 @@ fn fmr_build_app() -> FmrApp !IO {
     app = fmr_route_meta(app, "PATCH", "/v1/dividend-distributions/{id}", RID_DDIST_UPDATE(), "", "dividends", 0, "DividendDistUpdate", "DividendDist", "200", "")
     app = fmr_route_meta(app, "DELETE", "/v1/dividend-distributions/{id}", RID_DDIST_DELETE(), "", "dividends", 0, "", "-", "204", "")
     app = fmr_route_meta(app, "POST", "/v1/dividends/{id}/pay", RID_DIV_PAY(), "", "dividends", 0, "DividendPay", "Dividend", "200", "")
+    app = fmr_route_meta(app, "GET", "/v1/recipes", RID_RECIPES_INDEX(), "", "production", 0, "", "RecipeList", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/recipes", RID_RECIPES_CREATE(), "", "production", 0, "RecipeCreate", "Recipe", "201", "")
+    app = fmr_route_meta(app, "GET", "/v1/recipes/{id}", RID_RECIPES_SHOW(), "", "production", 0, "", "Recipe", "200", "")
+    app = fmr_route_meta(app, "PATCH", "/v1/recipes/{id}", RID_RECIPES_UPDATE(), "", "production", 0, "RecipeUpdate", "Recipe", "200", "")
+    app = fmr_route_meta(app, "DELETE", "/v1/recipes/{id}", RID_RECIPES_DELETE(), "", "production", 0, "", "-", "204", "")
+    app = fmr_route_meta(app, "GET", "/v1/production-orders", RID_PORD_INDEX(), "", "production", 0, "", "PordList", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/production-orders", RID_PORD_CREATE(), "", "production", 0, "PordCreate", "Pord", "201", "")
+    app = fmr_route_meta(app, "GET", "/v1/production-orders/{id}", RID_PORD_SHOW(), "", "production", 0, "", "Pord", "200", "")
+    app = fmr_route_meta(app, "DELETE", "/v1/production-orders/{id}", RID_PORD_DELETE(), "", "production", 0, "", "-", "204", "")
+    app = fmr_route_meta(app, "POST", "/v1/production-orders/{id}/confirm", RID_PORD_CONFIRM(), "", "production", 0, "", "Pord", "200", "")
     return app
 }
 
@@ -477,5 +500,15 @@ fn fmr_dispatch(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net !Random {
     if id == RID_DDIST_UPDATE() { return act_ddist_update(ctx, db)? }
     if id == RID_DDIST_DELETE() { return act_ddist_delete(ctx, db)? }
     if id == RID_DIV_PAY() { return act_div_pay(ctx, db)? }
+    if id == RID_RECIPES_INDEX() { return act_recipes_index(ctx, db)? }
+    if id == RID_RECIPES_CREATE() { return act_recipes_create(ctx, db)? }
+    if id == RID_RECIPES_SHOW() { return act_recipes_show(ctx, db)? }
+    if id == RID_RECIPES_UPDATE() { return act_recipes_update(ctx, db)? }
+    if id == RID_RECIPES_DELETE() { return act_recipes_delete(ctx, db)? }
+    if id == RID_PORD_INDEX() { return act_pord_index(ctx, db)? }
+    if id == RID_PORD_CREATE() { return act_pord_create(ctx, db)? }
+    if id == RID_PORD_SHOW() { return act_pord_show(ctx, db)? }
+    if id == RID_PORD_DELETE() { return act_pord_delete(ctx, db)? }
+    if id == RID_PORD_CONFIRM() { return act_pord_confirm(ctx, db)? }
     return fmr_out(fmr_500("unhandled route"), db)
 }

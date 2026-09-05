@@ -6,7 +6,10 @@
 (+ boila близнаци), а големите action файлове се цепят
 (`fixed_assets` / `fixed_assets_ops`, `internal_docs` / `internal_docs_confirm`,
 `invoices` / `invoices_post` / `invoices_print`,
-`reports` / `reports_util` / `reports_trial` / `reports_book`).
+`reports` / `reports_util` / `reports_trial` / `reports_book`,
+`recipes` / `production` / `production_confirm`,
+`dividends` / `dividends_ops`, `vat` / `vat_files` / `vat_line` / `vat_fmt`,
+`bank_accounts` / `bank_transactions` / `bank_parse`).
 
 Преди да надуеш файл — `wc -l`. `invoices.baga` вече е на ръба.
 
@@ -57,7 +60,7 @@ Baga `<` `>` `<=` `>=` върху `str` сравняват **указатели*
 - частичен PATCH: липсващо поле = не пипай, не нулирай
 - **търсачка** в списъците (клиентски филтър върху заредените редове) —
   `CrudPage` (фирми, сметкоплан, контрагенти), стоки, дневник, вътрешни
-  документи, начални салда, фактури
+  документи, начални салда, фактури, банкови сметки, производство, дивиденти
 - **икон-бутони** за ред в таблица/списък: молив = редакция, кошче = изтрий,
   око/печат/активирай/история — `frontend/components/IconButton.tsx`,
   клас `.btn-icon` + `.icon-actions`. `title` / `aria-label` носят текста

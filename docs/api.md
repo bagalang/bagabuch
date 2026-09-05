@@ -91,14 +91,32 @@ JSON на екрана (сумите с точка); файлът е XHTML та�
 `counterpart_trial`, `counterpart_chrono`. Датите са ISO `YYYY-MM-DD`.
 `account` е префикс на номера. По контрагент `counterpart_id` е задължителен.
 
-## ДДС, SAF-T, валута, ДМА
+## Банки
+
+| Метод | Път |
+|--------|-----|
+| CRUD | `/v1/bank-accounts` |
+| GET | `/v1/bank-transactions?bank_account_id=&status=` |
+| POST | `/v1/bank-transactions/preview` `{bank_account_id, filename, content_base64}` |
+| POST | `/v1/bank-transactions/import` — същият payload; записва новите |
+| POST | `/v1/bank-transactions/{id}/book` `{debit_account_id, credit_account_id}` |
+| POST | `/v1/bank-transactions/{id}/reallocate` `{target_account_id}` |
+| DELETE | `/v1/bank-transactions/{id}` |
+
+Формати на извлечението: OBB XML, ISO camt.053, PostBank XML, MT-940, CSV.
+Прегледът маркира дубликати преди импорт.
+
+## ДДС, дивиденти, производство, SAF-T, валута, ДМА
 
 | Метод | Път |
 |--------|-----|
 | GET | `/v1/vat/registers?period=` `/v1/vat/return?period=` |
 | GET | `/v1/vat/export?period=&type=deklar\|pokupki\|prodagbi\|zip` |
-| CRUD | `/v1/dividend-distributions` |
-| POST | `/v1/dividends/{id}/pay` `{is_paid, payment_date}` |
+| CRUD | `/v1/dividend-distributions` — PATCH `{status}` за одобрение / връщане |
+| POST | `/v1/dividends/{id}/pay` `{is_paid, payment_date}` — само след одобрение |
+| CRUD | `/v1/recipes` (BOM: изход + материали + фира) |
+| GET/POST/GET id/DELETE | `/v1/production-orders` (няма PATCH; редовете идват от рецептата) |
+| POST | `/v1/production-orders/{id}/confirm` — изписване + заприход + запис 611 |
 | GET | `/v1/saft/export?period=&mode=monthly\|ondemand\|annual` |
 | GET | `/v1/saft/nomenclatures?kind=&search=` |
 | GET | `/v1/exchange-rates`, `/v1/exchange-rates/rate?currency=&date=` |

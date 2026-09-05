@@ -19,6 +19,8 @@ PK за таблици от преди P20: `MAX(id)+1` в приложение�
 | `company_locations` | Търговски обекти и поделения |
 | `beneficial_owners` | Действителни собственици |
 | `dividend_distributions` / `dividends` | Протокол за разпределение + редове по собственик |
+| `recipes` / `recipe_lines` | Технологична карта (BOM) |
+| `production_orders` / `production_order_lines` | Производствена поръчка + материали |
 | `ultimate_parents` | Крайни предприятия-майки |
 | `document_series` | Кочани; `document_types` е CSV от кодове |
 | `accounts` | Сметкоплан; `analytic_type`: none / counterpart / product |
@@ -34,8 +36,8 @@ PK за таблици от преди P20: `MAX(id)+1` в приложение�
 | `opening_balances` | Начално салдо за фискална година по сметка |
 | `exchange_rates` | ЕЦБ курсове по дата |
 | `settings` | Ключ/стойност (активна фирма). OCR/Mistral ключът е в `companies.settings`, не тук |
-| `users` | Има таблица, няма модул |
-| `bank_accounts` / `bank_transactions` | Има таблици, няма модул |
+| `users` / `roles` | CRUD екрани `/users` `/roles`; правата още не се налагат на API |
+| `bank_accounts` / `bank_transactions` | Банкови сметки + извлечения; `company_id` на транзакциите |
 | `product_name_mappings` | Име от сканиран документ → наш артикул, по контрагент |
 
 ## SAF-T номенклатури (без таблица)
@@ -77,6 +79,58 @@ internal_doc_lines (
   unit_cost, amount, description
 )
 ```
+
+## Дивиденти
+
+```
+dividend_distributions (
+  id, company_id, year, total_amount,
+  decision_date, decision_number,
+  status,            -- draft | approved | partially_paid | paid
+  notes, created_at
+)
+
+dividends (
+  id, company_id, distribution_id, beneficial_owner_id,
+  owner_name, owner_egn, ownership_percentage,   -- снимка при създаване
+  gross_amount, tax_rate, tax_amount, net_amount,
+  decision_date, payment_date, is_paid, notes
+)
+```
+
+Дяловете идват от `beneficial_owners`. Остатъкът след закръгляне отива при
+последния собственик. Плащане (`POST /v1/dividends/{id}/pay`) само ако
+разпределението не е `draft`.
+
+## Производство
+
+```
+recipes (
+  id, company_id, code, name,
+  output_product_id, output_quantity, output_unit,
+  notes, is_active, created_at
+)
+
+recipe_lines (
+  id, recipe_id, product_id, quantity, unit,
+  wastage_percent, line_no
+)
+
+production_orders (
+  id, company_id, number, recipe_id, output_product_id,
+  quantity, location_id, order_date,
+  status,            -- draft | completed
+  notes, material_cost, journal_entry_id, created_at
+)
+
+production_order_lines (
+  id, order_id, product_id, product_name,
+  quantity, unit, unit_cost, amount
+)
+```
+
+Редовете на поръчката се копират от рецептата при `POST`. `unit_cost` /
+`amount` се пълнят при confirm.
 
 ## Пари и дати
 

@@ -157,5 +157,37 @@ fn bagabuch_migrations_c() -> MigrationSet {
     )
     set = migrate_add(set, 20260905103, "index_dividend_distributions_company_id", "CREATE INDEX IF NOT EXISTS index_dividend_distributions_company_id ON dividend_distributions (company_id)", "DROP INDEX IF EXISTS index_dividend_distributions_company_id")
     set = migrate_add(set, 20260905104, "index_dividends_distribution_id", "CREATE INDEX IF NOT EXISTS index_dividends_distribution_id ON dividends (distribution_id)", "DROP INDEX IF EXISTS index_dividends_distribution_id")
+    set = migrate_add(
+        set,
+        20260906101,
+        "create_recipes",
+        "CREATE TABLE recipes (id BIGSERIAL PRIMARY KEY, company_id BIGINT NOT NULL, code TEXT NOT NULL DEFAULT '', name TEXT NOT NULL, output_product_id BIGINT NOT NULL DEFAULT 0, output_quantity NUMERIC(18,4) NOT NULL DEFAULT 1, output_unit TEXT NOT NULL DEFAULT '', notes TEXT NOT NULL DEFAULT '', is_active BIGINT NOT NULL DEFAULT 1, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())",
+        "DROP TABLE IF EXISTS recipes"
+    )
+    set = migrate_add(
+        set,
+        20260906102,
+        "create_recipe_lines",
+        "CREATE TABLE recipe_lines (id BIGSERIAL PRIMARY KEY, recipe_id BIGINT NOT NULL, product_id BIGINT NOT NULL DEFAULT 0, quantity NUMERIC(18,4) NOT NULL DEFAULT 0, unit TEXT NOT NULL DEFAULT '', wastage_percent NUMERIC(8,4) NOT NULL DEFAULT 0, line_no BIGINT NOT NULL DEFAULT 0)",
+        "DROP TABLE IF EXISTS recipe_lines"
+    )
+    set = migrate_add(
+        set,
+        20260906103,
+        "create_production_orders",
+        "CREATE TABLE production_orders (id BIGSERIAL PRIMARY KEY, company_id BIGINT NOT NULL, number TEXT NOT NULL DEFAULT '', recipe_id BIGINT NOT NULL DEFAULT 0, output_product_id BIGINT NOT NULL DEFAULT 0, quantity NUMERIC(18,4) NOT NULL DEFAULT 0, location_id BIGINT NOT NULL DEFAULT 0, order_date TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'draft', notes TEXT NOT NULL DEFAULT '', material_cost NUMERIC(18,2) NOT NULL DEFAULT 0, journal_entry_id BIGINT NOT NULL DEFAULT 0, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())",
+        "DROP TABLE IF EXISTS production_orders"
+    )
+    set = migrate_add(
+        set,
+        20260906104,
+        "create_production_order_lines",
+        "CREATE TABLE production_order_lines (id BIGSERIAL PRIMARY KEY, order_id BIGINT NOT NULL, product_id BIGINT NOT NULL DEFAULT 0, product_name TEXT NOT NULL DEFAULT '', quantity NUMERIC(18,4) NOT NULL DEFAULT 0, unit TEXT NOT NULL DEFAULT '', unit_cost NUMERIC(18,4) NOT NULL DEFAULT 0, amount NUMERIC(18,2) NOT NULL DEFAULT 0)",
+        "DROP TABLE IF EXISTS production_order_lines"
+    )
+    set = migrate_add(set, 20260906105, "index_recipes_company_id", "CREATE INDEX IF NOT EXISTS index_recipes_company_id ON recipes (company_id)", "DROP INDEX IF EXISTS index_recipes_company_id")
+    set = migrate_add(set, 20260906106, "index_recipe_lines_recipe_id", "CREATE INDEX IF NOT EXISTS index_recipe_lines_recipe_id ON recipe_lines (recipe_id)", "DROP INDEX IF EXISTS index_recipe_lines_recipe_id")
+    set = migrate_add(set, 20260906107, "index_production_orders_company_id", "CREATE INDEX IF NOT EXISTS index_production_orders_company_id ON production_orders (company_id)", "DROP INDEX IF EXISTS index_production_orders_company_id")
+    set = migrate_add(set, 20260906108, "index_production_order_lines_order_id", "CREATE INDEX IF NOT EXISTS index_production_order_lines_order_id ON production_order_lines (order_id)", "DROP INDEX IF EXISTS index_production_order_lines_order_id")
     return set
 }

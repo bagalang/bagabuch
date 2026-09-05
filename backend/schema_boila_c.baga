@@ -157,5 +157,37 @@ fn bagabuch_boila_migrations_c() -> MigrationSet {
     )
     set = migrate_add(set, 20260905103, "index_dividend_distributions_company_id", "CREATE INDEX IF NOT EXISTS index_dividend_distributions_company_id ON dividend_distributions (company_id)", "DROP INDEX IF EXISTS index_dividend_distributions_company_id ON dividend_distributions")
     set = migrate_add(set, 20260905104, "index_dividends_distribution_id", "CREATE INDEX IF NOT EXISTS index_dividends_distribution_id ON dividends (distribution_id)", "DROP INDEX IF EXISTS index_dividends_distribution_id ON dividends")
+    set = migrate_add(
+        set,
+        20260906101,
+        "create_recipes",
+        "CREATE TABLE IF NOT EXISTS recipes (id BIGINT, company_id BIGINT, code TEXT, name TEXT, output_product_id BIGINT, output_quantity NUMERIC, output_unit TEXT, notes TEXT, is_active BIGINT, created_at TIMESTAMPTZ, PRIMARY KEY (id))",
+        "DROP TABLE IF EXISTS recipes"
+    )
+    set = migrate_add(
+        set,
+        20260906102,
+        "create_recipe_lines",
+        "CREATE TABLE IF NOT EXISTS recipe_lines (id BIGINT, recipe_id BIGINT, product_id BIGINT, quantity NUMERIC, unit TEXT, wastage_percent NUMERIC, line_no BIGINT, PRIMARY KEY (id))",
+        "DROP TABLE IF EXISTS recipe_lines"
+    )
+    set = migrate_add(
+        set,
+        20260906103,
+        "create_production_orders",
+        "CREATE TABLE IF NOT EXISTS production_orders (id BIGINT, company_id BIGINT, number TEXT, recipe_id BIGINT, output_product_id BIGINT, quantity NUMERIC, location_id BIGINT, order_date TEXT, status TEXT, notes TEXT, material_cost NUMERIC, journal_entry_id BIGINT, created_at TIMESTAMPTZ, PRIMARY KEY (id))",
+        "DROP TABLE IF EXISTS production_orders"
+    )
+    set = migrate_add(
+        set,
+        20260906104,
+        "create_production_order_lines",
+        "CREATE TABLE IF NOT EXISTS production_order_lines (id BIGINT, order_id BIGINT, product_id BIGINT, product_name TEXT, quantity NUMERIC, unit TEXT, unit_cost NUMERIC, amount NUMERIC, PRIMARY KEY (id))",
+        "DROP TABLE IF EXISTS production_order_lines"
+    )
+    set = migrate_add(set, 20260906105, "index_recipes_company_id", "CREATE INDEX IF NOT EXISTS index_recipes_company_id ON recipes (company_id)", "DROP INDEX IF EXISTS index_recipes_company_id ON recipes")
+    set = migrate_add(set, 20260906106, "index_recipe_lines_recipe_id", "CREATE INDEX IF NOT EXISTS index_recipe_lines_recipe_id ON recipe_lines (recipe_id)", "DROP INDEX IF EXISTS index_recipe_lines_recipe_id ON recipe_lines")
+    set = migrate_add(set, 20260906107, "index_production_orders_company_id", "CREATE INDEX IF NOT EXISTS index_production_orders_company_id ON production_orders (company_id)", "DROP INDEX IF EXISTS index_production_orders_company_id ON production_orders")
+    set = migrate_add(set, 20260906108, "index_production_order_lines_order_id", "CREATE INDEX IF NOT EXISTS index_production_order_lines_order_id ON production_order_lines (order_id)", "DROP INDEX IF EXISTS index_production_order_lines_order_id ON production_order_lines")
     return set
 }
