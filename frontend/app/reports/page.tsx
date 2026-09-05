@@ -43,7 +43,12 @@ interface TrialTotals {
   closing_credit: string;
 }
 
-interface TrialData {
+interface FirmHead {
+  company_name?: string;
+  company_eik?: string;
+}
+
+interface TrialData extends FirmHead {
   kind: string;
   from: string;
   to: string;
@@ -64,7 +69,7 @@ interface ChronoRow {
   credit_amount: string;
 }
 
-interface ChronoData {
+interface ChronoData extends FirmHead {
   kind: string;
   from: string;
   to: string;
@@ -95,7 +100,7 @@ interface LedgerAccount {
   transactions: LedgerTx[];
 }
 
-interface LedgerData {
+interface LedgerData extends FirmHead {
   kind: string;
   from: string;
   to: string;
@@ -119,6 +124,15 @@ function isCp(kind: Kind): boolean {
   return kind === "counterpart_trial" || kind === "counterpart_chrono";
 }
 
+function firmLine(d: FirmHead): string {
+  const name = (d.company_name || "").trim();
+  const eik = (d.company_eik || "").trim();
+  if (name && eik) return `${name} — ЕИК ${eik}`;
+  if (name) return name;
+  if (eik) return `ЕИК ${eik}`;
+  return "";
+}
+
 function qs(kind: Kind, from: string, to: string, account: string, cpid: string): string {
   const p = new URLSearchParams();
   p.set("kind", kind);
@@ -133,6 +147,18 @@ function Num({ v }: { v: string }) {
   return <td className="num">{v}</td>;
 }
 
+function FirmTableRow({ d, cols }: { d: FirmHead; cols: number }) {
+  const line = firmLine(d);
+  if (!line) return null;
+  return (
+    <tr>
+      <th colSpan={cols} style={{ textAlign: "left", fontWeight: 700 }}>
+        {line}
+      </th>
+    </tr>
+  );
+}
+
 function TrialTable({
   data,
   t,
@@ -145,6 +171,7 @@ function TrialTable({
     <div className="table-wrap print-sheet">
       <table className="table">
         <thead>
+          <FirmTableRow d={data} cols={8} />
           <tr>
             <th>{t("reports.col.account")}</th>
             <th>{t("reports.col.name")}</th>
@@ -199,6 +226,7 @@ function ChronoTable({
     <div className="table-wrap print-sheet">
       <table className="table">
         <thead>
+          <FirmTableRow d={data} cols={9} />
           <tr>
             <th>{t("reports.col.n")}</th>
             <th>{t("reports.col.date")}</th>
@@ -249,7 +277,7 @@ function LedgerTables({
 }) {
   return (
     <div className="print-sheet">
-      {(data.accounts ?? []).map((acc) => (
+      {(data.accounts ?? []).map((acc, idx) => (
         <div key={acc.account_number} style={{ marginBottom: 28 }}>
           <h3 className="report-account" style={{ padding: "8px 12px", margin: "0 0 8px" }}>
             {acc.account_number} {acc.account_name}
@@ -257,6 +285,7 @@ function LedgerTables({
           <div className="table-wrap">
             <table className="table">
               <thead>
+                {idx === 0 ? <FirmTableRow d={data} cols={5} /> : null}
                 <tr>
                   <th>{t("reports.col.date")}</th>
                   <th>{t("reports.col.document")}</th>
@@ -365,9 +394,15 @@ function ReportsInner() {
               : kind === "counterpart_trial"
                 ? "oborotna-kontragent"
                 : "hronologichen-kontragent";
+      const head = trial ?? chrono ?? ledger;
+      const name = (head?.company_name || "").trim().replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, "_");
+      const eik = (head?.company_eik || "").trim();
+      let fname = slug;
+      if (name) fname = `${fname}-${name}`;
+      if (eik) fname = `${fname}-${eik}`;
       await downloadFile(
         `/v1/reports/export?${qs(kind, from, to, account, cpid)}&format=${fmt}`,
-        `${slug}-${from}-${to}.${fmt}`
+        `${fname}-${from}-${to}.${fmt}`
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -464,6 +499,9 @@ function ReportsInner() {
 
       {trial && (kind === "trial_balance" || kind === "counterpart_trial") && (
         <div className="card content">
+          {firmLine(trial) && (
+            <p style={{ margin: "0 0 4px", fontWeight: 600 }}>{firmLine(trial)}</p>
+          )}
           <h2 style={{ margin: "0 0 8px" }}>{trial.title}</h2>
           <p className="muted">
             {formatBgDate(trial.from)} — {formatBgDate(trial.to)}
@@ -473,6 +511,9 @@ function ReportsInner() {
       )}
       {chrono && (kind === "chronological" || kind === "counterpart_chrono") && (
         <div className="card content">
+          {firmLine(chrono) && (
+            <p style={{ margin: "0 0 4px", fontWeight: 600 }}>{firmLine(chrono)}</p>
+          )}
           <h2 style={{ margin: "0 0 8px" }}>{chrono.title}</h2>
           <p className="muted">
             {formatBgDate(chrono.from)} — {formatBgDate(chrono.to)}
@@ -482,6 +523,9 @@ function ReportsInner() {
       )}
       {ledger && kind === "general_ledger" && (
         <div className="card content">
+          {firmLine(ledger) && (
+            <p style={{ margin: "0 0 4px", fontWeight: 600 }}>{firmLine(ledger)}</p>
+          )}
           <h2 style={{ margin: "0 0 8px" }}>{ledger.title}</h2>
           <p className="muted">
             {formatBgDate(ledger.from)} — {formatBgDate(ledger.to)}

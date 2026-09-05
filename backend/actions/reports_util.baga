@@ -22,15 +22,42 @@ fn rpt_cell(tag: str, s: str) -> str {
     return concat(concat(concat("<", concat(tag, ">")), rpt_h(s)), concat("</", concat(tag, ">")))
 }
 
-fn rpt_html_open(title: str, period: str) -> str {
+fn rpt_firm_line(name: str, eik: str) -> str {
+    if name == "" && eik == "" {
+        return ""
+    }
+    if eik == "" {
+        return name
+    }
+    if name == "" {
+        return concat("ЕИК ", eik)
+    }
+    return concat(concat(name, " — ЕИК "), eik)
+}
+
+fn rpt_html_open(title: str, period: str, firm: str) -> str {
     let mut h = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
     h = concat(h, "<html xmlns=\"http://www.w3.org/1999/xhtml\"><head><meta charset=\"utf-8\"/><title>")
-    h = concat(h, rpt_h(title))
+    let mut head = title
+    if firm != "" {
+        head = firm
+    }
+    h = concat(h, rpt_h(head))
     h = concat(h, "</title></head><body>")
-    h = concat(h, concat("<h1>", concat(rpt_h(title), "</h1>")))
+    h = concat(h, concat("<h1>", concat(rpt_h(head), "</h1>")))
+    if firm != "" {
+        h = concat(h, concat("<p>", concat(rpt_h(title), "</p>")))
+    }
     h = concat(h, concat("<p>", concat(rpt_h(period), "</p>")))
     h = concat(h, "<table>")
     return h
+}
+
+fn rpt_html_firm_row(html: str, firm: str) -> str {
+    if firm == "" {
+        return html
+    }
+    return str_replace(html, "<table>", concat("<table><tr><th>", concat(rpt_h(firm), "</th></tr>")))
 }
 
 fn rpt_html_close(h: str) -> str {

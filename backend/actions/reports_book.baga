@@ -53,7 +53,7 @@ fn rpt_chrono_item(n: i64, date: str, doc: str, desc: str, cp: str, da: str, ca:
     return o
 }
 
-fn rpt_chrono_build(kind: str, aq: OrmQuery, jq: OrmQuery, lq: OrmQuery, from: str, to: str, account: str, cpid: i64) -> RptBuilt {
+fn rpt_chrono_build(kind: str, aq: OrmQuery, jq: OrmQuery, lq: OrmQuery, from: str, to: str, account: str, cpid: i64, firm: str) -> RptBuilt {
     let mut nums: Map<str, str> = map_new()
     let mut ai: i64 = 0
     while ai < orm_nrows(aq) {
@@ -61,7 +61,7 @@ fn rpt_chrono_build(kind: str, aq: OrmQuery, jq: OrmQuery, lq: OrmQuery, from: s
         ai = ai + 1
     }
     let title = rpt_title(kind)
-    let mut html = rpt_html_open(title, rpt_period(from, to))
+    let mut html = rpt_html_open(title, rpt_period(from, to), firm)
     html = concat(html, rpt_chrono_header())
     let mut rows = jarr_new()
     let mut t_d = "0"
@@ -200,7 +200,7 @@ fn rpt_gl_tx(date: str, doc: str, desc: str, d: str, c: str, rd: str, rc: str) -
     return o
 }
 
-fn rpt_gl_build(kind: str, aq: OrmQuery, obq: OrmQuery, jq: OrmQuery, lq: OrmQuery, from: str, to: str, account: str, cpid: i64) -> RptBuilt {
+fn rpt_gl_build(kind: str, aq: OrmQuery, obq: OrmQuery, jq: OrmQuery, lq: OrmQuery, from: str, to: str, account: str, cpid: i64, firm: str) -> RptBuilt {
     let year = substr(from, 0, 4)
     let fiscal = concat(year, "-01-01")
     let mut dates: Map<str, str> = map_new()
@@ -271,7 +271,7 @@ fn rpt_gl_build(kind: str, aq: OrmQuery, obq: OrmQuery, jq: OrmQuery, lq: OrmQue
         lj = lj + 1
     }
     let title = rpt_title(kind)
-    let mut html = rpt_html_open(title, rpt_period(from, to))
+    let mut html = rpt_html_open(title, rpt_period(from, to), firm)
     html = concat(html, rpt_gl_header())
     let mut accounts = jarr_new()
     let mut i: i64 = 0
