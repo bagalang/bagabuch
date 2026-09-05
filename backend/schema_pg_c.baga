@@ -189,5 +189,13 @@ fn bagabuch_migrations_c() -> MigrationSet {
     set = migrate_add(set, 20260906106, "index_recipe_lines_recipe_id", "CREATE INDEX IF NOT EXISTS index_recipe_lines_recipe_id ON recipe_lines (recipe_id)", "DROP INDEX IF EXISTS index_recipe_lines_recipe_id")
     set = migrate_add(set, 20260906107, "index_production_orders_company_id", "CREATE INDEX IF NOT EXISTS index_production_orders_company_id ON production_orders (company_id)", "DROP INDEX IF EXISTS index_production_orders_company_id")
     set = migrate_add(set, 20260906108, "index_production_order_lines_order_id", "CREATE INDEX IF NOT EXISTS index_production_order_lines_order_id ON production_order_lines (order_id)", "DROP INDEX IF EXISTS index_production_order_lines_order_id")
+    set = migrate_add(set, 20260907101, "add_invoices_company_id", "ALTER TABLE invoices ADD COLUMN company_id BIGINT NOT NULL DEFAULT 0", "ALTER TABLE invoices DROP COLUMN company_id")
+    set = migrate_add(set, 20260907102, "add_journal_entries_company_id", "ALTER TABLE journal_entries ADD COLUMN company_id BIGINT NOT NULL DEFAULT 0", "ALTER TABLE journal_entries DROP COLUMN company_id")
+    set = migrate_add(set, 20260907103, "add_products_company_id", "ALTER TABLE products ADD COLUMN company_id BIGINT NOT NULL DEFAULT 0", "ALTER TABLE products DROP COLUMN company_id")
+    set = migrate_add(set, 20260907104, "add_counterparts_company_id", "ALTER TABLE counterparts ADD COLUMN company_id BIGINT NOT NULL DEFAULT 0", "ALTER TABLE counterparts DROP COLUMN company_id")
+    set = migrate_add(set, 20260907105, "invoices_company_id_idx", "CREATE INDEX IF NOT EXISTS invoices_company_id_idx ON invoices (company_id)", "DROP INDEX IF EXISTS invoices_company_id_idx")
+    set = migrate_add(set, 20260907106, "journal_entries_company_id_idx", "CREATE INDEX IF NOT EXISTS journal_entries_company_id_idx ON journal_entries (company_id)", "DROP INDEX IF EXISTS journal_entries_company_id_idx")
+    set = migrate_add(set, 20260907107, "products_company_id_idx", "CREATE INDEX IF NOT EXISTS products_company_id_idx ON products (company_id)", "DROP INDEX IF EXISTS products_company_id_idx")
+    set = migrate_add(set, 20260907108, "counterparts_company_id_idx", "CREATE INDEX IF NOT EXISTS counterparts_company_id_idx ON counterparts (company_id)", "DROP INDEX IF EXISTS counterparts_company_id_idx")
     return set
 }

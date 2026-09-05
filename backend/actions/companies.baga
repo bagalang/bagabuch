@@ -1,6 +1,7 @@
 // actions/companies.baga — фирми: CRUD handlers.
 
 import "../models/company.baga"
+import "acl.baga"
 import "accounts_seed.baga"
 import "fmrbaga/app.baga"
 import "fmrbaga/ctx.baga"
@@ -9,7 +10,7 @@ import "fmrbaga/jsonx.baga"
 import "ormbaga/orm.baga"
 
 fn act_companies_index(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
-    let auth = act_require_auth(ctx, db)
+    let auth = act_require_perm(ctx, db, "company:read")?
     if auth.ok == 0 {
         return auth.out
     }
@@ -28,7 +29,7 @@ fn act_companies_index(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
 }
 
 fn act_companies_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
-    let auth = act_require_auth(ctx, db)
+    let auth = act_require_perm(ctx, db, "company:create")?
     if auth.ok == 0 {
         return auth.out
     }
@@ -100,7 +101,7 @@ fn act_companies_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
 }
 
 fn act_companies_show(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
-    let auth = act_require_auth(ctx, db)
+    let auth = act_require_perm(ctx, db, "company:read")?
     if auth.ok == 0 {
         return auth.out
     }
@@ -122,7 +123,7 @@ fn act_companies_show(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
 }
 
 fn act_companies_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
-    let auth = act_require_auth(ctx, db)
+    let auth = act_require_perm(ctx, db, "company:update")?
     if auth.ok == 0 {
         return auth.out
     }
@@ -438,7 +439,7 @@ fn act_companies_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
 }
 
 fn act_companies_delete(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
-    let auth = act_require_auth(ctx, db)
+    let auth = act_require_perm(ctx, db, "company:delete")?
     if auth.ok == 0 {
         return auth.out
     }

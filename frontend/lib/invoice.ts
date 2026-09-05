@@ -47,6 +47,10 @@ export function docTypeRequiresOriginal(t: string): boolean {
   return t === "02" || t === "03" || t === "12" || t === "13" || t === "23";
 }
 
+export function docTypeIsCredit(t: string): boolean {
+  return t === "03" || t === "13" || t === "23";
+}
+
 export function docTypeIsProforma(t: string): boolean {
   return t === DOC_TYPE_PROFORMA;
 }
@@ -137,7 +141,17 @@ export function num(s: string): number {
   return parseFloat(String(s).replace(",", ".")) || 0;
 }
 
-export function calcLine(l: InvoiceLine, pricesIncludeVat: boolean): InvoiceLine {
+export function signedMoney(n: number, negative: boolean): string {
+  if (!n) return round2(0);
+  const abs = Math.abs(n);
+  return round2(negative ? -abs : abs);
+}
+
+export function calcLine(
+  l: InvoiceLine,
+  pricesIncludeVat: boolean,
+  credit = false
+): InvoiceLine {
   const q = num(l.quantity);
   const rate = num(l.vat_rate) / 100;
   let priceNet = num(l.unit_price);
@@ -148,9 +162,9 @@ export function calcLine(l: InvoiceLine, pricesIncludeVat: boolean): InvoiceLine
   const vat = net * rate;
   return {
     ...l,
-    net_amount: round2(net),
-    vat_amount: round2(vat),
-    total_amount: round2(net + vat),
+    net_amount: signedMoney(net, credit),
+    vat_amount: signedMoney(vat, credit),
+    total_amount: signedMoney(net + vat, credit),
   };
 }
 

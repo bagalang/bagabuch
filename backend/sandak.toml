@@ -6,6 +6,7 @@ kind = "bin"
 
 [dependencies]
 fmrbaga = { path = "../../../app-product/fmrbaga" }
+jwtbaga = { path = "../../../app-product/jwtbaga" }
 ormbaga = { path = "../../../app-product/ormbaga" }
 bagadecimal = { path = "../../../app-product/bagadecimal" }
 chronobaga = { path = "../../../app-product/chronobaga" }

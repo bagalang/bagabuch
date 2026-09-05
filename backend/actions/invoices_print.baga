@@ -8,6 +8,7 @@ import "../models/setting.baga"
 import "../models/doc_type.baga"
 import "../models/vat_exemption.baga"
 import "document_series.baga"
+import "acl.baga"
 import "fmrbaga/app.baga"
 import "fmrbaga/ctx.baga"
 import "fmrbaga/action.baga"
@@ -155,7 +156,12 @@ fn inv_w_int(n: i64, fem: i64) -> str {
 }
 
 fn inv_slovom(amount: str, currency: str) -> str {
-    let s = str_replace(amount, ",", ".")
+    let mut s = str_replace(amount, ",", ".")
+    let mut sign_w = ""
+    if len(s) > 0 && char_at(s, 0) == 45 {
+        sign_w = "минус "
+        s = substr(s, 1, len(s))
+    }
     let parts = str_split(s, ".")
     let whole = parse_int(vec_get(parts, 0))
     let mut cents: i64 = 0
@@ -189,7 +195,7 @@ fn inv_slovom(amount: str, currency: str) -> str {
     if cents > 0 {
         out = concat(out, concat(" и ", concat(int_to_str(cents), concat(" ", centn))))
     }
-    return out
+    return concat(sign_w, out)
 }
 
 fn inv_mime(format: str) -> str {
@@ -206,7 +212,7 @@ fn inv_mime(format: str) -> str {
 }
 
 fn act_invoices_next_number(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
-    let auth = act_require_auth(ctx, db)
+    let auth = act_require_perm(ctx, db, "invoice:read")?
     if auth.ok == 0 {
         return auth.out
     }
@@ -246,7 +252,7 @@ fn inv_file_resp(db: OrmDb, data: bytes, mime: str, filename: str) -> FmrOut {
 }
 
 fn act_invoices_print(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
-    let auth = act_require_auth(ctx, db)
+    let auth = act_require_perm(ctx, db, "invoice:read")?
     if auth.ok == 0 {
         return auth.out
     }

@@ -1,6 +1,7 @@
 // actions/users.baga — потребители CRUD.
 
 import "../models/user.baga"
+import "acl.baga"
 import "fmrbaga/app.baga"
 import "fmrbaga/ctx.baga"
 import "fmrbaga/action.baga"
@@ -9,7 +10,7 @@ import "ormbaga/orm.baga"
 import "std/json/json.baga"
 
 fn act_users_index(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
-    let auth = act_require_auth(ctx, db)
+    let auth = act_require_perm(ctx, db, "user:read")?
     if auth.ok == 0 {
         return auth.out
     }
@@ -24,7 +25,7 @@ fn act_users_index(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
 }
 
 fn act_users_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
-    let auth = act_require_auth(ctx, db)
+    let auth = act_require_perm(ctx, db, "user:create")?
     if auth.ok == 0 {
         return auth.out
     }
@@ -90,7 +91,7 @@ fn act_users_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
 }
 
 fn act_users_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
-    let auth = act_require_auth(ctx, db)
+    let auth = act_require_perm(ctx, db, "user:update")?
     if auth.ok == 0 {
         return auth.out
     }
@@ -205,7 +206,7 @@ fn act_users_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
 }
 
 fn act_users_delete(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
-    let auth = act_require_auth(ctx, db)
+    let auth = act_require_perm(ctx, db, "user:delete")?
     if auth.ok == 0 {
         return auth.out
     }

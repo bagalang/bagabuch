@@ -376,6 +376,9 @@ function ObInner() {
               </label>
               <input
                 className="input"
+                inputMode="decimal"
+                placeholder="-100.00"
+                title={t("journal.sign_hint")}
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 required={side !== "any"}

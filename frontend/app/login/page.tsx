@@ -1,7 +1,7 @@
 "use client";
 
-// Вход — потребителско име + парола (скелет: паролата не се проверява от
-// backend-а, изпраща се само потребителят като 'суб').
+// Вход — email/потребител + парола. JWT през jwtbaga. Bootstrap само ако
+// още няма потребители в базата.
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -22,7 +22,7 @@ export default function LoginPage() {
     setBusy(true);
     setError("");
     try {
-      await login(username);
+      await login(username, password);
       router.push("/");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
@@ -56,7 +56,7 @@ export default function LoginPage() {
         </div>
         {error && <div className="error-text">{error}</div>}
         <div className="form-actions">
-          <button className="btn btn-primary" disabled={busy || !username}>
+          <button className="btn btn-primary" disabled={busy || !username || !password}>
             {t("login.submit")}
           </button>
         </div>

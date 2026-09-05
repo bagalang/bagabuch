@@ -102,9 +102,11 @@ export async function downloadFile(path: string, filename: string): Promise<void
 }
 
 // автентикация
-export async function login(username: string): Promise<string> {
+export async function login(username: string, password: string): Promise<string> {
   const data = await api.post<{ access_token: string }>("/v1/auth/token", {
     sub: username,
+    email: username,
+    password,
   });
   setToken(data.access_token);
   return data.access_token;

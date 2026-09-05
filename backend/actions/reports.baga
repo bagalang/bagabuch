@@ -5,6 +5,7 @@ import "../models/journal.baga"
 import "../models/account.baga"
 import "../models/opening_balance.baga"
 import "reports_util.baga"
+import "acl.baga"
 import "reports_trial.baga"
 import "reports_book.baga"
 import "fmrbaga/app.baga"
@@ -47,7 +48,7 @@ fn rpt_run(kind: str, aq: OrmQuery, obq: OrmQuery, jq: OrmQuery, lq: OrmQuery, f
 }
 
 fn rpt_prepare(ctx: FmrCtx, db: OrmDb, want_file: i64) -> FmrOut !IO !Net {
-    let auth = act_require_auth(ctx, db)
+    let auth = act_require_perm(ctx, db, "report:read")?
     if auth.ok == 0 {
         return auth.out
     }

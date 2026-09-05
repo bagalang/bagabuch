@@ -7,6 +7,7 @@ import "fmrbaga/app.baga"
 import "ormbaga/orm.baga"
 import "ormbaga/migrate.baga"
 import "std/str/str.baga"
+import "std/os/os.baga"
 
 fn boot_migrate() -> i64 !Net !IO !Random {
     let app = fmr_build_app()?
@@ -30,6 +31,10 @@ fn boot_migrate() -> i64 !Net !IO !Random {
 }
 
 fn main() -> i64 !Net !IO !Par !Random !Time {
+    let secret = env("FMR_JWT_SECRET")?
+    if secret == "" || secret == "dev-secret" || secret == "baga-secret" {
+        print("WARNING: FMR_JWT_SECRET is empty or a known default. Set a long random secret before VPS.")
+    }
     let rc = boot_migrate()?
     if rc != 0 {
         return rc

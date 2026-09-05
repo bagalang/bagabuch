@@ -12,6 +12,7 @@ import {
   applyDiscountToLines,
   calcLine,
   calcTotals,
+  docTypeIsCredit,
   docTypeRequiresOriginal,
   docTypesFor,
   emptyLine,
@@ -195,9 +196,10 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
 
   const selectedCp = counterparts.find((c) => String(c.id) === counterpartId);
 
+  const isCredit = docTypeIsCredit(documentType);
   const pricedLines = useMemo(
-    () => lines.map((l) => calcLine(l, pricesIncludeVat)),
-    [lines, pricesIncludeVat]
+    () => lines.map((l) => calcLine(l, pricesIncludeVat, isCredit)),
+    [lines, pricesIncludeVat, isCredit]
   );
   const totals = useMemo(
     () => calcTotals(pricedLines, discountPercent),
@@ -271,7 +273,9 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
         setSaving(false);
         return;
       }
-      const computed = pricedLines.map((l) => calcLine(l, pricesIncludeVat));
+      const computed = pricedLines.map((l) =>
+        calcLine(l, pricesIncludeVat, isCredit)
+      );
       const payloadLines = applyDiscountToLines(computed, discountPercent).map(
         (l) => ({
           product_id: l.product_id,
@@ -343,6 +347,11 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
                 </option>
               ))}
             </select>
+            {isCredit && (
+              <p className="muted" style={{ marginTop: 6 }}>
+                {t("invoices.credit_sign_hint")}
+              </p>
+            )}
           </div>
         </div>
         <div className="form-grid">

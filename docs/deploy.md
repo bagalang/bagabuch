@@ -1,0 +1,43 @@
+# Качване на VPS (контейнери)
+
+След няколко дни локалният прототип става услуга. jwtbaga е наред; за VPS
+приложението вече издава JWT с `iat`/`exp` (default 7 дни, `FMR_JWT_TTL_SEC`)
+и `fmr_before` отказва изтекъл токен.
+
+## Какво трябва да е вярно преди `up`
+
+1. **`FMR_JWT_SECRET`** — дълъг случаен низ (`openssl rand -hex 32`). Не
+   `dev-secret` / `baga-secret`. Backend-ът пише WARNING ако е default.
+2. **Смени паролата на `superadmin`** след първи вход (`123+123` е само за
+   seed). Създай отделен счетоводител, не работи с супер-админ всеки ден.
+3. **Том за boilaDB** — `boila-data`. Без него рестартът на контейнера трие
+   дневника.
+4. **TLS** — Caddy/nginx пред `:3000`. `FMR_CORS` = публичният https origin,
+   не `*`.
+5. Frontend проксира `/v1` към `backend:8080` (rewrite). Браузърът не трябва
+   да вика `:8080` директно.
+
+## Старт от корена на baga монорепото
+
+```bash
+cp app-product/bagabuch/deploy/.env.example app-product/bagabuch/deploy/.env
+# редактирай FMR_JWT_SECRET
+docker compose -f app-product/bagabuch/deploy/docker-compose.yml \
+  --env-file app-product/bagabuch/deploy/.env up --build -d
+```
+
+После seed (веднъж), от хоста или exec в backend мрежата към `:8080`.
+
+Вход: `superadmin` / `123+123` — смени веднага.
+
+## Контейнери
+
+| Услуга | Роля | Порт |
+|--------|------|------|
+| boiladb | база, PostgreSQL wire | 6575 вътре |
+| backend | Baga API | 8080 вътре |
+| sidecar | SMTP/S3 Python | 5050 вътре |
+| frontend | Next.js | 3000 публичен |
+
+Caddy в отделен compose (както baraba) с `caddy-network` ако вече имаш reverse
+proxy на VPS.

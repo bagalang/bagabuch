@@ -1,6 +1,8 @@
 // models/doc_type.baga — видове данъчни документи по ППДДС (кодове за ДДС дневниците).
 // Проформа фактура НЕ е данъчен документ: не влиза в дневниците и не се осчетоводява.
 
+import "bagadecimal/src/decimal.baga"
+
 fn doc_type_is_proforma(t: str) -> i64 {
     if t == "proforma" {
         return 1
@@ -112,6 +114,40 @@ fn doc_type_title(t: str) -> str {
         return "ПРОФОРМА ФАКТУРА"
     }
     return "ФАКТУРА"
+}
+
+// Кредитно известие: същите кореспонденции, сумите в базата са с минус.
+fn doc_type_is_credit(t: str) -> i64 {
+    if t == "03" || t == "13" || t == "23" {
+        return 1
+    }
+    return 0
+}
+
+// Ако видът е кредитно и сумата още е плюс — записва се като минус.
+// Вече отрицателна не се обръща втори път. Статиите не се разменят Дт↔Кт.
+fn amount_for_doc(doc_type: str, amount: str) -> str {
+    if doc_type_is_credit(doc_type) == 0 {
+        return amount
+    }
+    let p = dec_parse(amount)
+    if p.ok == 0 {
+        return amount
+    }
+    if dec_is_zero(p.value) == 1 {
+        return amount
+    }
+    if dec_is_negative(p.value) == 1 {
+        return amount
+    }
+    return dec_to_string(dec_neg(p.value))
+}
+
+fn amount_for_doc_pick(use_patched: i64, patched: str, existing: str, amount: str) -> str {
+    if use_patched == 1 {
+        return amount_for_doc(patched, amount)
+    }
+    return amount_for_doc(existing, amount)
 }
 
 fn doc_type_prefix(t: str) -> str {

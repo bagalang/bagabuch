@@ -557,7 +557,7 @@ fn act_fa_depreciation_post(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     }
     // Счетоводен запис Дт 603 / Кт 241.
     let total_s = dec_to_string(total)
-    let eq2 = journal_entry_insert(db2, period.val, "depreciation", 0, "Месечна амортизация на ДМА", "no_vat", 0, "", "", "", period.val, period.val, total_s, "0")?
+    let eq2 = journal_entry_insert(db2, period.val, "depreciation", 0, "Месечна амортизация на ДМА", "no_vat", 0, "", "", "", period.val, period.val, total_s, "0", 0)?
     if orm_ok_q(eq2) == 0 || orm_nrows(eq2) < 1 {
         return act_err(orm_db_q(eq2), 500, "journal entry insert failed")
     }

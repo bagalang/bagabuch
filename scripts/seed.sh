@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # seed.sh — демо данни за разработка през HTTP API (след migrate).
-# Вход: произволно име (скелетът не проверява парола). Тук: demo / demo.
+# Първият token е bootstrap (празен users). После: superadmin / 123+123.
 set -euo pipefail
 
 PORT="${PORT:-8080}"
 BASE="http://127.0.0.1:${PORT}"
-SUB="${BAGABUCH_SEED_SUB:-demo}"
+SUB="${BAGABUCH_SEED_SUB:-superadmin}"
+PASS="${BAGABUCH_SEED_PASS:-123+123}"
 
 jget() {
   python3 -c 'import json,sys; print(json.load(sys.stdin)[sys.argv[1]])' "$1"
@@ -28,11 +29,30 @@ wait_ready 120
 
 TOKEN=$(curl -sf -X POST "$BASE/v1/auth/token" \
   -H "Content-Type: application/json" \
-  -d "{\"sub\":\"$SUB\"}" | jget access_token)
+  -d "{\"sub\":\"$SUB\",\"password\":\"$PASS\"}" | jget access_token || true)
+if [ -z "${TOKEN:-}" ]; then
+  TOKEN=$(curl -sf -X POST "$BASE/v1/auth/token" \
+    -H "Content-Type: application/json" \
+    -d "{\"sub\":\"$SUB\"}" | jget access_token)
+fi
 
 auth() {
   curl -sf -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" "$@"
 }
+
+echo "==> роли (baraba: super_admin / admin / accountant / viewer)"
+auth -X POST "$BASE/v1/roles" -d '{"name":"super_admin","description":"Супер администратор","permissions":["*"]}' >/dev/null || true
+ADMIN_JSON='{"name":"admin","description":"Администратор","permissions":["admin:read","admin:create","admin:update","admin:delete","user:read","user:create","user:update","user:delete","company:read","company:create","company:update","company:delete","role:read","role:create","role:update","role:delete","settings:read","settings:update","report:read","report:export"]}'
+auth -X POST "$BASE/v1/roles" -d "$ADMIN_JSON" >/dev/null || true
+ACC_JSON='{"name":"accountant","description":"Счетоводител","permissions":["accounting:read","accounting:write","accounting:post","invoice:read","invoice:create","invoice:update","invoice:delete","vat:read","vat:create","vat:submit","document:read","document:upload","report:read","settings:read"]}'
+auth -X POST "$BASE/v1/roles" -d "$ACC_JSON" >/dev/null || true
+auth -X POST "$BASE/v1/roles" -d '{"name":"viewer","description":"Наблюдател","permissions":["admin:read","accounting:read","invoice:read","document:read","report:read","vat:read","settings:read","user:read","company:read","role:read"]}' >/dev/null || true
+ROLE_ID=$(auth "$BASE/v1/roles" | python3 -c 'import json,sys; rs=json.load(sys.stdin).get("items") or []; print(next((r["id"] for r in rs if r.get("name")=="super_admin"),0))')
+echo "==> потребител $SUB (супер-админ, парола $PASS)"
+auth -X POST "$BASE/v1/users" -d "{\"email\":\"$SUB\",\"name\":\"Superadmin\",\"password\":\"$PASS\",\"is_active\":true,\"is_super_admin\":true,\"role_id\":$ROLE_ID}" >/dev/null || true
+TOKEN=$(curl -sf -X POST "$BASE/v1/auth/token" \
+  -H "Content-Type: application/json" \
+  -d "{\"sub\":\"$SUB\",\"password\":\"$PASS\"}" | jget access_token)
 
 echo "==> фирма"
 CO=$(auth -X POST "$BASE/v1/companies" -d '{
@@ -240,5 +260,5 @@ auth -X POST "$BASE/v1/journal" -d "{
 echo "    Дт 501 / Кт 411  768 EUR"
 
 echo
-echo "Демото е готово. Вход: http://localhost:3000  потребител demo  (паролата не се проверява)"
+echo "Демото е готово. Вход: http://localhost:3000  superadmin / 123+123"
 echo "Фирма: Бага ООД  ЕИК 207123456  валута EUR"

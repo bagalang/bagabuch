@@ -13,6 +13,7 @@ import {
   VAT_RATES,
   calcLine,
   calcTotals,
+  docTypeIsCredit,
   docTypesFor,
   emptyLine,
   num,
@@ -218,8 +219,8 @@ function ScanInner() {
   }, [products]);
 
   const priced = useMemo(
-    () => lines.map((l) => calcLine(l, false)),
-    [lines]
+    () => lines.map((l) => calcLine(l, false, docTypeIsCredit(documentType))),
+    [lines, documentType]
   );
   const totals = useMemo(() => calcTotals(priced, "0"), [priced]);
 

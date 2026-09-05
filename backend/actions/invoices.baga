@@ -1,11 +1,11 @@
-// actions/invoices.baga — фактури: header + редове, суми през SQL SUM.
-
 import "../models/invoice.baga"
 import "../models/counterpart.baga"
 import "../models/company.baga"
 import "../models/setting.baga"
 import "../models/doc_type.baga"
 import "document_series.baga"
+import "acl.baga"
+import "active_company.baga"
 import "txn.baga"
 import "fmrbaga/app.baga"
 import "fmrbaga/ctx.baga"
@@ -16,7 +16,7 @@ import "std/json/json.baga"
 import "std/str/str.baga"
 
 fn act_invoices_index(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
-    let auth = act_require_auth(ctx, db)
+    let auth = act_require_perm(ctx, db, "invoice:read")?
     if auth.ok == 0 {
         return auth.out
     }
@@ -24,18 +24,19 @@ fn act_invoices_index(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         return act_err(db, 503, "database unavailable")
     }
     let page = act_page(ctx, 50, 200)
-    let q = invoice_all(db)?
+    let ac = active_company_id(db, auth.ctx.user_sub)?
+    let q = invoice_all(ac.db)?
     if orm_ok_q(q) == 0 {
         return act_err(orm_db_q(q), 500, orm_err_q(q))
     }
-    let mut o = invoice_list_json(q)
+    let mut o = invoice_list_json_co(q, ac.id)
     o = jobj_i64(o, "limit", page.limit)
     o = jobj_i64(o, "offset", page.offset)
     return act_ok(orm_db_q(q), o)
 }
 
 fn act_invoices_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
-    let auth = act_require_auth(ctx, db)
+    let auth = act_require_perm(ctx, db, "invoice:create")?
     if auth.ok == 0 {
         return auth.out
     }
@@ -129,7 +130,7 @@ fn act_invoices_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         return act_err(orm_db_exec(bgn), 500, orm_err_exec(bgn))
     }
     d0 = orm_db_exec(bgn)
-    let hq = invoice_create_header(d0, direction.val, number, document_type.val, original_invoice_id, issue_date.val, due_date.val, tax_event_date, accounting_month, cid.num, currency.val, currency_rate.val, payment_method.val, notes.val, discount_percent.val, discount_amount.val, vat_exemption_reason.val)?
+    let hq = invoice_create_header(d0, direction.val, number, document_type.val, original_invoice_id, issue_date.val, due_date.val, tax_event_date, accounting_month, cid.num, currency.val, currency_rate.val, payment_method.val, notes.val, discount_percent.val, discount_amount.val, vat_exemption_reason.val, auth.ctx.user_sub)?
     if orm_ok_q(hq) == 0 || orm_nrows(hq) < 1 {
         return act_err_rb(orm_db_q(hq), 500, "header insert failed")
     }
@@ -146,7 +147,6 @@ fn act_invoices_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         }
         db2 = orm_db_exec(lup)
     }
-    // Редове: всеки носи сумите си; тоталите се преизчисляват накрая.
     let lines_node = json_get(b.doc, b.root, "lines")
     if lines_node >= 0 && json_tag(b.doc, lines_node) == 5 {
         let n = json_count(b.doc, lines_node)
@@ -190,7 +190,7 @@ fn act_invoices_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
             if total_amount.ok == 0 {
                 return act_422_field_rb(db2, "lines[i].total_amount", total_amount)
             }
-            let ins = invoice_line_insert(db2, new_id, product_id, product_null, description.val, quantity.val, unit.val, unit_price.val, net_amount.val, vat_rate.val, vat_amount.val, total_amount.val)?
+            let ins = invoice_line_insert(db2, new_id, product_id, product_null, description.val, quantity.val, unit.val, unit_price.val, amount_for_doc(document_type.val, net_amount.val), vat_rate.val, amount_for_doc(document_type.val, vat_amount.val), amount_for_doc(document_type.val, total_amount.val))?
             if orm_ok(ins) == 0 {
                 return act_err_rb(orm_db_exec(ins), 500, orm_err_exec(ins))
             }
@@ -219,7 +219,7 @@ fn act_invoices_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
 }
 
 fn act_invoices_show(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
-    let auth = act_require_auth(ctx, db)
+    let auth = act_require_perm(ctx, db, "invoice:read")?
     if auth.ok == 0 {
         return auth.out
     }
@@ -272,7 +272,7 @@ fn act_invoices_show(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
 }
 
 fn act_invoices_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
-    let auth = act_require_auth(ctx, db)
+    let auth = act_require_perm(ctx, db, "invoice:update")?
     if auth.ok == 0 {
         return auth.out
     }
@@ -304,7 +304,6 @@ fn act_invoices_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     if b.ok == 0 {
         return act_err(db, 400, b.err)
     }
-    // Частичен PATCH на header; ако има lines — редовете се подменят изцяло.
     let cols = vec_new()
     let vals = vec_new()
     let direction = jreq_str(b.doc, b.root, "direction")
@@ -535,7 +534,7 @@ fn act_invoices_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
             if total_amount.ok == 0 {
                 return act_422_field_rb(dbu, "lines[i].total_amount", total_amount)
             }
-            let ins = invoice_line_insert(dbu, id, product_id, product_null, description.val, quantity.val, unit.val, unit_price.val, net_amount.val, vat_rate.val, vat_amount.val, total_amount.val)?
+            let ins = invoice_line_insert(dbu, id, product_id, product_null, description.val, quantity.val, unit.val, unit_price.val, amount_for_doc_pick(document_type.present, document_type.val, orm_cell_by(existing, 0, "document_type"), net_amount.val), vat_rate.val, amount_for_doc_pick(document_type.present, document_type.val, orm_cell_by(existing, 0, "document_type"), vat_amount.val), amount_for_doc_pick(document_type.present, document_type.val, orm_cell_by(existing, 0, "document_type"), total_amount.val))?
             if orm_ok(ins) == 0 {
                 return act_err_rb(orm_db_exec(ins), 500, orm_err_exec(ins))
             }
@@ -564,7 +563,7 @@ fn act_invoices_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
 }
 
 fn act_invoices_delete(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
-    let auth = act_require_auth(ctx, db)
+    let auth = act_require_perm(ctx, db, "invoice:delete")?
     if auth.ok == 0 {
         return auth.out
     }

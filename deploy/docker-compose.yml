@@ -1,0 +1,93 @@
+# VPS: от корена на baga монорепото
+#   docker compose -f app-product/bagabuch/deploy/docker-compose.yml --env-file app-product/bagabuch/deploy/.env up --build -d
+#
+# Задължително в .env: FMR_JWT_SECRET (дълъг случаен низ). Не ползвай dev-secret.
+
+services:
+  boiladb:
+    build:
+      context: ../../..
+      dockerfile: app-product/bagabuch/deploy/Dockerfile.baga
+      args:
+        BAGA_ENTRY: app-product/boilaDB/tools/serve_pg.baga
+    restart: unless-stopped
+    environment:
+      BOILA_PGPORT: "6575"
+      BOILA_WORKERS: "8"
+      BOILA_PATH: /data
+    volumes:
+      - boila-data:/data
+    expose:
+      - "6575"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo >/dev/tcp/127.0.0.1/6575'"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 40s
+
+  backend:
+    build:
+      context: ../../..
+      dockerfile: app-product/bagabuch/deploy/Dockerfile.baga
+      args:
+        BAGA_ENTRY: app-product/bagabuch/backend/start.baga
+    restart: unless-stopped
+    depends_on:
+      boiladb:
+        condition: service_healthy
+    environment:
+      PORT: "8080"
+      ORM_BACKEND: boila
+      BOILA_PGHOST: boiladb
+      BOILA_PGPORT: "6575"
+      BOILA_PGUSER: boila
+      BOILA_PGDATABASE: boila
+      FMR_WORKERS: "8"
+      FMR_LOG: "1"
+      FMR_CORS: ${FMR_CORS:-}
+      FMR_JWT_SECRET: ${FMR_JWT_SECRET:?set FMR_JWT_SECRET in deploy/.env}
+      FMR_JWT_TTL_SEC: ${FMR_JWT_TTL_SEC:-604800}
+      FMR_TITLE: bagabuch
+      FMR_VERSION: "0.1.0"
+      BAGABUCH_SIDECAR: http://sidecar:5050
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo >/dev/tcp/127.0.0.1/8080'"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+
+  sidecar:
+    image: python:3.12-slim
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ../scripts/py:/app:ro
+      - boila-data:/data
+    environment:
+      BAGABUCH_SIDECAR_PORT: "5050"
+      BAGABUCH_DB_PATH: /data
+    command: ["sh", "-c", "pip install -q -r requirements.txt && python sidecar.py"]
+    expose:
+      - "5050"
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.frontend
+      args:
+        BAGABUCH_API_PROXY: http://backend:8080
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      BAGABUCH_API_PROXY: http://backend:8080
+    ports:
+      - "3000:3000"
+
+volumes:
+  boila-data:

@@ -70,6 +70,7 @@ fn counterpart_to_json(q: OrmQuery, row: i64) -> JObj {
     o = jobj_str(o, "contact_person", orm_cell_by(q, row, "contact_person"))
     o = jobj_str(o, "email", orm_cell_by(q, row, "email"))
     o = jobj_str(o, "phone", orm_cell_by(q, row, "phone"))
+    o = jobj_i64(o, "company_id", orm_cell_by_i64(q, row, "company_id"))
     let ca = orm_cell_by(q, row, "created_at")
     if ca != "" {
         o = jobj_str(o, "created_at", ca)
@@ -79,7 +80,7 @@ fn counterpart_to_json(q: OrmQuery, row: i64) -> JObj {
 
 // Dual-safe: без ::text кастове (граматиката на boila за кастове е по-тясна).
 fn counterpart_select_sql() -> str {
-    return "SELECT id, name, is_client, is_supplier, eik, vat_number, address, vies_address, city, country, post_code, street_name, building_number, region, contact_person, email, phone, created_at FROM counterparts"
+    return "SELECT id, name, is_client, is_supplier, eik, vat_number, address, vies_address, city, country, post_code, street_name, building_number, region, contact_person, email, phone, company_id, created_at FROM counterparts"
 }
 
 fn counterpart_find(db: OrmDb, id: i64) -> OrmQuery !IO !Net {
@@ -112,7 +113,7 @@ fn counterpart_by_eik(db: OrmDb, eik: str) -> OrmQuery !IO !Net {
     return orm_query_params(db, sql, vals, nulls)?
 }
 
-fn counterpart_create(db: OrmDb, name: str, counterpart_type: str, eik: str, vat_number: str, address: str, vies_address: str, city: str, country: str, post_code: str, street_name: str, building_number: str, region: str, contact_person: str, email: str, phone: str) -> OrmExec !IO !Net {
+fn counterpart_create(db: OrmDb, name: str, counterpart_type: str, eik: str, vat_number: str, address: str, vies_address: str, city: str, country: str, post_code: str, street_name: str, building_number: str, region: str, contact_person: str, email: str, phone: str, company_id: i64) -> OrmExec !IO !Net {
     let ic = counterpart_is_client(counterpart_type)
     let is_ = counterpart_is_supplier(counterpart_type)
     if counterpart_backend_boila()? == 1 {
@@ -140,6 +141,7 @@ fn counterpart_create(db: OrmDb, name: str, counterpart_type: str, eik: str, vat
         vec_push(cols, "contact_person")
         vec_push(cols, "email")
         vec_push(cols, "phone")
+        vec_push(cols, "company_id")
         let vals = vec_new()
         vec_push(vals, int_to_str(nid))
         vec_push(vals, name)
@@ -158,6 +160,7 @@ fn counterpart_create(db: OrmDb, name: str, counterpart_type: str, eik: str, vat
         vec_push(vals, contact_person)
         vec_push(vals, email)
         vec_push(vals, phone)
+        vec_push(vals, int_to_str(company_id))
         return orm_insert_strs(d, counterpart_table(), cols, vals)?
     }
     let cols = vec_new()
@@ -177,6 +180,7 @@ fn counterpart_create(db: OrmDb, name: str, counterpart_type: str, eik: str, vat
     vec_push(cols, "contact_person")
     vec_push(cols, "email")
     vec_push(cols, "phone")
+    vec_push(cols, "company_id")
     let vals = vec_new()
     vec_push(vals, name)
     vec_push(vals, int_to_str(ic))
@@ -194,6 +198,7 @@ fn counterpart_create(db: OrmDb, name: str, counterpart_type: str, eik: str, vat
     vec_push(vals, contact_person)
     vec_push(vals, email)
     vec_push(vals, phone)
+    vec_push(vals, int_to_str(company_id))
     return orm_insert_strs(db, counterpart_table(), cols, vals)?
 }
 
@@ -201,7 +206,29 @@ fn counterpart_delete(db: OrmDb, id: i64) -> OrmExec !IO !Net {
     return orm_delete_by_id(db, counterpart_table(), id)?
 }
 
+fn counterpart_list_json_co(q: OrmQuery, cid: i64) -> JObj {
+    let mut arr = jarr_new()
+    let mut i: i64 = 0
+    let mut n: i64 = 0
+    while i < orm_nrows(q) {
+        let row_co = orm_cell_by_i64(q, i, "company_id")
+        if cid <= 0 || row_co == 0 || row_co == cid {
+            arr = jarr_obj(arr, counterpart_to_json(q, i))
+            n = n + 1
+        }
+        i = i + 1
+    }
+    let mut o = jobj_new()
+    o = jobj_raw(o, "items", jarr_encode(arr))
+    o = jobj_i64(o, "count", n)
+    return o
+}
+
 fn counterpart_list_json(q: OrmQuery) -> JObj {
+    return counterpart_list_json_co(q, 0)
+}
+
+fn counterpart_list_json_all(q: OrmQuery) -> JObj {
     let mut arr = jarr_new()
     let mut i: i64 = 0
     while i < orm_nrows(q) {

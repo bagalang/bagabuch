@@ -405,6 +405,9 @@ function JournalInner() {
               </div>
 
               <h3 style={{ margin: "12px 0 8px" }}>{t("journal.title")}</h3>
+              <p className="muted" style={{ margin: "0 0 8px" }}>
+                {t("journal.sign_hint")}
+              </p>
               {lines.map((l, i) => (
                 <div key={i} style={{ display: "flex", gap: 6, marginBottom: 8 }}>
                   <select
@@ -437,7 +440,9 @@ function JournalInner() {
                   <input
                     className="input"
                     style={{ flex: 1 }}
-                    placeholder={t("journal.amount")}
+                    inputMode="decimal"
+                    placeholder="-100.00"
+                    title={t("journal.sign_hint")}
                     value={l.amount}
                     onChange={(e) => setLine(i, "amount", e.target.value)}
                     required
@@ -446,7 +451,9 @@ function JournalInner() {
                     <input
                       className="input"
                       style={{ flex: 1 }}
+                      inputMode="decimal"
                       placeholder={t("journal.vat_amount")}
+                      title={t("journal.sign_hint")}
                       value={l.vatAmount}
                       onChange={(e) => setLine(i, "vatAmount", e.target.value)}
                     />

@@ -18,7 +18,9 @@ const GROUPS: { titleKey: string; items: { id: string; labelKey: string }[] }[] 
     titleKey: "roles.g.admin",
     items: [
       { id: "admin:read", labelKey: "roles.p.read" },
+      { id: "admin:create", labelKey: "roles.p.create" },
       { id: "admin:update", labelKey: "roles.p.update" },
+      { id: "admin:delete", labelKey: "roles.p.delete" },
     ],
   },
   {
@@ -27,6 +29,22 @@ const GROUPS: { titleKey: string; items: { id: string; labelKey: string }[] }[] 
       { id: "accounting:read", labelKey: "roles.p.read" },
       { id: "accounting:write", labelKey: "roles.p.write" },
       { id: "accounting:post", labelKey: "roles.p.post" },
+    ],
+  },
+  {
+    titleKey: "roles.g.invoices",
+    items: [
+      { id: "invoice:read", labelKey: "roles.p.read" },
+      { id: "invoice:create", labelKey: "roles.p.create" },
+      { id: "invoice:update", labelKey: "roles.p.update" },
+      { id: "invoice:delete", labelKey: "roles.p.delete" },
+    ],
+  },
+  {
+    titleKey: "roles.g.documents",
+    items: [
+      { id: "document:read", labelKey: "roles.p.read" },
+      { id: "document:upload", labelKey: "roles.p.upload" },
     ],
   },
   {
@@ -40,7 +58,15 @@ const GROUPS: { titleKey: string; items: { id: string; labelKey: string }[] }[] 
     titleKey: "roles.g.vat",
     items: [
       { id: "vat:read", labelKey: "roles.p.read" },
+      { id: "vat:create", labelKey: "roles.p.create" },
       { id: "vat:submit", labelKey: "roles.p.submit" },
+    ],
+  },
+  {
+    titleKey: "roles.g.settings",
+    items: [
+      { id: "settings:read", labelKey: "roles.p.read" },
+      { id: "settings:update", labelKey: "roles.p.update" },
     ],
   },
   {
@@ -59,6 +85,15 @@ const GROUPS: { titleKey: string; items: { id: string; labelKey: string }[] }[] 
       { id: "company:create", labelKey: "roles.p.create" },
       { id: "company:update", labelKey: "roles.p.update" },
       { id: "company:delete", labelKey: "roles.p.delete" },
+    ],
+  },
+  {
+    titleKey: "roles.g.roles",
+    items: [
+      { id: "role:read", labelKey: "roles.p.read" },
+      { id: "role:create", labelKey: "roles.p.create" },
+      { id: "role:update", labelKey: "roles.p.update" },
+      { id: "role:delete", labelKey: "roles.p.delete" },
     ],
   },
 ];

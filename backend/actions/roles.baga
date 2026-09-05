@@ -1,6 +1,7 @@
 // actions/roles.baga — роли и права CRUD.
 
 import "../models/role.baga"
+import "acl.baga"
 import "fmrbaga/app.baga"
 import "fmrbaga/ctx.baga"
 import "fmrbaga/action.baga"
@@ -18,7 +19,7 @@ fn role_perms_from_body(d: JsonDoc, root: i64) -> str {
 }
 
 fn act_roles_index(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
-    let auth = act_require_auth(ctx, db)
+    let auth = act_require_perm(ctx, db, "role:read")?
     if auth.ok == 0 {
         return auth.out
     }
@@ -33,7 +34,7 @@ fn act_roles_index(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
 }
 
 fn act_roles_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
-    let auth = act_require_auth(ctx, db)
+    let auth = act_require_perm(ctx, db, "role:create")?
     if auth.ok == 0 {
         return auth.out
     }
@@ -67,7 +68,7 @@ fn act_roles_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
 }
 
 fn act_roles_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
-    let auth = act_require_auth(ctx, db)
+    let auth = act_require_perm(ctx, db, "role:update")?
     if auth.ok == 0 {
         return auth.out
     }
@@ -132,7 +133,7 @@ fn act_roles_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
 }
 
 fn act_roles_delete(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
-    let auth = act_require_auth(ctx, db)
+    let auth = act_require_perm(ctx, db, "role:delete")?
     if auth.ok == 0 {
         return auth.out
     }

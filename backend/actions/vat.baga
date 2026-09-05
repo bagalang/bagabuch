@@ -6,6 +6,7 @@
 import "../models/journal.baga"
 import "../models/company.baga"
 import "vat_fmt.baga"
+import "acl.baga"
 import "vat_line.baga"
 import "vat_files.baga"
 import "fmrbaga/app.baga"
@@ -185,7 +186,7 @@ fn vat_need_period(ctx: FmrCtx, db: OrmDb) -> FmrOut {
 }
 
 fn act_vat_registers(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
-    let auth = act_require_auth(ctx, db)
+    let auth = act_require_perm(ctx, db, "vat:read")?
     if auth.ok == 0 {
         return auth.out
     }
@@ -212,7 +213,7 @@ fn act_vat_return(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
 }
 
 fn act_vat_export(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
-    let auth = act_require_auth(ctx, db)
+    let auth = act_require_perm(ctx, db, "vat:read")?
     if auth.ok == 0 {
         return auth.out
     }

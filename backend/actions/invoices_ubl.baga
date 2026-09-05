@@ -6,6 +6,7 @@ import "../models/counterpart.baga"
 import "../models/company.baga"
 import "../models/unit.baga"
 import "../models/vat_exemption.baga"
+import "acl.baga"
 import "fmrbaga/app.baga"
 import "fmrbaga/ctx.baga"
 import "fmrbaga/action.baga"
@@ -324,7 +325,7 @@ fn ubl_line(lq: OrmQuery, i: i64, currency: str, credit: i64, exemption: str) ->
 }
 
 fn act_vat_exemptions_index(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
-    let auth = act_require_auth(ctx, db)
+    let auth = act_require_perm(ctx, db, "invoice:read")?
     if auth.ok == 0 {
         return auth.out
     }
@@ -332,7 +333,7 @@ fn act_vat_exemptions_index(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
 }
 
 fn act_invoices_ubl(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
-    let auth = act_require_auth(ctx, db)
+    let auth = act_require_perm(ctx, db, "invoice:read")?
     if auth.ok == 0 {
         return auth.out
     }
