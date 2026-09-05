@@ -28,6 +28,8 @@ import "actions/active_company.baga"
 import "actions/exchange_rates.baga"
 import "actions/bank_accounts.baga"
 import "actions/bank_transactions.baga"
+import "actions/dividends.baga"
+import "actions/dividends_ops.baga"
 import "actions/scans.baga"
 import "actions/admin_settings.baga"
 import "actions/users.baga"
@@ -171,6 +173,12 @@ fn RID_BANK_TRANSACTIONS_IMPORT() -> i64 { return 222 }
 fn RID_BANK_TRANSACTIONS_BOOK() -> i64 { return 223 }
 fn RID_BANK_TRANSACTIONS_REALLOCATE() -> i64 { return 224 }
 fn RID_BANK_TRANSACTIONS_DELETE() -> i64 { return 225 }
+fn RID_DDIST_INDEX() -> i64 { return 230 }
+fn RID_DDIST_CREATE() -> i64 { return 231 }
+fn RID_DDIST_SHOW() -> i64 { return 232 }
+fn RID_DDIST_UPDATE() -> i64 { return 233 }
+fn RID_DDIST_DELETE() -> i64 { return 234 }
+fn RID_DIV_PAY() -> i64 { return 235 }
 
 fn fmr_build_app() -> FmrApp !IO {
     let cfg = fmr_config_load()?
@@ -308,6 +316,12 @@ fn fmr_build_app() -> FmrApp !IO {
     app = fmr_route_meta(app, "POST", "/v1/bank-transactions/{id}/book", RID_BANK_TRANSACTIONS_BOOK(), "", "bank-transactions", 0, "BankBookRequest", "BankBookResult", "200", "")
     app = fmr_route_meta(app, "POST", "/v1/bank-transactions/{id}/reallocate", RID_BANK_TRANSACTIONS_REALLOCATE(), "", "bank-transactions", 0, "BankReallocateRequest", "BankReallocateResult", "200", "")
     app = fmr_route_meta(app, "DELETE", "/v1/bank-transactions/{id}", RID_BANK_TRANSACTIONS_DELETE(), "", "bank-transactions", 0, "", "-", "204", "")
+    app = fmr_route_meta(app, "GET", "/v1/dividend-distributions", RID_DDIST_INDEX(), "", "dividends", 0, "", "DividendDistList", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/dividend-distributions", RID_DDIST_CREATE(), "", "dividends", 0, "DividendDistCreate", "DividendDist", "201", "")
+    app = fmr_route_meta(app, "GET", "/v1/dividend-distributions/{id}", RID_DDIST_SHOW(), "", "dividends", 0, "", "DividendDist", "200", "")
+    app = fmr_route_meta(app, "PATCH", "/v1/dividend-distributions/{id}", RID_DDIST_UPDATE(), "", "dividends", 0, "DividendDistUpdate", "DividendDist", "200", "")
+    app = fmr_route_meta(app, "DELETE", "/v1/dividend-distributions/{id}", RID_DDIST_DELETE(), "", "dividends", 0, "", "-", "204", "")
+    app = fmr_route_meta(app, "POST", "/v1/dividends/{id}/pay", RID_DIV_PAY(), "", "dividends", 0, "DividendPay", "Dividend", "200", "")
     return app
 }
 
@@ -457,5 +471,11 @@ fn fmr_dispatch(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net !Random {
     if id == RID_BANK_TRANSACTIONS_BOOK() { return act_bank_transactions_book(ctx, db)? }
     if id == RID_BANK_TRANSACTIONS_REALLOCATE() { return act_bank_transactions_reallocate(ctx, db)? }
     if id == RID_BANK_TRANSACTIONS_DELETE() { return act_bank_transactions_delete(ctx, db)? }
+    if id == RID_DDIST_INDEX() { return act_ddist_index(ctx, db)? }
+    if id == RID_DDIST_CREATE() { return act_ddist_create(ctx, db)? }
+    if id == RID_DDIST_SHOW() { return act_ddist_show(ctx, db)? }
+    if id == RID_DDIST_UPDATE() { return act_ddist_update(ctx, db)? }
+    if id == RID_DDIST_DELETE() { return act_ddist_delete(ctx, db)? }
+    if id == RID_DIV_PAY() { return act_div_pay(ctx, db)? }
     return fmr_out(fmr_500("unhandled route"), db)
 }

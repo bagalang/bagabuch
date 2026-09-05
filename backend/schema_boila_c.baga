@@ -141,5 +141,21 @@ fn bagabuch_boila_migrations_c() -> MigrationSet {
     set = migrate_add(set, 20260831108, "add_bank_transactions_journal_entry_id", "ALTER TABLE bank_transactions ADD COLUMN journal_entry_id BIGINT", "ALTER TABLE bank_transactions DROP COLUMN journal_entry_id")
     set = migrate_add(set, 20260831111, "add_bank_transactions_company_id", "ALTER TABLE bank_transactions ADD COLUMN company_id BIGINT", "ALTER TABLE bank_transactions DROP COLUMN company_id")
     set = migrate_add(set, 20260831113, "bank_transactions_company_id_index", "CREATE INDEX IF NOT EXISTS bank_transactions_company_id_idx ON bank_transactions (company_id)", "DROP INDEX IF EXISTS bank_transactions_company_id_idx ON bank_transactions")
+    set = migrate_add(
+        set,
+        20260905101,
+        "create_dividend_distributions",
+        "CREATE TABLE IF NOT EXISTS dividend_distributions (id BIGINT, company_id BIGINT, year BIGINT, total_amount NUMERIC, decision_date TEXT, decision_number TEXT, status TEXT, notes TEXT, created_at TIMESTAMPTZ, PRIMARY KEY (id))",
+        "DROP TABLE IF EXISTS dividend_distributions"
+    )
+    set = migrate_add(
+        set,
+        20260905102,
+        "create_dividends",
+        "CREATE TABLE IF NOT EXISTS dividends (id BIGINT, company_id BIGINT, distribution_id BIGINT, beneficial_owner_id BIGINT, owner_name TEXT, owner_egn TEXT, ownership_percentage NUMERIC, gross_amount NUMERIC, tax_rate NUMERIC, tax_amount NUMERIC, net_amount NUMERIC, decision_date TEXT, payment_date TEXT, is_paid BIGINT, notes TEXT, PRIMARY KEY (id))",
+        "DROP TABLE IF EXISTS dividends"
+    )
+    set = migrate_add(set, 20260905103, "index_dividend_distributions_company_id", "CREATE INDEX IF NOT EXISTS index_dividend_distributions_company_id ON dividend_distributions (company_id)", "DROP INDEX IF EXISTS index_dividend_distributions_company_id ON dividend_distributions")
+    set = migrate_add(set, 20260905104, "index_dividends_distribution_id", "CREATE INDEX IF NOT EXISTS index_dividends_distribution_id ON dividends (distribution_id)", "DROP INDEX IF EXISTS index_dividends_distribution_id ON dividends")
     return set
 }

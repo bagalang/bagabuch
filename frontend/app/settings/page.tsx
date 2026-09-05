@@ -5,6 +5,7 @@
 // улица/сграда/регион, обекти (поделения), действителни собственици, предприятия-майки.
 
 import { FormEvent, ReactNode, useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { RequireAuth } from "../../components/RequireAuth";
 import { useI18n } from "../../components/I18nProvider";
 import { DocumentSeriesTab, DocSeries } from "../../components/DocumentSeriesTab";
@@ -841,6 +842,7 @@ function SettingsInner() {
               <h3 className="section-title" style={{ margin: 0 }}>
                 {t("settings.owners")}
               </h3>
+              <Link href="/dividends" className="btn btn-sm">{t("settings.to_dividends")}</Link>
               <button
                 type="button"
                 className="btn btn-sm"

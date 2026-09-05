@@ -141,5 +141,21 @@ fn bagabuch_migrations_c() -> MigrationSet {
     set = migrate_add(set, 20260831108, "add_bank_transactions_journal_entry_id", "ALTER TABLE bank_transactions ADD COLUMN journal_entry_id BIGINT NOT NULL DEFAULT 0", "ALTER TABLE bank_transactions DROP COLUMN journal_entry_id")
     set = migrate_add(set, 20260831111, "add_bank_transactions_company_id", "ALTER TABLE bank_transactions ADD COLUMN company_id BIGINT NOT NULL DEFAULT 0", "ALTER TABLE bank_transactions DROP COLUMN company_id")
     set = migrate_add(set, 20260831113, "bank_transactions_company_id_index", "CREATE INDEX IF NOT EXISTS bank_transactions_company_id_idx ON bank_transactions (company_id)", "DROP INDEX IF EXISTS bank_transactions_company_id_idx")
+    set = migrate_add(
+        set,
+        20260905101,
+        "create_dividend_distributions",
+        "CREATE TABLE dividend_distributions (id BIGSERIAL PRIMARY KEY, company_id BIGINT NOT NULL, year BIGINT NOT NULL, total_amount NUMERIC(18,2) NOT NULL DEFAULT 0, decision_date TEXT NOT NULL DEFAULT '', decision_number TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'draft', notes TEXT NOT NULL DEFAULT '', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())",
+        "DROP TABLE IF EXISTS dividend_distributions"
+    )
+    set = migrate_add(
+        set,
+        20260905102,
+        "create_dividends",
+        "CREATE TABLE dividends (id BIGSERIAL PRIMARY KEY, company_id BIGINT NOT NULL, distribution_id BIGINT NOT NULL, beneficial_owner_id BIGINT NOT NULL DEFAULT 0, owner_name TEXT NOT NULL DEFAULT '', owner_egn TEXT NOT NULL DEFAULT '', ownership_percentage NUMERIC(18,4) NOT NULL DEFAULT 0, gross_amount NUMERIC(18,2) NOT NULL DEFAULT 0, tax_rate NUMERIC(8,4) NOT NULL DEFAULT 5, tax_amount NUMERIC(18,2) NOT NULL DEFAULT 0, net_amount NUMERIC(18,2) NOT NULL DEFAULT 0, decision_date TEXT NOT NULL DEFAULT '', payment_date TEXT NOT NULL DEFAULT '', is_paid BIGINT NOT NULL DEFAULT 0, notes TEXT NOT NULL DEFAULT '')",
+        "DROP TABLE IF EXISTS dividends"
+    )
+    set = migrate_add(set, 20260905103, "index_dividend_distributions_company_id", "CREATE INDEX IF NOT EXISTS index_dividend_distributions_company_id ON dividend_distributions (company_id)", "DROP INDEX IF EXISTS index_dividend_distributions_company_id")
+    set = migrate_add(set, 20260905104, "index_dividends_distribution_id", "CREATE INDEX IF NOT EXISTS index_dividends_distribution_id ON dividends (distribution_id)", "DROP INDEX IF EXISTS index_dividends_distribution_id")
     return set
 }

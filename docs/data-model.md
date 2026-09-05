@@ -18,6 +18,7 @@ PK за таблици от преди P20: `MAX(id)+1` в приложение�
 | `companies` | Реквизити, ДДС, SAF-T полета, метод WAC/FIFO/LIFO; `settings` е JSON текст (`mistral_api_key`, `zhipu_api_key`) |
 | `company_locations` | Търговски обекти и поделения |
 | `beneficial_owners` | Действителни собственици |
+| `dividend_distributions` / `dividends` | Протокол за разпределение + редове по собственик |
 | `ultimate_parents` | Крайни предприятия-майки |
 | `document_series` | Кочани; `document_types` е CSV от кодове |
 | `accounts` | Сметкоплан; `analytic_type`: none / counterpart / product |
