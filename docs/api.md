@@ -96,6 +96,7 @@ JSON на екрана (сумите с точка); файлът е XHTML та�
 | Метод | Път |
 |--------|-----|
 | GET | `/v1/vat/registers?period=` `/v1/vat/return?period=` |
+| GET | `/v1/vat/export?period=&type=deklar\|pokupki\|prodagbi\|zip` |
 | GET | `/v1/saft/export?period=&mode=monthly\|ondemand\|annual` |
 | GET | `/v1/saft/nomenclatures?kind=&search=` |
 | GET | `/v1/exchange-rates`, `/v1/exchange-rates/rate?currency=&date=` |

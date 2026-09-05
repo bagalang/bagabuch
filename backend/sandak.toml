@@ -11,4 +11,5 @@ bagadecimal = { path = "../../../app-product/bagadecimal" }
 chronobaga = { path = "../../../app-product/chronobaga" }
 xmlbaga = { path = "../../../app-product/xmlbaga" }
 reportbaga = { path = "../../../app-product/reportbaga" }
+zipbaga = { path = "../../../app-product/zipbaga" }
 std = { path = "../../../std" }
