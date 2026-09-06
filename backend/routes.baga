@@ -92,6 +92,7 @@ fn RID_INVOICES_UBL() -> i64 { return 68 }
 fn RID_JOURNAL_INDEX() -> i64 { return 70 }
 fn RID_JOURNAL_SHOW() -> i64 { return 71 }
 fn RID_JOURNAL_CREATE() -> i64 { return 72 }
+fn RID_JOURNAL_UPDATE() -> i64 { return 73 }
 fn RID_VAT_REGISTERS() -> i64 { return 90 }
 fn RID_VAT_RETURN() -> i64 { return 91 }
 fn RID_VAT_EXPORT() -> i64 { return 93 }
@@ -258,6 +259,7 @@ fn fmr_build_app() -> FmrApp !IO {
     app = fmr_route_meta(app, "GET", "/v1/journal", RID_JOURNAL_INDEX(), "", "journal", 0, "", "JournalList", "200", "limit,offset")
     app = fmr_route_meta(app, "POST", "/v1/journal", RID_JOURNAL_CREATE(), "", "journal", 0, "JournalCreate", "JournalEntry", "201", "")
     app = fmr_route_meta(app, "GET", "/v1/journal/{id}", RID_JOURNAL_SHOW(), "", "journal", 0, "", "JournalEntry", "200", "")
+    app = fmr_route_meta(app, "PUT", "/v1/journal/{id}", RID_JOURNAL_UPDATE(), "", "journal", 0, "JournalUpdate", "JournalEntry", "200", "")
     app = fmr_route_meta(app, "GET", "/v1/vat/registers", RID_VAT_REGISTERS(), "", "vat", 0, "", "VatRegisters", "200", "period")
     app = fmr_route_meta(app, "GET", "/v1/vat/return", RID_VAT_RETURN(), "", "vat", 0, "", "VatReturn", "200", "period")
     app = fmr_route_meta(app, "GET", "/v1/vat/export", RID_VAT_EXPORT(), "", "vat", 0, "", "-", "200", "period,type:s")
@@ -431,6 +433,7 @@ fn fmr_dispatch(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net !Random !Time {
     if id == RID_JOURNAL_INDEX() { return act_journal_index(ctx, db)? }
     if id == RID_JOURNAL_SHOW() { return act_journal_show(ctx, db)? }
     if id == RID_JOURNAL_CREATE() { return act_journal_create(ctx, db)? }
+    if id == RID_JOURNAL_UPDATE() { return act_journal_update(ctx, db)? }
     if id == RID_VAT_REGISTERS() { return act_vat_registers(ctx, db)? }
     if id == RID_VAT_RETURN() { return act_vat_return(ctx, db)? }
     if id == RID_VAT_EXPORT() { return act_vat_export(ctx, db)? }

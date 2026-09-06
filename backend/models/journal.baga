@@ -318,3 +318,39 @@ fn journal_lines_list_json(q: OrmQuery) -> JArr {
     }
     return arr
 }
+
+fn journal_lines_delete_by_entry(db: OrmDb, entry_id: i64) -> OrmExec !IO !Net {
+    let sql = "DELETE FROM journal_lines WHERE entry_id = $1"
+    let vals = vec_new()
+    let nulls = vec_new()
+    pg_param_i64(vals, nulls, entry_id)
+    return orm_exec_params(db, sql, vals, nulls)?
+}
+
+fn journal_entry_update(db: OrmDb, id: i64, entry_date: str, description: str, vat_type: str, counterpart_id: i64, counterpart_name: str, counterpart_vat_number: str, document_number: str, document_date: str, vat_period: str, total_amount: str, total_vat_amount: str) -> OrmExec !IO !Net {
+    let cols = vec_new()
+    vec_push(cols, "entry_date")
+    vec_push(cols, "description")
+    vec_push(cols, "vat_type")
+    vec_push(cols, "counterpart_id")
+    vec_push(cols, "counterpart_name")
+    vec_push(cols, "counterpart_vat_number")
+    vec_push(cols, "document_number")
+    vec_push(cols, "document_date")
+    vec_push(cols, "vat_period")
+    vec_push(cols, "total_amount")
+    vec_push(cols, "total_vat_amount")
+    let vals = vec_new()
+    vec_push(vals, entry_date)
+    vec_push(vals, description)
+    vec_push(vals, vat_type)
+    vec_push(vals, int_to_str(counterpart_id))
+    vec_push(vals, counterpart_name)
+    vec_push(vals, counterpart_vat_number)
+    vec_push(vals, document_number)
+    vec_push(vals, document_date)
+    vec_push(vals, vat_period)
+    vec_push(vals, total_amount)
+    vec_push(vals, total_vat_amount)
+    return orm_update_by_id(db, journal_entry_table(), id, cols, vals)?
+}

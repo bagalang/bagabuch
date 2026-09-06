@@ -52,7 +52,7 @@ VIES (нужен JWT; ключът е на **активната** фирма):
 | POST | `/v1/invoices/{id}/post` |
 | GET | `/v1/invoices/{id}/print?format=pdf\|docx\|odt` |
 | GET | `/v1/invoices/{id}/ubl` |
-| GET/POST | `/v1/journal`, GET `/v1/journal/{id}` |
+| GET/POST | `/v1/journal`, GET/PUT `/v1/journal/{id}` |
 
 ## Вътрешни документи и склад
 

@@ -1,13 +1,14 @@
 "use client";
 
-// Дневник — счетоводни записи. Нов запис: модал с три таба
-// (Покупки / Продажби / Без ДДС) — покупките и продажбите влизат в
-// дневниците за ДДС.
+// Дневник — счетоводни записи. Нов запис / редакция: голям модал с три
+// таба (Покупки / Продажби / Без ДДС). Клик върху ред зарежда записа.
 
-import { useCallback, useEffect, useMemo, useState, Fragment, FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, FormEvent, MouseEvent } from "react";
 import { api, ListResponse } from "../../lib/api";
+import { formatBgDate, todayIso } from "../../lib/dates";
 import { useI18n } from "../../components/I18nProvider";
 import { RequireAuth } from "../../components/RequireAuth";
+import { IconButton } from "../../components/IconButton";
 
 interface JournalEntry {
   id: number;
@@ -17,6 +18,10 @@ interface JournalEntry {
   description: string;
   vat_type: string;
   counterpart_name: string;
+  counterpart_id?: number;
+  document_number?: string;
+  document_date?: string;
+  vat_period?: string;
 }
 
 interface JournalLine {
@@ -27,6 +32,8 @@ interface JournalLine {
   vat_amount?: string;
   account_number?: string;
   account_name?: string;
+  location_id?: number;
+  product_id?: number;
 }
 
 interface Account {
@@ -48,13 +55,44 @@ interface LineDraft {
   direction: "debit" | "credit";
   amount: string;
   vatAmount: string;
+  locationId: number;
+  productId: number;
 }
+
+const emptyLine = (): LineDraft => ({
+  accountId: "",
+  direction: "debit",
+  amount: "",
+  vatAmount: "",
+  locationId: 0,
+  productId: 0,
+});
 
 const VAT_TYPE_LABEL: Record<string, string> = {
   purchase: "journal.tab.purchase",
   sales: "journal.tab.sales",
   no_vat: "journal.tab.no_vat",
 };
+
+function toDateInput(raw: string | undefined): string {
+  if (!raw) return "";
+  const s = String(raw).trim();
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  const compact = s.match(/^(\d{4})(\d{2})(\d{2})$/);
+  if (compact) return `${compact[1]}-${compact[2]}-${compact[3]}`;
+  return s.slice(0, 10);
+}
+
+function toMonthInput(raw: string | undefined): string {
+  if (!raw) return "";
+  const s = String(raw).trim();
+  const iso = s.match(/^(\d{4})-(\d{2})/);
+  if (iso) return `${iso[1]}-${iso[2]}`;
+  const compact = s.match(/^(\d{4})(\d{2})$/);
+  if (compact) return `${compact[1]}-${compact[2]}`;
+  return s.slice(0, 7);
+}
 
 function JournalInner() {
   const { t } = useI18n();
@@ -64,11 +102,11 @@ function JournalInner() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [q, setQ] = useState("");
-  const [expanded, setExpanded] = useState<number | null>(null);
-  const [linesByEntry, setLinesByEntry] = useState<Record<number, JournalLine[]>>({});
 
   // модал
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [loadingEntry, setLoadingEntry] = useState(false);
   const [tab, setTab] = useState<Tab>("purchase");
   const [entryDate, setEntryDate] = useState("");
   const [description, setDescription] = useState("");
@@ -76,9 +114,7 @@ function JournalInner() {
   const [documentNumber, setDocumentNumber] = useState("");
   const [documentDate, setDocumentDate] = useState("");
   const [vatPeriod, setVatPeriod] = useState("");
-  const [lines, setLines] = useState<LineDraft[]>([
-    { accountId: "", direction: "debit", amount: "", vatAmount: "" },
-  ]);
+  const [lines, setLines] = useState<LineDraft[]>([emptyLine()]);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
 
@@ -111,57 +147,74 @@ function JournalInner() {
     loadRefs();
   }, [load, loadRefs]);
 
-  const accLabel = (line: JournalLine) => {
-    if (line.account_number) {
-      return line.account_name
-        ? `${line.account_number} ${line.account_name}`
-        : line.account_number;
-    }
-    const a = accounts.find((x) => x.id === line.account_id);
-    return a ? `${a.number} ${a.name}` : String(line.account_id);
-  };
-
-  const toggle = async (entry: JournalEntry) => {
-    if (expanded === entry.id) {
-      setExpanded(null);
-      return;
-    }
-    setExpanded(entry.id);
-    if (!linesByEntry[entry.id]) {
-      try {
-        const data = await api.get<JournalEntry & { lines: JournalLine[] }>(
-          `/v1/journal/${entry.id}`
-        );
-        setLinesByEntry((prev) => ({ ...prev, [entry.id]: data.lines ?? [] }));
-      } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
-      }
-    }
-  };
-
-  const openCreate = () => {
+  const resetForm = (date: string) => {
     setTab("purchase");
-    setEntryDate("");
+    setEntryDate(date);
     setDescription("");
     setCounterpartId("");
     setDocumentNumber("");
     setDocumentDate("");
     setVatPeriod("");
-    setLines([{ accountId: "", direction: "debit", amount: "", vatAmount: "" }]);
+    setLines([emptyLine()]);
     setFormError("");
+  };
+
+  const openCreate = () => {
+    setEditingId(null);
+    setLoadingEntry(false);
+    resetForm(todayIso());
     setModalOpen(true);
   };
 
-  const setLine = (i: number, f: keyof LineDraft, v: string) =>
+  const applyEntry = (data: JournalEntry & { lines?: JournalLine[] }) => {
+    const vt = data.vat_type;
+    setTab(vt === "purchase" || vt === "sales" || vt === "no_vat" ? vt : "no_vat");
+    setEntryDate(toDateInput(data.entry_date));
+    setDescription(data.description ?? "");
+    setCounterpartId(data.counterpart_id ? String(data.counterpart_id) : "");
+    setDocumentNumber(data.document_number ?? "");
+    setDocumentDate(toDateInput(data.document_date));
+    setVatPeriod(toMonthInput(data.vat_period));
+    const loaded = (data.lines ?? []).map((l) => ({
+      accountId: l.account_id ? String(l.account_id) : "",
+      direction: l.direction === "credit" ? ("credit" as const) : ("debit" as const),
+      amount: l.amount ?? "",
+      vatAmount: l.vat_amount && l.vat_amount !== "0" ? l.vat_amount : "",
+      locationId: l.location_id ?? 0,
+      productId: l.product_id ?? 0,
+    }));
+    setLines(loaded.length > 0 ? loaded : [emptyLine()]);
+  };
+
+  const openEdit = async (entry: JournalEntry, e?: MouseEvent) => {
+    e?.stopPropagation();
+    setEditingId(entry.id);
+    setFormError("");
+    setLoadingEntry(true);
+    setModalOpen(true);
+    applyEntry(entry);
+    try {
+      const data = await api.get<JournalEntry & { lines: JournalLine[] }>(
+        `/v1/journal/${entry.id}`
+      );
+      applyEntry(data);
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoadingEntry(false);
+    }
+  };
+
+  const setLine = (
+    i: number,
+    f: "accountId" | "direction" | "amount" | "vatAmount",
+    v: string
+  ) =>
     setLines((prev) =>
       prev.map((l, idx) => (idx === i ? { ...l, [f]: v } : l))
     );
 
-  const addLine = () =>
-    setLines((prev) => [
-      ...prev,
-      { accountId: "", direction: "debit", amount: "", vatAmount: "" },
-    ]);
+  const addLine = () => setLines((prev) => [...prev, emptyLine()]);
 
   const removeLine = (i: number) =>
     setLines((prev) => prev.filter((_, idx) => idx !== i));
@@ -178,20 +231,30 @@ function JournalInner() {
     const s = q.trim().toLowerCase();
     if (!s) return entries;
     return entries.filter((en) =>
-      `${en.entry_date} ${en.document_type} ${en.document_id} ${en.description} ${en.counterpart_name}`
+      `${en.entry_date} ${en.document_type} ${en.document_id} ${en.document_number ?? ""} ${en.description} ${en.counterpart_name}`
         .toLowerCase()
         .includes(s)
     );
   }, [entries, q]);
 
   const filteredCounterparts = counterparts.filter((c) => {
+    if (String(c.id) === counterpartId) return true;
     if (tab === "purchase") return c.counterpart_type !== "customer";
     if (tab === "sales") return c.counterpart_type !== "supplier";
     return true;
   });
 
+  const docLabel = (en: JournalEntry) => {
+    if (en.document_number) return en.document_number;
+    if (en.document_type === "manual" || !en.document_type) {
+      return t("journal.doc.manual");
+    }
+    return en.document_id ? `${en.document_type} #${en.document_id}` : en.document_type;
+  };
+
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
+    if (loadingEntry) return;
     setSaving(true);
     setFormError("");
     try {
@@ -199,7 +262,7 @@ function JournalInner() {
         entry_date: entryDate,
         description,
         vat_type: tab,
-        counterpart_id: tab === "no_vat" ? 0 : Number(counterpartId) || 0,
+        counterpart_id: Number(counterpartId) || 0,
         document_number: documentNumber,
         document_date: documentDate,
         vat_period: tab === "no_vat" ? "" : vatPeriod,
@@ -208,9 +271,15 @@ function JournalInner() {
           direction: l.direction,
           amount: l.amount,
           vat_amount: l.vatAmount || "0",
+          location_id: l.locationId || 0,
+          product_id: l.productId || 0,
         })),
       };
-      await api.post("/v1/journal", payload);
+      if (editingId) {
+        await api.put(`/v1/journal/${editingId}`, payload);
+      } else {
+        await api.post("/v1/journal", payload);
+      }
       setModalOpen(false);
       await load();
     } catch (err) {
@@ -245,24 +314,27 @@ function JournalInner() {
         ) : filteredEntries.length === 0 ? (
           <div className="content muted">{t("common.empty")}</div>
         ) : (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>{t("journal.entry_date")}</th>
-                <th>{t("journal.document")}</th>
-                <th>{t("journal.description")}</th>
-                <th>{t("journal.counterpart")}</th>
-                <th>{t("invoices.status")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredEntries.map((en) => (
-                <Fragment key={en.id}>
-                  <tr onClick={() => toggle(en)} style={{ cursor: "pointer" }}>
-                    <td>{en.entry_date}</td>
-                    <td>
-                      {en.document_type} #{en.document_id}
-                    </td>
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>{t("journal.entry_date")}</th>
+                  <th>{t("journal.document")}</th>
+                  <th>{t("journal.description")}</th>
+                  <th>{t("journal.counterpart")}</th>
+                  <th>{t("journal.vat_type")}</th>
+                  <th>{t("common.actions")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredEntries.map((en) => (
+                  <tr
+                    key={en.id}
+                    onClick={() => void openEdit(en)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <td>{formatBgDate(en.entry_date)}</td>
+                    <td>{docLabel(en)}</td>
                     <td>{en.description}</td>
                     <td>{en.counterpart_name}</td>
                     <td>
@@ -278,46 +350,38 @@ function JournalInner() {
                         {t(VAT_TYPE_LABEL[en.vat_type] ?? "journal.tab.no_vat")}
                       </span>
                     </td>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <div className="icon-actions">
+                        <IconButton
+                          icon="edit"
+                          title={t("common.edit")}
+                          onClick={(e) => void openEdit(en, e)}
+                        />
+                      </div>
+                    </td>
                   </tr>
-                  {expanded === en.id && linesByEntry[en.id] && (
-                    <tr>
-                      <td colSpan={5}>
-                        <table className="table">
-                          <thead>
-                            <tr>
-                              <th>{t("journal.account")}</th>
-                              <th>{t("journal.debit")}</th>
-                              <th>{t("journal.credit")}</th>
-                              <th>{t("journal.vat_amount")}</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {linesByEntry[en.id].map((l) => (
-                              <tr key={l.id}>
-                                <td>{accLabel(l)}</td>
-                                <td>{l.direction === "debit" ? l.amount : ""}</td>
-                                <td>{l.direction === "credit" ? l.amount : ""}</td>
-                                <td>{l.vat_amount || ""}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              ))}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
       {modalOpen && (
         <div className="modal-backdrop" onClick={() => setModalOpen(false)}>
-          <div className="card modal" onClick={(e) => e.stopPropagation()}>
-            <h2 className="modal-title">{t("journal.new_entry")}</h2>
+          <div
+            className="card modal modal-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="modal-title">
+              {editingId ? t("journal.edit_entry") : t("journal.new_entry")}
+            </h2>
 
-            <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
+            {loadingEntry ? (
+              <div className="content muted">{t("journal.loading_entry")}</div>
+            ) : null}
+
+            <div style={{ display: "flex", gap: 8, marginBottom: 18, flexWrap: "wrap" }}>
               {(
                 [
                   ["purchase", "journal.tab.purchase"],
@@ -330,22 +394,24 @@ function JournalInner() {
                   type="button"
                   className={`btn btn-sm ${tab === value ? "btn-primary" : ""}`}
                   onClick={() => setTab(value)}
+                  disabled={loadingEntry}
                 >
                   {t(key)}
                 </button>
               ))}
             </div>
 
-            <form onSubmit={handleSave}>
+            <form onSubmit={(e) => void handleSave(e)}>
               <div className="form-grid">
                 <div className="field">
                   <label className="label">{t("journal.entry_date")} *</label>
                   <input
                     className="input"
+                    type="date"
                     value={entryDate}
                     onChange={(e) => setEntryDate(e.target.value)}
-                    placeholder="2026-08-20"
                     required
+                    disabled={loadingEntry}
                   />
                 </div>
                 <div className="field">
@@ -355,119 +421,137 @@ function JournalInner() {
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     required
+                    disabled={loadingEntry}
                   />
                 </div>
-                {tab !== "no_vat" && (
-                  <>
-                    <div className="field">
-                      <label className="label">{t("journal.counterpart")}</label>
-                      <select
-                        className="select"
-                        value={counterpartId}
-                        onChange={(e) => setCounterpartId(e.target.value)}
-                      >
-                        <option value="">—</option>
-                        {filteredCounterparts.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="field">
-                      <label className="label">{t("journal.vat_period")}</label>
-                      <input
-                        className="input"
-                        value={vatPeriod}
-                        onChange={(e) => setVatPeriod(e.target.value)}
-                        placeholder="2026-08"
-                      />
-                    </div>
-                    <div className="field">
-                      <label className="label">{t("journal.document_number")}</label>
-                      <input
-                        className="input"
-                        value={documentNumber}
-                        onChange={(e) => setDocumentNumber(e.target.value)}
-                      />
-                    </div>
-                    <div className="field">
-                      <label className="label">{t("journal.document_date")}</label>
-                      <input
-                        className="input"
-                        value={documentDate}
-                        onChange={(e) => setDocumentDate(e.target.value)}
-                        placeholder="2026-08-20"
-                      />
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <h3 style={{ margin: "12px 0 8px" }}>{t("journal.title")}</h3>
-              <p className="muted" style={{ margin: "0 0 8px" }}>
-                {t("journal.sign_hint")}
-              </p>
-              {lines.map((l, i) => (
-                <div key={i} style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+                <div className="field">
+                  <label className="label">{t("journal.counterpart")}</label>
                   <select
                     className="select"
-                    style={{ flex: 2 }}
-                    value={l.accountId}
-                    onChange={(e) => setLine(i, "accountId", e.target.value)}
-                    required
+                    value={counterpartId}
+                    onChange={(e) => setCounterpartId(e.target.value)}
+                    disabled={loadingEntry}
                   >
-                    <option value="" disabled>
-                      {t("journal.account")}…
-                    </option>
-                    {accounts.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.number} {a.name}
+                    <option value="">—</option>
+                    {filteredCounterparts.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
                       </option>
                     ))}
                   </select>
-                  <select
-                    className="select"
-                    style={{ flex: 1 }}
-                    value={l.direction}
-                    onChange={(e) =>
-                      setLine(i, "direction", e.target.value as "debit" | "credit")
-                    }
-                  >
-                    <option value="debit">{t("journal.debit")}</option>
-                    <option value="credit">{t("journal.credit")}</option>
-                  </select>
-                  <input
-                    className="input"
-                    style={{ flex: 1 }}
-                    inputMode="decimal"
-                    placeholder="-100.00"
-                    title={t("journal.sign_hint")}
-                    value={l.amount}
-                    onChange={(e) => setLine(i, "amount", e.target.value)}
-                    required
-                  />
-                  {tab !== "no_vat" && (
+                </div>
+                {tab !== "no_vat" && (
+                  <div className="field">
+                    <label className="label">{t("journal.vat_period")}</label>
                     <input
                       className="input"
-                      style={{ flex: 1 }}
-                      inputMode="decimal"
-                      placeholder={t("journal.vat_amount")}
-                      title={t("journal.sign_hint")}
-                      value={l.vatAmount}
-                      onChange={(e) => setLine(i, "vatAmount", e.target.value)}
+                      type="month"
+                      value={vatPeriod}
+                      onChange={(e) => setVatPeriod(e.target.value)}
+                      disabled={loadingEntry}
                     />
-                  )}
-                  <button
-                    type="button"
-                    className="btn btn-danger btn-sm"
-                    onClick={() => removeLine(i)}
-                  >
-                    ✕
-                  </button>
+                  </div>
+                )}
+                <div className="field">
+                  <label className="label">{t("journal.document_number")}</label>
+                  <input
+                    className="input"
+                    value={documentNumber}
+                    onChange={(e) => setDocumentNumber(e.target.value)}
+                    disabled={loadingEntry}
+                  />
                 </div>
-              ))}
-              <button type="button" className="btn btn-sm" onClick={addLine}>
+                <div className="field">
+                  <label className="label">{t("journal.document_date")}</label>
+                  <input
+                    className="input"
+                    type="date"
+                    value={documentDate}
+                    onChange={(e) => setDocumentDate(e.target.value)}
+                    disabled={loadingEntry}
+                  />
+                </div>
+              </div>
+
+              <h3 style={{ margin: "16px 0 8px" }}>{t("journal.lines")}</h3>
+              <p className="muted" style={{ margin: "0 0 8px" }}>
+                {t("journal.sign_hint")}
+              </p>
+              <div className={tab === "no_vat" ? "journal-lines-novat" : undefined}>
+                <div className="journal-line-head">
+                  <span>{t("journal.account")}</span>
+                  <span>{t("journal.debit")} / {t("journal.credit")}</span>
+                  <span>{t("journal.amount")}</span>
+                  {tab !== "no_vat" ? <span>{t("journal.vat_amount")}</span> : null}
+                  <span />
+                </div>
+                {lines.map((l, i) => (
+                  <div key={i} className="journal-line-row">
+                    <select
+                      className="select"
+                      value={l.accountId}
+                      onChange={(e) => setLine(i, "accountId", e.target.value)}
+                      required
+                      disabled={loadingEntry}
+                    >
+                      <option value="" disabled>
+                        {t("journal.account")}…
+                      </option>
+                      {accounts.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.number} {a.name}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      className="select"
+                      value={l.direction}
+                      onChange={(e) =>
+                        setLine(i, "direction", e.target.value as "debit" | "credit")
+                      }
+                      disabled={loadingEntry}
+                    >
+                      <option value="debit">{t("journal.debit")}</option>
+                      <option value="credit">{t("journal.credit")}</option>
+                    </select>
+                    <input
+                      className="input"
+                      inputMode="decimal"
+                      placeholder="-100.00"
+                      title={t("journal.sign_hint")}
+                      value={l.amount}
+                      onChange={(e) => setLine(i, "amount", e.target.value)}
+                      required
+                      disabled={loadingEntry}
+                    />
+                    {tab !== "no_vat" && (
+                      <input
+                        className="input"
+                        inputMode="decimal"
+                        placeholder={t("journal.vat_amount")}
+                        title={t("journal.sign_hint")}
+                        value={l.vatAmount}
+                        onChange={(e) => setLine(i, "vatAmount", e.target.value)}
+                        disabled={loadingEntry}
+                      />
+                    )}
+                    <button
+                      type="button"
+                      className="btn btn-danger btn-sm"
+                      onClick={() => removeLine(i)}
+                      disabled={loadingEntry || lines.length < 2}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={addLine}
+                disabled={loadingEntry}
+              >
                 + {t("journal.add_line")}
               </button>
 
@@ -488,7 +572,7 @@ function JournalInner() {
                 </button>
                 <button
                   className="btn btn-primary"
-                  disabled={saving || !balanced}
+                  disabled={saving || !balanced || loadingEntry}
                 >
                   {t("common.save")}
                 </button>
