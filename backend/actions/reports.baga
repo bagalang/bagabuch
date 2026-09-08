@@ -5,11 +5,14 @@ import "../models/journal.baga"
 import "../models/account.baga"
 import "../models/opening_balance.baga"
 import "../models/company.baga"
+import "../models/fs_formula_store.baga"
 import "reports_util.baga"
 import "acl.baga"
 import "active_company.baga"
 import "reports_trial.baga"
 import "reports_book.baga"
+import "reports_corr.baga"
+import "reports_fs.baga"
 import "fmrbaga/app.baga"
 import "fmrbaga/ctx.baga"
 import "fmrbaga/action.baga"
@@ -46,6 +49,9 @@ fn rpt_run(kind: str, aq: OrmQuery, obq: OrmQuery, jq: OrmQuery, lq: OrmQuery, f
     if kind == "general_ledger" {
         return rpt_gl_build(kind, aq, obq, jq, lq, from, to, account, 0, firm)
     }
+    if kind == "correspondence_ledger" {
+        return rpt_corr_build(kind, aq, obq, jq, lq, from, to, account, firm)
+    }
     return rpt_empty()
 }
 
@@ -59,7 +65,7 @@ fn rpt_prepare(ctx: FmrCtx, db: OrmDb, want_file: i64) -> FmrOut !IO !Net {
         kind = "trial_balance"
     }
     if rpt_kind_ok(kind) == 0 {
-        return act_err(db, 400, "kind трябва да е trial_balance/general_ledger/chronological/counterpart_trial/counterpart_chrono")
+        return act_err(db, 400, "непознат kind")
     }
     let from = rpt_day(fmr_query(ctx, "from"))
     let to = rpt_day(fmr_query(ctx, "to"))
@@ -112,16 +118,40 @@ fn rpt_prepare(ctx: FmrCtx, db: OrmDb, want_file: i64) -> FmrOut !IO !Net {
     if orm_ok_q(lq) == 0 {
         return act_err(orm_db_q(lq), 500, orm_err_q(lq))
     }
-    let built = rpt_run(kind, aq, obq, jq, lq, from, to, account, cpid, firm)
+    let mut fmap: Map<str, str> = map_new()
+    let mut d1 = orm_db_q(lq)
+    if kind == "balance_sheet" || kind == "income_statement" || kind == "cash_flow" || kind == "equity" {
+        if ac.id > 0 {
+            let fq = fsf_by_company(d1, ac.id)?
+            if orm_ok_q(fq) == 0 {
+                return act_err(orm_db_q(fq), 500, orm_err_q(fq))
+            }
+            let want = fs_kind_to_rpt(kind)
+            let mut fi: i64 = 0
+            while fi < orm_nrows(fq) {
+                if orm_cell_by(fq, fi, "statement") == want {
+                    map_set(fmap, orm_cell_by(fq, fi, "line_code"), orm_cell_by(fq, fi, "formula"))
+                }
+                fi = fi + 1
+            }
+            d1 = orm_db_q(fq)
+        }
+    }
+    let mut built = rpt_empty()
+    if kind == "balance_sheet" || kind == "income_statement" || kind == "cash_flow" || kind == "equity" {
+        built = rpt_fs_build(kind, aq, obq, jq, lq, fmap, from, to, firm)
+    } else {
+        built = rpt_run(kind, aq, obq, jq, lq, from, to, account, cpid, firm)
+    }
     let mut body = built.body
     body = jobj_str(body, "company_name", firm_name)
     body = jobj_str(body, "company_eik", firm_eik)
     if want_file == 0 {
-        return act_ok(orm_db_q(lq), body)
+        return act_ok(d1, body)
     }
     let format = fmr_query(ctx, "format")
     if rpt_format_ok(format) == 0 {
-        return act_err(orm_db_q(lq), 400, "format трябва да е pdf, xlsx или ods")
+        return act_err(d1, 400, "format трябва да е pdf, xlsx или ods")
     }
     let mut html = built.html
     if format == "xlsx" || format == "ods" {
@@ -129,7 +159,7 @@ fn rpt_prepare(ctx: FmrCtx, db: OrmDb, want_file: i64) -> FmrOut !IO !Net {
     }
     let out = report_from_html_io(html, format)?
     if out.ok == 0 {
-        return act_err(orm_db_q(lq), 500, out.err)
+        return act_err(d1, 500, out.err)
     }
     let mut fname = built.slug
     if firm_name != "" {
@@ -140,7 +170,7 @@ fn rpt_prepare(ctx: FmrCtx, db: OrmDb, want_file: i64) -> FmrOut !IO !Net {
     }
     fname = concat(concat(fname, "-"), concat(from, concat("-", to)))
     fname = concat(fname, concat(".", format))
-    return rpt_file_resp(orm_db_q(lq), out.data, rpt_mime(format), fname)
+    return rpt_file_resp(d1, out.data, rpt_mime(format), fname)
 }
 
 fn act_reports(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {

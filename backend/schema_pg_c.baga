@@ -205,5 +205,13 @@ fn bagabuch_migrations_c() -> MigrationSet {
         "DROP TABLE IF EXISTS saft_account_mappings"
     )
     set = migrate_add(set, 20260908102, "saft_account_mappings_company_id_idx", "CREATE INDEX IF NOT EXISTS saft_account_mappings_company_id_idx ON saft_account_mappings (company_id)", "DROP INDEX IF EXISTS saft_account_mappings_company_id_idx")
+    set = migrate_add(
+        set,
+        20260908103,
+        "create_fs_line_formulas",
+        "CREATE TABLE fs_line_formulas (id BIGSERIAL PRIMARY KEY, company_id BIGINT NOT NULL, statement TEXT NOT NULL, line_code TEXT NOT NULL, formula TEXT NOT NULL DEFAULT '')",
+        "DROP TABLE IF EXISTS fs_line_formulas"
+    )
+    set = migrate_add(set, 20260908104, "fs_line_formulas_company_id_idx", "CREATE INDEX IF NOT EXISTS fs_line_formulas_company_id_idx ON fs_line_formulas (company_id)", "DROP INDEX IF EXISTS fs_line_formulas_company_id_idx")
     return set
 }

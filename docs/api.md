@@ -87,9 +87,14 @@ JSON на екрана (сумите с точка); файлът е XHTML та�
 | GET | `/v1/reports?kind=&from=&to=&account=&counterpart_id=` |
 | GET | `/v1/reports/export?kind=&from=&to=&account=&counterpart_id=&format=` |
 
-`kind`: `trial_balance`, `general_ledger`, `chronological`,
-`counterpart_trial`, `counterpart_chrono`. Датите са ISO `YYYY-MM-DD`.
-`account` е префикс на номера. По контрагент `counterpart_id` е задължителен.
+`kind`: `trial_balance`, `general_ledger`, `correspondence_ledger`,
+`chronological`, `counterpart_trial`, `counterpart_chrono`,
+`balance_sheet`, `income_statement`, `cash_flow`, `equity`. Датите са ISO
+`YYYY-MM-DD`. `account` е префикс на номера. По контрагент `counterpart_id`
+е задължителен. `correspondence_ledger` е главна книга по Дт/Кт двойки
+(без дати и документи): `debit_lead` и `credit_lead`. Финансовите отчети
+се пълнят от формули в Настройки (салда `+304Д`, обороти `+702ОК`,
+кореспонденции `+304Д/401К`).
 
 ## Банки
 
@@ -119,6 +124,9 @@ JSON на екрана (сумите с точка); файлът е XHTML та�
 | POST | `/v1/production-orders/{id}/confirm` — изписване + заприход + запис 611 |
 | GET | `/v1/saft/export?period=&mode=monthly\|ondemand\|annual` |
 | GET | `/v1/saft/nomenclatures?kind=&search=` |
+| GET | `/v1/fs/lines?statement=balance\|pl\|cashflow\|equity` |
+| GET/PUT | `/v1/fs/formulas?statement=` / `{statement, line_code, formula}` |
+| POST | `/v1/fs/formulas/defaults` `/validate` `/clear` |
 | GET | `/v1/saft/movement-mappings?kind=stock\|asset\|cash` |
 | POST | `/v1/saft/movement-mappings` `{kind, type_code, debit_account, credit_account, …}` |
 | POST | `/v1/saft/movement-mappings/defaults` `{kind}` — само ако няма редове за този вид |

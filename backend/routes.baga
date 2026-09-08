@@ -20,6 +20,7 @@ import "actions/vat.baga"
 import "actions/saft.baga"
 import "actions/saft_noms.baga"
 import "actions/saft_mappings.baga"
+import "actions/fs_formulas.baga"
 import "actions/fixed_assets.baga"
 import "actions/internal_docs.baga"
 import "actions/internal_docs_confirm.baga"
@@ -202,6 +203,12 @@ fn RID_SMAP_CREATE() -> i64 { return 251 }
 fn RID_SMAP_DEFAULTS() -> i64 { return 252 }
 fn RID_SMAP_UPDATE() -> i64 { return 253 }
 fn RID_SMAP_DELETE() -> i64 { return 254 }
+fn RID_FS_LINES() -> i64 { return 260 }
+fn RID_FS_FORMULAS() -> i64 { return 261 }
+fn RID_FS_FORMULAS_PUT() -> i64 { return 262 }
+fn RID_FS_FORMULAS_DEFAULTS() -> i64 { return 263 }
+fn RID_FS_FORMULAS_VALIDATE() -> i64 { return 264 }
+fn RID_FS_FORMULAS_CLEAR() -> i64 { return 265 }
 
 fn fmr_build_app() -> FmrApp !IO {
     let cfg = fmr_config_load()?
@@ -361,6 +368,12 @@ fn fmr_build_app() -> FmrApp !IO {
     app = fmr_route_meta(app, "POST", "/v1/saft/movement-mappings/defaults", RID_SMAP_DEFAULTS(), "", "saft", 0, "SaftMappingDefaults", "SaftMappingSeed", "200", "")
     app = fmr_route_meta(app, "PATCH", "/v1/saft/movement-mappings/{id}", RID_SMAP_UPDATE(), "", "saft", 0, "SaftMappingUpdate", "SaftMapping", "200", "")
     app = fmr_route_meta(app, "DELETE", "/v1/saft/movement-mappings/{id}", RID_SMAP_DELETE(), "", "saft", 0, "", "-", "204", "")
+    app = fmr_route_meta(app, "GET", "/v1/fs/lines", RID_FS_LINES(), "", "fs", 0, "", "FsLineList", "200", "statement:s")
+    app = fmr_route_meta(app, "GET", "/v1/fs/formulas", RID_FS_FORMULAS(), "", "fs", 0, "", "FsFormulaList", "200", "statement:s")
+    app = fmr_route_meta(app, "PUT", "/v1/fs/formulas", RID_FS_FORMULAS_PUT(), "", "fs", 0, "FsFormulaPut", "FsFormula", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/fs/formulas/defaults", RID_FS_FORMULAS_DEFAULTS(), "", "fs", 0, "FsFormulaDefaults", "FsFormulaSeed", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/fs/formulas/validate", RID_FS_FORMULAS_VALIDATE(), "", "fs", 0, "FsFormulaValidate", "FsFormulaCheck", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/fs/formulas/clear", RID_FS_FORMULAS_CLEAR(), "", "fs", 0, "FsFormulaClear", "FsFormulaSeed", "200", "")
     return app
 }
 
@@ -540,5 +553,11 @@ fn fmr_dispatch(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net !Random !Time {
     if id == RID_SMAP_DEFAULTS() { return act_smap_defaults(ctx, db)? }
     if id == RID_SMAP_UPDATE() { return act_smap_update(ctx, db)? }
     if id == RID_SMAP_DELETE() { return act_smap_delete(ctx, db)? }
+    if id == RID_FS_LINES() { return act_fs_lines(ctx, db)? }
+    if id == RID_FS_FORMULAS() { return act_fs_formulas_get(ctx, db)? }
+    if id == RID_FS_FORMULAS_PUT() { return act_fs_formulas_put(ctx, db)? }
+    if id == RID_FS_FORMULAS_DEFAULTS() { return act_fs_formulas_defaults(ctx, db)? }
+    if id == RID_FS_FORMULAS_VALIDATE() { return act_fs_formulas_validate(ctx, db)? }
+    if id == RID_FS_FORMULAS_CLEAR() { return act_fs_formulas_clear(ctx, db)? }
     return fmr_out(fmr_500("unhandled route"), db)
 }

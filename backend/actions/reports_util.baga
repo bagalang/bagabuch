@@ -211,6 +211,21 @@ fn rpt_title(kind: str) -> str {
     if kind == "counterpart_chrono" {
         return "Хронологичен журнал по контрагент"
     }
+    if kind == "correspondence_ledger" {
+        return "Главна книга по кореспонденции"
+    }
+    if kind == "balance_sheet" {
+        return "Счетоводен баланс"
+    }
+    if kind == "income_statement" {
+        return "Отчет за приходите и разходите"
+    }
+    if kind == "cash_flow" {
+        return "Отчет за паричните потоци"
+    }
+    if kind == "equity" {
+        return "Отчет за собствения капитал"
+    }
     return "Справка"
 }
 
@@ -230,6 +245,21 @@ fn rpt_slug(kind: str) -> str {
     if kind == "counterpart_chrono" {
         return "hronologichen-kontragent"
     }
+    if kind == "correspondence_ledger" {
+        return "glavna-kniga-korespondencii"
+    }
+    if kind == "balance_sheet" {
+        return "balans"
+    }
+    if kind == "income_statement" {
+        return "opr"
+    }
+    if kind == "cash_flow" {
+        return "parichen-potok"
+    }
+    if kind == "equity" {
+        return "sobstven-kapital"
+    }
     return "spravka"
 }
 
@@ -247,6 +277,12 @@ fn rpt_kind_ok(kind: str) -> i64 {
         return 1
     }
     if kind == "counterpart_chrono" {
+        return 1
+    }
+    if kind == "correspondence_ledger" {
+        return 1
+    }
+    if kind == "balance_sheet" || kind == "income_statement" || kind == "cash_flow" || kind == "equity" {
         return 1
     }
     return 0

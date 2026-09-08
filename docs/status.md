@@ -54,8 +54,12 @@
 - икон-бутони за редакция/изтриване и сродни действия в таблиците
 - тема, BG/EN
 - глобални настройки (SMTP/S3 през Python sidecar :5050)
-- справки: оборотна ведомост (6 колони), главна книга, хронологичен журнал
-  (FIFO двойки), по контрагент (оборотна + хронологична); екран `/reports`;
+- справки: оборотна ведомост (6 колони), главна книга, главна книга по
+  кореспонденции (без дати/документи; водещ дебит и водещ кредит), баланс /
+  ОПР / паричен поток / собствен капитал (формули в Настройки), хронологичен
+  журнал (FIFO двойки), по контрагент (оборотна + хронологична); екран `/reports`;
+- финансови отчети: таб Настройки → формули `+304Д` / `+702ОК` / `+304Д/401К` /
+  `+@код`; стандартни формули по сметкоплана; преглед за период
   експорт PDF / Excel / ODS като таблица през reportbaga (същият път като
   печата на фактури). XLSX/ODS пишат сумите като числа (не текст); при
   български Excel/Google се вижда запетая. Периодът на справката се
@@ -78,7 +82,7 @@
 - сторно като отделно действие върху осчетоводена фактура / ръчен запис /
   производствена поръчка (правилото е готово: нова статия с минус по същите
   сметки; бутон още няма)
-- баланс / ОПР / ДМА справки / складови справки
+- ДМА справки / складови справки
 - `company_id` върху сметкоплан / ДМА / вътрешни документи / начални салда
   (фактури, дневник, стоки, контрагенти, банки, дивиденти, производство — имат)
 - статуси платена / анулирана фактура в поста
@@ -103,7 +107,8 @@
 | Mistral / VIES адрес | `backend/actions/mistral.baga`, `docs/ai.md` |
 | Сканиране на фактури | `backend/actions/scans.baga`, `mistral_ocr.baga`, `frontend/app/scan/` |
 | Начални салда | `backend/actions/opening_balances.baga`, `frontend/app/opening-balances/` |
-| Справки | `backend/actions/reports.baga` (+ `_util` `_trial` `_book`), `frontend/app/reports/` |
+| Справки | `backend/actions/reports.baga` (+ `_util` `_trial` `_book` `_corr` `_fs`), `frontend/app/reports/` |
+| Финансови отчети | `backend/actions/fs_formulas.baga`, `models/fs_nom_*.baga`, `frontend/components/FsFormulasTab.tsx` |
 | Периоди | `backend/actions/periods.baga`, `frontend/app/accounting-periods/` |
 | ДДС / НАП файлове | `backend/actions/vat.baga`, `vat_files.baga`, `vat_line.baga`, `frontend/app/vat/` |
 | Дивиденти | `backend/actions/dividends.baga`, `dividends_ops.baga`, `frontend/app/dividends/` |

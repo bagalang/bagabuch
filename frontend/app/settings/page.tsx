@@ -9,6 +9,7 @@ import Link from "next/link";
 import { RequireAuth } from "../../components/RequireAuth";
 import { useI18n } from "../../components/I18nProvider";
 import { DocumentSeriesTab, DocSeries } from "../../components/DocumentSeriesTab";
+import { FsFormulasTab } from "../../components/FsFormulasTab";
 import { IconButton } from "../../components/IconButton";
 import {
   ACTIVE_COMPANY_EVENT,
@@ -127,7 +128,7 @@ function Field({
 function SettingsInner() {
   const { t } = useI18n();
   const [activeId, setActiveId] = useState(0);
-  const [tab, setTab] = useState<0 | 1 | 2>(0);
+  const [tab, setTab] = useState<0 | 1 | 2 | 3>(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
@@ -503,6 +504,13 @@ function SettingsInner() {
           onClick={() => setTab(2)}
         >
           {t("settings.tab.series")}
+        </button>
+        <button
+          type="button"
+          className={`tab${tab === 3 ? " tab-active" : ""}`}
+          onClick={() => setTab(3)}
+        >
+          {t("settings.tab.fs")}
         </button>
       </div>
 
@@ -1028,6 +1036,8 @@ function SettingsInner() {
           />
         </div>
       )}
+
+      {tab === 3 && <FsFormulasTab />}
     </>
   );
 }

@@ -1,8 +1,8 @@
 "use client";
 
-// Справки — оборотна ведомост, главна книга, хронологичен журнал,
-// по контрагент (оборотна + хронологична). Експорт PDF/XLSX/ODS през
-// същия reportbaga път като печата на фактури.
+// Справки — оборотна ведомост, главна книга, по кореспонденции
+// (водещ Дт и водещ Кт), хронологичен журнал, по контрагент.
+// Експорт PDF/XLSX/ODS през същия reportbaga път като печата на фактури.
 
 import { useCallback, useEffect, useState } from "react";
 import { api, downloadFile, ListResponse } from "../../lib/api";
@@ -16,7 +16,12 @@ type Kind =
   | "general_ledger"
   | "chronological"
   | "counterpart_trial"
-  | "counterpart_chrono";
+  | "counterpart_chrono"
+  | "correspondence_ledger"
+  | "balance_sheet"
+  | "income_statement"
+  | "cash_flow"
+  | "equity";
 
 interface Counterpart {
   id: number;
@@ -108,9 +113,58 @@ interface LedgerData extends FirmHead {
   accounts: LedgerAccount[];
 }
 
+interface CorrRow {
+  correspondent: string;
+  correspondent_name: string;
+  debit: string;
+  credit: string;
+}
+
+interface CorrAccount {
+  account_number: string;
+  account_name: string;
+  opening_debit: string;
+  opening_credit: string;
+  turnover_debit: string;
+  turnover_credit: string;
+  closing_debit: string;
+  closing_credit: string;
+  rows: CorrRow[];
+}
+
+interface FsRow {
+  code: string;
+  kind: string;
+  name: string;
+  current: string;
+  prior: string;
+}
+
+interface FsData extends FirmHead {
+  kind: string;
+  from: string;
+  to: string;
+  title: string;
+  rows: FsRow[];
+}
+
+interface CorrData extends FirmHead {
+  kind: string;
+  from: string;
+  to: string;
+  title: string;
+  debit_lead: CorrAccount[];
+  credit_lead: CorrAccount[];
+}
+
 const TABS: { kind: Kind; key: string }[] = [
   { kind: "trial_balance", key: "reports.tab.trial" },
   { kind: "general_ledger", key: "reports.tab.ledger" },
+  { kind: "correspondence_ledger", key: "reports.tab.corr" },
+  { kind: "balance_sheet", key: "reports.tab.balance" },
+  { kind: "income_statement", key: "reports.tab.pl" },
+  { kind: "cash_flow", key: "reports.tab.cash" },
+  { kind: "equity", key: "reports.tab.equity" },
   { kind: "chronological", key: "reports.tab.chrono" },
   { kind: "counterpart_trial", key: "reports.tab.cp_trial" },
   { kind: "counterpart_chrono", key: "reports.tab.cp_chrono" },
@@ -122,6 +176,15 @@ function yearStart(): string {
 
 function isCp(kind: Kind): boolean {
   return kind === "counterpart_trial" || kind === "counterpart_chrono";
+}
+
+function isFs(kind: Kind): boolean {
+  return (
+    kind === "balance_sheet" ||
+    kind === "income_statement" ||
+    kind === "cash_flow" ||
+    kind === "equity"
+  );
 }
 
 function firmLine(d: FirmHead): string {
@@ -328,6 +391,77 @@ function LedgerTables({
   );
 }
 
+function CorrSide({
+  title,
+  accounts,
+  t,
+  firm,
+  lead,
+}: {
+  title: string;
+  accounts: CorrAccount[];
+  t: (k: string) => string;
+  firm: FirmHead;
+  lead: "debit" | "credit";
+}) {
+  return (
+    <div style={{ marginBottom: 32 }}>
+      <h3 style={{ margin: "0 0 12px" }}>{title}</h3>
+      {accounts.length === 0 ? (
+        <div className="muted">{t("common.empty")}</div>
+      ) : (
+        accounts.map((acc, idx) => (
+          <div key={`${title}-${acc.account_number}`} style={{ marginBottom: 28 }}>
+            <h3 className="report-account" style={{ padding: "8px 12px", margin: "0 0 8px" }}>
+              {acc.account_number} {acc.account_name}
+            </h3>
+            <div className="table-wrap">
+              <table className="table">
+                <thead>
+                  {idx === 0 ? <FirmTableRow d={firm} cols={3} /> : null}
+                  <tr>
+                    <th>{t("reports.col.correspondent")}</th>
+                    <th className="num">{t("reports.col.debit")}</th>
+                    <th className="num">{t("reports.col.credit")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>{t("reports.opening")}</td>
+                    <Num v={acc.opening_debit} />
+                    <Num v={acc.opening_credit} />
+                  </tr>
+                  {(acc.rows ?? []).map((row, i) => (
+                    <tr key={`${acc.account_number}-${row.correspondent}-${i}`}>
+                      <td>
+                        {lead === "debit" ? "Кт " : "Дт "}
+                        {row.correspondent}
+                        {row.correspondent_name ? ` ${row.correspondent_name}` : ""}
+                      </td>
+                      <Num v={row.debit} />
+                      <Num v={row.credit} />
+                    </tr>
+                  ))}
+                  <tr>
+                    <td>{t("reports.turnover")}</td>
+                    <Num v={acc.turnover_debit} />
+                    <Num v={acc.turnover_credit} />
+                  </tr>
+                  <tr>
+                    <td>{t("reports.closing")}</td>
+                    <Num v={acc.closing_debit} />
+                    <Num v={acc.closing_credit} />
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
 function ReportsInner() {
   const { t } = useI18n();
   const [kind, setKind] = useState<Kind>("trial_balance");
@@ -339,6 +473,8 @@ function ReportsInner() {
   const [trial, setTrial] = useState<TrialData | null>(null);
   const [chrono, setChrono] = useState<ChronoData | null>(null);
   const [ledger, setLedger] = useState<LedgerData | null>(null);
+  const [corr, setCorr] = useState<CorrData | null>(null);
+  const [fs, setFs] = useState<FsData | null>(null);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
@@ -360,10 +496,16 @@ function ReportsInner() {
     setTrial(null);
     setChrono(null);
     setLedger(null);
+    setCorr(null);
+    setFs(null);
     try {
       const path = `/v1/reports?${qs(kind, from, to, account, cpid)}`;
       if (kind === "general_ledger") {
         setLedger(await api.get<LedgerData>(path));
+      } else if (kind === "correspondence_ledger") {
+        setCorr(await api.get<CorrData>(path));
+      } else if (isFs(kind)) {
+        setFs(await api.get<FsData>(path));
       } else if (kind === "chronological" || kind === "counterpart_chrono") {
         setChrono(await api.get<ChronoData>(path));
       } else {
@@ -389,12 +531,22 @@ function ReportsInner() {
           ? "oborotna"
           : kind === "general_ledger"
             ? "glavna-kniga"
-            : kind === "chronological"
-              ? "hronologichen"
-              : kind === "counterpart_trial"
-                ? "oborotna-kontragent"
-                : "hronologichen-kontragent";
-      const head = trial ?? chrono ?? ledger;
+            : kind === "correspondence_ledger"
+              ? "glavna-kniga-korespondencii"
+              : kind === "balance_sheet"
+                ? "balans"
+                : kind === "income_statement"
+                  ? "opr"
+                  : kind === "cash_flow"
+                    ? "parichen-potok"
+                    : kind === "equity"
+                      ? "sobstven-kapital"
+              : kind === "chronological"
+                ? "hronologichen"
+                : kind === "counterpart_trial"
+                  ? "oborotna-kontragent"
+                  : "hronologichen-kontragent";
+      const head = trial ?? chrono ?? ledger ?? corr ?? fs;
       const name = (head?.company_name || "").trim().replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, "_");
       const eik = (head?.company_eik || "").trim();
       let fname = slug;
@@ -411,7 +563,7 @@ function ReportsInner() {
     }
   };
 
-  const hasData = !!(trial || chrono || ledger);
+  const hasData = !!(trial || chrono || ledger || corr || fs);
 
   return (
     <div>
@@ -432,6 +584,8 @@ function ReportsInner() {
               setTrial(null);
               setChrono(null);
               setLedger(null);
+              setCorr(null);
+              setFs(null);
             }}
           >
             {t(tab.key)}
@@ -535,6 +689,63 @@ function ReportsInner() {
           ) : (
             <LedgerTables data={ledger} t={t} />
           )}
+        </div>
+      )}
+      {fs && isFs(kind) && (
+        <div className="card content">
+          {firmLine(fs) && (
+            <p style={{ margin: "0 0 4px", fontWeight: 600 }}>{firmLine(fs)}</p>
+          )}
+          <h2 style={{ margin: "0 0 8px" }}>{fs.title}</h2>
+          <p className="muted">
+            {formatBgDate(fs.from)} — {formatBgDate(fs.to)}
+          </p>
+          <div className="table-wrap print-sheet">
+            <table className="table">
+              <thead>
+                <FirmTableRow d={fs} cols={3} />
+                <tr>
+                  <th>{t("fs.col.line")}</th>
+                  <th className="num">{t("fs.col.current")}</th>
+                  <th className="num">{t("reports.col.prior")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(fs.rows ?? []).map((r) => (
+                  <tr key={r.code} style={{ fontWeight: r.kind === "total" ? 600 : 400 }}>
+                    <td>{r.name}</td>
+                    <td className="num">{r.kind === "header" ? "" : r.current}</td>
+                    <td className="num">{r.kind === "header" ? "" : r.prior}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+      {corr && kind === "correspondence_ledger" && (
+        <div className="card content">
+          {firmLine(corr) && (
+            <p style={{ margin: "0 0 4px", fontWeight: 600 }}>{firmLine(corr)}</p>
+          )}
+          <h2 style={{ margin: "0 0 8px" }}>{corr.title}</h2>
+          <p className="muted">
+            {formatBgDate(corr.from)} — {formatBgDate(corr.to)}
+          </p>
+          <CorrSide
+            title={t("reports.lead.debit")}
+            accounts={corr.debit_lead ?? []}
+            t={t}
+            firm={corr}
+            lead="debit"
+          />
+          <CorrSide
+            title={t("reports.lead.credit")}
+            accounts={corr.credit_lead ?? []}
+            t={t}
+            firm={corr}
+            lead="credit"
+          />
         </div>
       )}
     </div>

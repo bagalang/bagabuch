@@ -40,6 +40,7 @@ PK за таблици от преди P20: `MAX(id)+1` в приложение�
 | `bank_accounts` / `bank_transactions` | Банкови сметки + извлечения; `company_id` на транзакциите |
 | `product_name_mappings` | Име от сканиран документ → наш артикул, по контрагент |
 | `saft_account_mappings` | Дт/Кт шаблон към SAF-T тип движение; `kind` е stock / asset / cash; `*` е префикс |
+| `fs_line_formulas` | Формула на статия от НСС 1 бланка, по фирма (`statement` + `line_code`) |
 
 ## SAF-T номенклатури (без таблица)
 
