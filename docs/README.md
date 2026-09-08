@@ -15,6 +15,7 @@
 | [modules.md](modules.md) | Екрани и модули в UI |
 | [documents.md](documents.md) | Данъчни / вътрешни / производство; осчетоводяване |
 | [opening-and-periods.md](opening-and-periods.md) | Начални салда по НСС и заключване на месеци |
+| [financial-statements.md](financial-statements.md) | Баланс, ОПР, паричен поток, собствен капитал — формули |
 | [objects.md](objects.md) | Търговски обекти, склад по обект, ДМА, протокол |
 | [data-model.md](data-model.md) | Таблици и ключови колони |
 | [api.md](api.md) | HTTP пътища |

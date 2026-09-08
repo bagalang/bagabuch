@@ -1,4 +1,4 @@
-# Състояние (към 2026-09-05)
+# Състояние (към 2026-09-08)
 
 > Обновявай този файл когато качваш нещо съществено. `PLAN.md` не е истина
 > за всеки ред.
@@ -108,7 +108,7 @@
 | Сканиране на фактури | `backend/actions/scans.baga`, `mistral_ocr.baga`, `frontend/app/scan/` |
 | Начални салда | `backend/actions/opening_balances.baga`, `frontend/app/opening-balances/` |
 | Справки | `backend/actions/reports.baga` (+ `_util` `_trial` `_book` `_corr` `_fs`), `frontend/app/reports/` |
-| Финансови отчети | `backend/actions/fs_formulas.baga`, `models/fs_nom_*.baga`, `frontend/components/FsFormulasTab.tsx` |
+| Финансови отчети | `docs/financial-statements.md`; `backend/actions/fs_formulas.baga`, `models/fs_nom_*.baga`, `frontend/components/FsFormulasTab.tsx` |
 | Периоди | `backend/actions/periods.baga`, `frontend/app/accounting-periods/` |
 | ДДС / НАП файлове | `backend/actions/vat.baga`, `vat_files.baga`, `vat_line.baga`, `frontend/app/vat/` |
 | Дивиденти | `backend/actions/dividends.baga`, `dividends_ops.baga`, `frontend/app/dividends/` |

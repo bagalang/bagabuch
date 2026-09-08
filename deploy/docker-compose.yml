@@ -49,7 +49,7 @@ services:
       FMR_JWT_SECRET: ${FMR_JWT_SECRET:?set FMR_JWT_SECRET in deploy/.env}
       FMR_JWT_TTL_SEC: ${FMR_JWT_TTL_SEC:-604800}
       FMR_TITLE: bagabuch
-      FMR_VERSION: "0.1.0"
+      FMR_VERSION: "0.8.4"
       BAGABUCH_SIDECAR: http://sidecar:5050
     expose:
       - "8080"

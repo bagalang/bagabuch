@@ -6,7 +6,8 @@
 (+ boila близнаци), а големите action файлове се цепят
 (`fixed_assets` / `fixed_assets_ops`, `internal_docs` / `internal_docs_confirm`,
 `invoices` / `invoices_post` / `invoices_print`,
-`reports` / `reports_util` / `reports_trial` / `reports_book`,
+`reports` / `reports_util` / `reports_trial` / `reports_book` /
+`reports_corr` / `reports_fs`,
 `recipes` / `production` / `production_confirm`,
 `dividends` / `dividends_ops`, `vat` / `vat_files` / `vat_line` / `vat_fmt`,
 `bank_accounts` / `bank_transactions` / `bank_parse`).
