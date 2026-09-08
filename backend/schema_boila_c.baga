@@ -197,5 +197,13 @@ fn bagabuch_boila_migrations_c() -> MigrationSet {
     set = migrate_add(set, 20260907106, "journal_entries_company_id_idx", "CREATE INDEX IF NOT EXISTS journal_entries_company_id_idx ON journal_entries (company_id)", "DROP INDEX IF EXISTS journal_entries_company_id_idx ON journal_entries")
     set = migrate_add(set, 20260907107, "products_company_id_idx", "CREATE INDEX IF NOT EXISTS products_company_id_idx ON products (company_id)", "DROP INDEX IF EXISTS products_company_id_idx ON products")
     set = migrate_add(set, 20260907108, "counterparts_company_id_idx", "CREATE INDEX IF NOT EXISTS counterparts_company_id_idx ON counterparts (company_id)", "DROP INDEX IF EXISTS counterparts_company_id_idx ON counterparts")
+    set = migrate_add(
+        set,
+        20260908101,
+        "create_saft_account_mappings",
+        "CREATE TABLE IF NOT EXISTS saft_account_mappings (id BIGINT, company_id BIGINT, kind TEXT, type_code TEXT, debit_account TEXT, credit_account TEXT, debit_analytical TEXT, credit_analytical TEXT, description TEXT, is_active BIGINT, PRIMARY KEY (id))",
+        "DROP TABLE IF EXISTS saft_account_mappings"
+    )
+    set = migrate_add(set, 20260908102, "saft_account_mappings_company_id_idx", "CREATE INDEX IF NOT EXISTS saft_account_mappings_company_id_idx ON saft_account_mappings (company_id)", "DROP INDEX IF EXISTS saft_account_mappings_company_id_idx ON saft_account_mappings")
     return set
 }

@@ -197,5 +197,13 @@ fn bagabuch_migrations_c() -> MigrationSet {
     set = migrate_add(set, 20260907106, "journal_entries_company_id_idx", "CREATE INDEX IF NOT EXISTS journal_entries_company_id_idx ON journal_entries (company_id)", "DROP INDEX IF EXISTS journal_entries_company_id_idx")
     set = migrate_add(set, 20260907107, "products_company_id_idx", "CREATE INDEX IF NOT EXISTS products_company_id_idx ON products (company_id)", "DROP INDEX IF EXISTS products_company_id_idx")
     set = migrate_add(set, 20260907108, "counterparts_company_id_idx", "CREATE INDEX IF NOT EXISTS counterparts_company_id_idx ON counterparts (company_id)", "DROP INDEX IF EXISTS counterparts_company_id_idx")
+    set = migrate_add(
+        set,
+        20260908101,
+        "create_saft_account_mappings",
+        "CREATE TABLE saft_account_mappings (id BIGSERIAL PRIMARY KEY, company_id BIGINT NOT NULL, kind TEXT NOT NULL, type_code TEXT NOT NULL, debit_account TEXT NOT NULL, credit_account TEXT NOT NULL, debit_analytical TEXT NOT NULL DEFAULT '', credit_analytical TEXT NOT NULL DEFAULT '', description TEXT NOT NULL DEFAULT '', is_active BIGINT NOT NULL DEFAULT 1)",
+        "DROP TABLE IF EXISTS saft_account_mappings"
+    )
+    set = migrate_add(set, 20260908102, "saft_account_mappings_company_id_idx", "CREATE INDEX IF NOT EXISTS saft_account_mappings_company_id_idx ON saft_account_mappings (company_id)", "DROP INDEX IF EXISTS saft_account_mappings_company_id_idx")
     return set
 }

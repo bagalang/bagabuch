@@ -39,6 +39,7 @@ PK за таблици от преди P20: `MAX(id)+1` в приложение�
 | `users` / `roles` | CRUD екрани `/users` `/roles`; правата още не се налагат на API |
 | `bank_accounts` / `bank_transactions` | Банкови сметки + извлечения; `company_id` на транзакциите |
 | `product_name_mappings` | Име от сканиран документ → наш артикул, по контрагент |
+| `saft_account_mappings` | Дт/Кт шаблон към SAF-T тип движение; `kind` е stock / asset / cash; `*` е префикс |
 
 ## SAF-T номенклатури (без таблица)
 

@@ -119,6 +119,10 @@ JSON на екрана (сумите с точка); файлът е XHTML та�
 | POST | `/v1/production-orders/{id}/confirm` — изписване + заприход + запис 611 |
 | GET | `/v1/saft/export?period=&mode=monthly\|ondemand\|annual` |
 | GET | `/v1/saft/nomenclatures?kind=&search=` |
+| GET | `/v1/saft/movement-mappings?kind=stock\|asset\|cash` |
+| POST | `/v1/saft/movement-mappings` `{kind, type_code, debit_account, credit_account, …}` |
+| POST | `/v1/saft/movement-mappings/defaults` `{kind}` — само ако няма редове за този вид |
+| PATCH/DELETE | `/v1/saft/movement-mappings/{id}` |
 | GET | `/v1/exchange-rates`, `/v1/exchange-rates/rate?currency=&date=` |
 | POST | `/v1/exchange-rates/import` |
 | CRUD | `/v1/fixed-asset-categories`, `/v1/fixed-assets` |

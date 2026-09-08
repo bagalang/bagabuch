@@ -60,3 +60,33 @@ fn saft_asset_movement_rows() -> Vec<str> {
     return r
 }
 
+// Парични движения (каса/банка) за мапинг на кореспонденции.
+// Не са отделна номенклатура на НАП — кодовете са вътрешни към PaymentMethod.
+
+fn saft_cash_movement_push(rows: Vec<str>, line: str) -> Vec<str> {
+    vec_push(rows, line)
+    return rows
+}
+
+fn saft_cash_movement_rows() -> Vec<str> {
+    let mut r = vec_new()
+    r = saft_cash_movement_push(r, "10|Плащане в брой - приход|Cash receipt")
+    r = saft_cash_movement_push(r, "11|Плащане в брой - разход|Cash payment")
+    r = saft_cash_movement_push(r, "20|Плащане с чек - приход|Check receipt")
+    r = saft_cash_movement_push(r, "21|Плащане с чек - разход|Check payment")
+    r = saft_cash_movement_push(r, "42|Банков превод - приход|Bank transfer receipt")
+    r = saft_cash_movement_push(r, "43|Банков превод - разход|Bank transfer payment")
+    r = saft_cash_movement_push(r, "48|Плащане с карта - приход|Card payment receipt")
+    r = saft_cash_movement_push(r, "49|Плащане с карта - разход|Card payment")
+    r = saft_cash_movement_push(r, "68|Онлайн плащане - приход|Online payment receipt")
+    r = saft_cash_movement_push(r, "69|Онлайн плащане - разход|Online payment")
+    r = saft_cash_movement_push(r, "80|Вътрешен трансфер|Internal transfer")
+    r = saft_cash_movement_push(r, "90|Валутна разлика - положителна|FX gain")
+    r = saft_cash_movement_push(r, "91|Валутна разлика - отрицателна|FX loss")
+    r = saft_cash_movement_push(r, "97|Прихващане|Offset")
+    r = saft_cash_movement_push(r, "98|Бартер|Barter")
+    r = saft_cash_movement_push(r, "99|Подотчетни лица|Accountable persons")
+    r = saft_cash_movement_push(r, "100|Други парични движения|Other cash movements")
+    return r
+}
+

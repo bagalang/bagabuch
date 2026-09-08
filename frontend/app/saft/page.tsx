@@ -53,6 +53,8 @@ function SaftInner() {
 
       <p className="muted" style={{ margin: "0 0 16px" }}>
         <Link href="/nomenclatures">{t("saft.link.noms")}</Link>
+        {" · "}
+        <Link href="/saft-movement-mappings">{t("saft.link.mappings")}</Link>
       </p>
 
       <div className="card content">

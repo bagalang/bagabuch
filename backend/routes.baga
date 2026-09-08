@@ -19,6 +19,7 @@ import "actions/journal.baga"
 import "actions/vat.baga"
 import "actions/saft.baga"
 import "actions/saft_noms.baga"
+import "actions/saft_mappings.baga"
 import "actions/fixed_assets.baga"
 import "actions/internal_docs.baga"
 import "actions/internal_docs_confirm.baga"
@@ -196,6 +197,11 @@ fn RID_PORD_CREATE() -> i64 { return 246 }
 fn RID_PORD_SHOW() -> i64 { return 247 }
 fn RID_PORD_DELETE() -> i64 { return 248 }
 fn RID_PORD_CONFIRM() -> i64 { return 249 }
+fn RID_SMAP_INDEX() -> i64 { return 250 }
+fn RID_SMAP_CREATE() -> i64 { return 251 }
+fn RID_SMAP_DEFAULTS() -> i64 { return 252 }
+fn RID_SMAP_UPDATE() -> i64 { return 253 }
+fn RID_SMAP_DELETE() -> i64 { return 254 }
 
 fn fmr_build_app() -> FmrApp !IO {
     let cfg = fmr_config_load()?
@@ -350,6 +356,11 @@ fn fmr_build_app() -> FmrApp !IO {
     app = fmr_route_meta(app, "GET", "/v1/production-orders/{id}", RID_PORD_SHOW(), "", "production", 0, "", "Pord", "200", "")
     app = fmr_route_meta(app, "DELETE", "/v1/production-orders/{id}", RID_PORD_DELETE(), "", "production", 0, "", "-", "204", "")
     app = fmr_route_meta(app, "POST", "/v1/production-orders/{id}/confirm", RID_PORD_CONFIRM(), "", "production", 0, "", "Pord", "200", "")
+    app = fmr_route_meta(app, "GET", "/v1/saft/movement-mappings", RID_SMAP_INDEX(), "", "saft", 0, "", "SaftMappingList", "200", "kind:s")
+    app = fmr_route_meta(app, "POST", "/v1/saft/movement-mappings", RID_SMAP_CREATE(), "", "saft", 0, "SaftMappingCreate", "SaftMapping", "201", "")
+    app = fmr_route_meta(app, "POST", "/v1/saft/movement-mappings/defaults", RID_SMAP_DEFAULTS(), "", "saft", 0, "SaftMappingDefaults", "SaftMappingSeed", "200", "")
+    app = fmr_route_meta(app, "PATCH", "/v1/saft/movement-mappings/{id}", RID_SMAP_UPDATE(), "", "saft", 0, "SaftMappingUpdate", "SaftMapping", "200", "")
+    app = fmr_route_meta(app, "DELETE", "/v1/saft/movement-mappings/{id}", RID_SMAP_DELETE(), "", "saft", 0, "", "-", "204", "")
     return app
 }
 
@@ -524,5 +535,10 @@ fn fmr_dispatch(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net !Random !Time {
     if id == RID_PORD_SHOW() { return act_pord_show(ctx, db)? }
     if id == RID_PORD_DELETE() { return act_pord_delete(ctx, db)? }
     if id == RID_PORD_CONFIRM() { return act_pord_confirm(ctx, db)? }
+    if id == RID_SMAP_INDEX() { return act_smap_index(ctx, db)? }
+    if id == RID_SMAP_CREATE() { return act_smap_create(ctx, db)? }
+    if id == RID_SMAP_DEFAULTS() { return act_smap_defaults(ctx, db)? }
+    if id == RID_SMAP_UPDATE() { return act_smap_update(ctx, db)? }
+    if id == RID_SMAP_DELETE() { return act_smap_delete(ctx, db)? }
     return fmr_out(fmr_500("unhandled route"), db)
 }

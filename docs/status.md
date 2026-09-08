@@ -37,6 +37,8 @@
   затворен месец спира confirm; завършена поръчка не се трие
 - SAF-T XML експорт; номенклатурата има кодове 20 (продукция от производство)
   и 70 (запаси към производство)
+- SAF-T кореспонденции на сметки (`/saft-movement-mappings`): Дт/Кт шаблони
+  към тип движение за запаси / ДМА / пари; бутон за стандартни настройки
 - SAF-T номенклатури на НАП (каталог, без таблица): екран `/nomenclatures`
   в менюто — движения, режими, плащания, фактури, данъци, запаси, мерки,
   области, сметки NRA
@@ -93,6 +95,7 @@
 | Обекти | `backend/actions/company_settings.baga`, `models/company_related.baga` |
 | ДМА местене | `backend/actions/fixed_assets_ops.baga` |
 | UI протокол | `frontend/app/internal-docs/`, `components/InternalDocForm.tsx` |
+| SAF-T кореспонденции | `backend/actions/saft_mappings.baga`, `models/saft_mapping.baga`, `frontend/app/saft-movement-mappings/` |
 | UI обект на фактура | `frontend/components/InvoiceForm.tsx` |
 | i18n | `frontend/lib/i18n.ts` |
 | Икон-бутони | `frontend/components/IconButton.tsx` |
