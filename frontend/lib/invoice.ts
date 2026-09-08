@@ -131,7 +131,14 @@ export function emptyLine(): InvoiceLine {
   };
 }
 
-export { todayIso, formatBgDate } from "./dates";
+export { todayIso, formatBgDate, toDateInput } from "./dates";
+
+export function normVatRate(s: string | undefined | null): string {
+  const n = num(String(s ?? ""));
+  const asStr = String(n);
+  if ((VAT_RATES as readonly string[]).includes(asStr)) return asStr;
+  return s && String(s).trim() ? String(s) : "20";
+}
 
 export function round2(n: number): string {
   return (Math.round(n * 100) / 100).toFixed(2);

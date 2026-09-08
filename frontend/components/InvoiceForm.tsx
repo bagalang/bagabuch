@@ -16,9 +16,11 @@ import {
   docTypeRequiresOriginal,
   docTypesFor,
   emptyLine,
+  normVatRate,
   num,
   round2,
   todayIso,
+  toDateInput,
 } from "../lib/invoice";
 import { useI18n } from "./I18nProvider";
 import { UnitPicker } from "./UnitPicker";
@@ -78,6 +80,7 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
 
   const [counterpartId, setCounterpartId] = useState("");
   const [counterparts, setCounterparts] = useState<Counterpart[]>([]);
+  const [loadedParty, setLoadedParty] = useState<Counterpart | null>(null);
   const [cpQuery, setCpQuery] = useState("");
   const [cpOpen, setCpOpen] = useState(false);
 
@@ -118,7 +121,7 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
     } catch {
       /* lookup failure is non-fatal */
     }
-  }, []);
+  }, [mode]);
 
   const loadNumber = useCallback(
     async (dt: string, dir: string) => {
@@ -153,7 +156,12 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
   }, [mode, documentType, direction, loadNumber]);
 
   useEffect(() => {
-    if (mode !== "edit" || !invoiceId) return;
+    if (mode !== "edit") return;
+    if (!invoiceId || !Number.isFinite(invoiceId) || invoiceId <= 0) {
+      setFormError(t("common.error"));
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     (async () => {
       try {
@@ -161,10 +169,10 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
         if (cancelled) return;
         setDirection(inv.direction || "out");
         setDocumentType(inv.document_type || "01");
-        setNumber(inv.number);
-        setIssueDate(inv.issue_date);
-        setTaxEventDate(inv.tax_event_date || inv.issue_date);
-        setDueDate(inv.due_date || "");
+        setNumber(inv.number || "");
+        setIssueDate(toDateInput(inv.issue_date) || todayIso());
+        setTaxEventDate(toDateInput(inv.tax_event_date || inv.issue_date) || todayIso());
+        setDueDate(toDateInput(inv.due_date || ""));
         setCurrency(inv.currency || "EUR");
         setCurrencyRate(inv.currency_rate || "1");
         setPaymentMethod(inv.payment_method || "");
@@ -176,11 +184,35 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
           inv.original_invoice_id ? String(inv.original_invoice_id) : ""
         );
         setCounterpartId(inv.counterpart_id ? String(inv.counterpart_id) : "");
+        const party = inv.counterpart;
+        if (party && (party.id || inv.counterpart_id)) {
+          setLoadedParty({
+            id: party.id || inv.counterpart_id,
+            name: party.name || inv.counterpart_name || "",
+            eik: party.eik || "",
+            vat_number: party.vat_number || "",
+            address: party.address || "",
+            city: party.city || "",
+          });
+        } else if (inv.counterpart_id) {
+          setLoadedParty({
+            id: inv.counterpart_id,
+            name: inv.counterpart_name || "",
+            eik: "",
+            vat_number: "",
+            address: "",
+            city: "",
+          });
+        }
         const ls = (inv.lines ?? []).map((l) => ({
           ...emptyLine(),
           ...l,
           code: l.code || "",
+          description: l.description || "",
+          quantity: l.quantity || "1",
           unit: l.unit || "C62",
+          unit_price: l.unit_price || "0",
+          vat_rate: normVatRate(l.vat_rate),
         }));
         setLines(ls.length ? ls : [emptyLine()]);
       } catch (e) {
@@ -192,9 +224,34 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [mode, invoiceId]);
+  }, [mode, invoiceId, t]);
 
-  const selectedCp = counterparts.find((c) => String(c.id) === counterpartId);
+  useEffect(() => {
+    if (products.length === 0) return;
+    setLines((prev) => {
+      let changed = false;
+      const next = prev.map((l) => {
+        if (l.code || !l.product_id) return l;
+        const p = products.find((x) => x.id === l.product_id);
+        if (!p?.code) return l;
+        changed = true;
+        return { ...l, code: p.code };
+      });
+      return changed ? next : prev;
+    });
+  }, [products]);
+
+  useEffect(() => {
+    if (!loadedParty) return;
+    setCounterparts((prev) => {
+      if (prev.some((c) => c.id === loadedParty.id)) return prev;
+      return [loadedParty, ...prev];
+    });
+  }, [loadedParty]);
+
+  const selectedCp =
+    counterparts.find((c) => String(c.id) === counterpartId) ??
+    (loadedParty && String(loadedParty.id) === counterpartId ? loadedParty : undefined);
 
   const isCredit = docTypeIsCredit(documentType);
   const pricedLines = useMemo(
@@ -374,6 +431,7 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
                 value={locationId}
                 onChange={(e) => setLocationId(e.target.value)}
               >
+                {locationId === "0" && <option value="0">—</option>}
                 {locations.map((loc) => (
                   <option key={loc.id} value={loc.id}>
                     {loc.name}
@@ -615,6 +673,10 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
                           {r}%
                         </option>
                       ))}
+                      {l.vat_rate &&
+                        !(VAT_RATES as readonly string[]).includes(l.vat_rate) && (
+                          <option value={l.vat_rate}>{l.vat_rate}%</option>
+                        )}
                     </select>
                   </td>
                   <td className="num">{l.net_amount}</td>
@@ -660,6 +722,9 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
                   {m}
                 </option>
               ))}
+              {paymentMethod && !PAY_METHODS.includes(paymentMethod) && (
+                <option value={paymentMethod}>{paymentMethod}</option>
+              )}
             </select>
           </div>
           <div className="field">

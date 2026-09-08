@@ -6,6 +6,7 @@ import { api, ListResponse } from "../../lib/api";
 import { Invoice, docTypesFor, formatBgDate } from "../../lib/invoice";
 import { useI18n } from "../../components/I18nProvider";
 import { RequireAuth } from "../../components/RequireAuth";
+import { IconButton } from "../../components/IconButton";
 
 interface Counterpart {
   id: number;
@@ -69,6 +70,16 @@ function InvoicesInner() {
     return "badge-warning";
   };
 
+  const handleDelete = async (inv: Invoice) => {
+    if (!window.confirm(t("common.confirmDelete"))) return;
+    try {
+      await api.del(`/v1/invoices/${inv.id}`);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
   return (
     <div>
       <div className="page-head">
@@ -130,6 +141,7 @@ function InvoicesInner() {
         ) : filtered.length === 0 ? (
           <div className="content muted">{t("common.empty")}</div>
         ) : (
+          <div className="table-wrap">
           <table className="table">
             <thead>
               <tr>
@@ -139,6 +151,7 @@ function InvoicesInner() {
                 <th>{t("invoices.counterpart")}</th>
                 <th>{t("invoices.total")}</th>
                 <th>{t("invoices.status")}</th>
+                <th>{t("common.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -162,10 +175,35 @@ function InvoicesInner() {
                       {t(`invoices.status.${inv.status}`)}
                     </span>
                   </td>
+                  <td>
+                    <div className="icon-actions">
+                      <IconButton
+                        icon="view"
+                        title={t("common.view")}
+                        href={`/invoices/${inv.id}`}
+                      />
+                      {inv.status === "draft" && (
+                        <IconButton
+                          icon="edit"
+                          title={t("common.edit")}
+                          href={`/invoices/${inv.id}/edit`}
+                        />
+                      )}
+                      {inv.status === "draft" && (
+                        <IconButton
+                          icon="delete"
+                          title={t("common.delete")}
+                          danger
+                          onClick={() => void handleDelete(inv)}
+                        />
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>
