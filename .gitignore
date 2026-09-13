@@ -19,6 +19,11 @@ dist/
 build/
 *.tsbuildinfo
 
+# python
+.venv/
+__pycache__/
+*.pyc
+
 # logs / misc
 *.log
 .DS_Store
