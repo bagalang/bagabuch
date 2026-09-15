@@ -10,7 +10,7 @@
 `reports_corr` / `reports_fs`,
 `recipes` / `production` / `production_confirm`,
 `dividends` / `dividends_ops`, `vat` / `vat_files` / `vat_line` / `vat_fmt`,
-`bank_accounts` / `bank_transactions` / `bank_parse`).
+`bank_accounts` / `bank_transactions` / `bank_transactions_ops` / `bank_parse`).
 
 Преди да надуеш файл — `wc -l`. `invoices.baga` вече е на ръба.
 

@@ -26,7 +26,7 @@
   (DEKLAR/POKUPKI/PRODAGBI в Windows-1251 + ZIP)
 - банки: сметки (IBAN, ГЛ + буфер), импорт на извлечения (OBB XML,
   ISO camt.053, PostBank XML, MT-940, CSV), преглед с дубликати,
-  осчетоводяване и разнасяне от буфер
+  осчетоводяване и разнасяне от буфер с търсене на контрагент и сметка
 - дивиденти: разпределение към действителни собственици (дял от настройките),
   снимка име/ЕГН/%, данък 5% по ЗДДФЛ, статуси
   чернова → одобрено → частично платено / платено; плащане само след одобрение
@@ -113,5 +113,5 @@
 | ДДС / НАП файлове | `backend/actions/vat.baga`, `vat_files.baga`, `vat_line.baga`, `frontend/app/vat/` |
 | Дивиденти | `backend/actions/dividends.baga`, `dividends_ops.baga`, `frontend/app/dividends/` |
 | Производство | `backend/actions/recipes.baga`, `production.baga`, `production_confirm.baga`, `frontend/app/production/` |
-| Банки | `backend/actions/bank_accounts.baga`, `bank_transactions.baga`, `bank_parse.baga`, `frontend/app/bank-accounts/`, `bank-transactions/` |
+| Банки | `backend/actions/bank_accounts.baga`, `bank_transactions.baga`, `bank_transactions_ops.baga`, `bank_parse.baga`, `frontend/app/bank-accounts/`, `bank-transactions/` |
 | Потребители / роли | `backend/actions/users.baga`, `roles.baga`, `frontend/app/users/`, `roles/` |
