@@ -4,90 +4,28 @@
 // Таб «Фирма»: реквизити, управител/счетоводител, ДДС. Таб «SAF-T / Собственици»:
 // улица/сграда/регион, обекти (поделения), действителни собственици, предприятия-майки.
 
-import { FormEvent, ReactNode, useCallback, useEffect, useState } from "react";
-import Link from "next/link";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import { RequireAuth } from "../../components/RequireAuth";
 import { useI18n } from "../../components/I18nProvider";
 import { DocumentSeriesTab, DocSeries } from "../../components/DocumentSeriesTab";
 import { FsFormulasTab } from "../../components/FsFormulasTab";
-import { IconButton } from "../../components/IconButton";
+import { SettingsCompanyTab } from "../../components/SettingsCompanyTab";
+import { SettingsSaftTab } from "../../components/SettingsSaftTab";
+import {
+  EMPTY_LOC,
+  EMPTY_OWNER,
+  EMPTY_PARENT,
+  Form,
+  Location,
+  Owner,
+  ParentCo,
+  SettingsPack,
+} from "../../components/settingsTypes";
 import {
   ACTIVE_COMPANY_EVENT,
-  Company,
   api,
   getActiveCompany,
 } from "../../lib/api";
-
-interface Location {
-  id: number;
-  name: string;
-  location_type: string;
-  street_name: string;
-  building_number: string;
-  city: string;
-  post_code: string;
-  region: string;
-  country: string;
-  is_main: number;
-}
-
-interface Owner {
-  id: number;
-  first_name_bg: string;
-  last_name_bg: string;
-  egn: string;
-  first_name_latin: string;
-  last_name_latin: string;
-  country: string;
-  ownership_percentage: string;
-}
-
-interface ParentCo {
-  id: number;
-  name_bg: string;
-  uic: string;
-  name_latin: string;
-  country: string;
-}
-
-interface SettingsPack {
-  company: Company;
-  locations: Location[];
-  beneficial_owners: Owner[];
-  ultimate_parents: ParentCo[];
-  document_series?: DocSeries[];
-}
-
-type Form = Record<string, string>;
-
-const EMPTY_LOC: Form = {
-  name: "",
-  location_type: "OFFICE",
-  street_name: "",
-  building_number: "",
-  city: "",
-  post_code: "",
-  region: "",
-  country: "BG",
-  is_main: "0",
-};
-
-const EMPTY_OWNER: Form = {
-  first_name_bg: "",
-  last_name_bg: "",
-  egn: "",
-  first_name_latin: "",
-  last_name_latin: "",
-  country: "BG",
-  ownership_percentage: "0",
-};
-
-const EMPTY_PARENT: Form = {
-  name_bg: "",
-  uic: "",
-  name_latin: "",
-  country: "BG",
-};
 
 function str(v: unknown, fallback = ""): string {
   if (v === null || v === undefined) return fallback;
@@ -106,23 +44,6 @@ function parseKeys(raw: unknown): { mistral_api_key: string; zhipu_api_key: stri
   } catch {
     return empty;
   }
-}
-
-function Field({
-  label,
-  children,
-  span,
-}: {
-  label: string;
-  children: ReactNode;
-  span?: number;
-}) {
-  return (
-    <div className="field" style={span ? { gridColumn: `span ${span}` } : undefined}>
-      <label className="label">{label}</label>
-      {children}
-    </div>
-  );
 }
 
 function SettingsInner() {
@@ -515,515 +436,58 @@ function SettingsInner() {
       </div>
 
       {tab === 0 && (
-        <form className="card card-pad" onSubmit={saveCompany} style={{ maxWidth: 760 }}>
-          <h3 className="section-title">{t("settings.section.basic")}</h3>
-          <div className="form-grid">
-            <Field label={`${t("companies.name")} *`} span={2}>
-              <input className="input" value={companyForm.name ?? ""} onChange={(e) => setC("name", e.target.value)} required />
-            </Field>
-            <Field label={`${t("companies.eik")} *`}>
-              <input className="input" value={companyForm.eik ?? ""} onChange={(e) => setC("eik", e.target.value)} required />
-            </Field>
-            <Field label={t("companies.vat_number")}>
-              <input className="input" value={companyForm.vat_number ?? ""} onChange={(e) => setC("vat_number", e.target.value)} />
-            </Field>
-            <Field label={t("companies.address")} span={2}>
-              <input className="input" value={companyForm.address ?? ""} onChange={(e) => setC("address", e.target.value)} />
-            </Field>
-            <Field label={t("companies.city")}>
-              <input className="input" value={companyForm.city ?? ""} onChange={(e) => setC("city", e.target.value)} />
-            </Field>
-            <Field label={t("companies.post_code")}>
-              <input className="input" value={companyForm.post_code ?? ""} onChange={(e) => setC("post_code", e.target.value)} />
-            </Field>
-            <Field label={t("settings.country")}>
-              <input className="input" value={companyForm.country ?? "BG"} onChange={(e) => setC("country", e.target.value)} />
-            </Field>
-            <Field label={t("companies.phone")}>
-              <input className="input" value={companyForm.phone ?? ""} onChange={(e) => setC("phone", e.target.value)} />
-            </Field>
-            <Field label={t("companies.email")}>
-              <input className="input" type="email" value={companyForm.email ?? ""} onChange={(e) => setC("email", e.target.value)} />
-            </Field>
-            <Field label={t("companies.website")}>
-              <input className="input" value={companyForm.website ?? ""} onChange={(e) => setC("website", e.target.value)} />
-            </Field>
-            <Field label={t("companies.mol")}>
-              <input className="input" value={companyForm.mol ?? ""} onChange={(e) => setC("mol", e.target.value)} />
-            </Field>
-            <Field label={t("companies.iban")}>
-              <input className="input" value={companyForm.iban ?? ""} onChange={(e) => setC("iban", e.target.value)} />
-            </Field>
-            <Field label={t("companies.bic")}>
-              <input className="input" value={companyForm.bic ?? ""} onChange={(e) => setC("bic", e.target.value)} />
-            </Field>
-            <Field label={t("companies.tax_authority")}>
-              <input className="input" value={companyForm.tax_authority ?? ""} onChange={(e) => setC("tax_authority", e.target.value)} />
-            </Field>
-            <Field label={t("companies.nap_office")}>
-              <input className="input" value={companyForm.nap_office ?? ""} onChange={(e) => setC("nap_office", e.target.value)} />
-            </Field>
-          </div>
-
-          <h3 className="section-title" style={{ marginTop: 22 }}>
-            {t("settings.section.people")}
-          </h3>
-          <div className="inline-form" style={{ marginBottom: 12 }}>
-            <h4 className="section-title" style={{ fontSize: 13 }}>
-              {t("settings.manager")}
-            </h4>
-            <div className="form-grid">
-              <Field label={t("settings.person.name")}>
-                <input className="input" value={companyForm.manager_name ?? ""} onChange={(e) => setC("manager_name", e.target.value)} />
-              </Field>
-              <Field label={t("settings.person.egn")}>
-                <input className="input" value={companyForm.manager_egn ?? ""} onChange={(e) => setC("manager_egn", e.target.value)} />
-              </Field>
-              <Field label={t("companies.manager_eik")} span={2}>
-                <input className="input" value={companyForm.manager_eik ?? ""} onChange={(e) => setC("manager_eik", e.target.value)} />
-              </Field>
-            </div>
-          </div>
-          <div className="inline-form" style={{ marginBottom: 12 }}>
-            <h4 className="section-title" style={{ fontSize: 13 }}>
-              {t("settings.accountant")}
-            </h4>
-            <div className="form-grid">
-              <Field label={t("settings.person.name")}>
-                <input className="input" value={companyForm.accountant_name ?? ""} onChange={(e) => setC("accountant_name", e.target.value)} />
-              </Field>
-              <Field label={t("settings.person.egn")}>
-                <input className="input" value={companyForm.accountant_egn ?? ""} onChange={(e) => setC("accountant_egn", e.target.value)} />
-              </Field>
-            </div>
-          </div>
-          <div className="inline-form">
-            <h4 className="section-title" style={{ fontSize: 13 }}>
-              {t("settings.authorized")}
-            </h4>
-            <div className="form-grid">
-              <Field label={t("settings.person.name")}>
-                <input className="input" value={companyForm.authorized_person_name ?? ""} onChange={(e) => setC("authorized_person_name", e.target.value)} />
-              </Field>
-              <Field label={t("settings.person.egn")}>
-                <input className="input" value={companyForm.authorized_person_egn ?? ""} onChange={(e) => setC("authorized_person_egn", e.target.value)} />
-              </Field>
-            </div>
-          </div>
-
-          <h3 className="section-title" style={{ marginTop: 22 }}>
-            {t("settings.section.vat")}
-          </h3>
-          <div className="form-grid-3">
-            <Field label={t("companies.is_vat_registered")}>
-              <select className="select" value={companyForm.is_vat_registered ?? "0"} onChange={(e) => setC("is_vat_registered", e.target.value)}>
-                <option value="1">{t("common.yes")}</option>
-                <option value="0">{t("common.no")}</option>
-              </select>
-            </Field>
-            <Field label={t("companies.vat_period")}>
-              <select className="select" value={companyForm.vat_period ?? "monthly"} onChange={(e) => setC("vat_period", e.target.value)}>
-                <option value="monthly">{t("companies.vat_period.monthly")}</option>
-                <option value="quarterly">{t("companies.vat_period.quarterly")}</option>
-              </select>
-            </Field>
-            <Field label={t("companies.currency")}>
-              <select className="select" value={companyForm.currency ?? "EUR"} onChange={(e) => setC("currency", e.target.value)}>
-                <option value="EUR">EUR (€)</option>
-                <option value="BGN">BGN</option>
-                <option value="USD">USD</option>
-              </select>
-            </Field>
-            <Field label={t("settings.vat_branch")}>
-              <input className="input" value={companyForm.vat_branch_number ?? ""} onChange={(e) => setC("vat_branch_number", e.target.value)} />
-            </Field>
-            <Field label={t("companies.fiscal_year_start_month")}>
-              <input className="input" type="number" min={1} max={12} value={companyForm.fiscal_year_start_month ?? "1"} onChange={(e) => setC("fiscal_year_start_month", e.target.value)} />
-            </Field>
-          </div>
-
-          <h3 className="section-title" style={{ marginTop: 22 }}>
-            {t("settings.section.integrations")}
-          </h3>
-          <div className="form-grid">
-            <Field label={t("settings.mistral_key")} span={2}>
-              <input className="input" type="password" autoComplete="off" value={keys.mistral_api_key} onChange={(e) => setKeys((k) => ({ ...k, mistral_api_key: e.target.value }))} />
-              <p className="muted" style={{ fontSize: 12, margin: "4px 0 0" }}>
-                {t("settings.mistral_hint")}
-              </p>
-            </Field>
-            <Field label={t("settings.zhipu_key")} span={2}>
-              <input className="input" value={keys.zhipu_api_key} onChange={(e) => setKeys((k) => ({ ...k, zhipu_api_key: e.target.value }))} />
-              <p className="muted" style={{ fontSize: 12, margin: "4px 0 0" }}>
-                {t("settings.zhipu_hint")}
-              </p>
-            </Field>
-          </div>
-          <div className="form-actions">
-            <button className="btn btn-primary" type="submit" disabled={saving}>
-              {saving ? t("common.loading") : t("settings.save.company")}
-            </button>
-          </div>
-        </form>
+        <SettingsCompanyTab
+          t={t}
+          companyForm={companyForm}
+          setC={setC}
+          keys={keys}
+          setKeys={setKeys}
+          saving={saving}
+          onSubmit={saveCompany}
+        />
       )}
 
       {tab === 1 && (
-        <div style={{ maxWidth: 900 }}>
-          <form className="card card-pad" onSubmit={saveSaft} style={{ marginBottom: 16 }}>
-            <h3 className="section-title">{t("settings.section.saft")}</h3>
-            <div className="form-grid-3">
-              <Field label={t("settings.street")}>
-                <input className="input" value={saftForm.street_name ?? ""} onChange={(e) => setS("street_name", e.target.value)} />
-              </Field>
-              <Field label={t("settings.building")}>
-                <input className="input" value={saftForm.building_number ?? ""} onChange={(e) => setS("building_number", e.target.value)} />
-              </Field>
-              <Field label={t("settings.region")}>
-                <input className="input" placeholder="BG-22" value={saftForm.region ?? ""} onChange={(e) => setS("region", e.target.value)} />
-              </Field>
-              <Field label={t("settings.tax_basis")}>
-                <select className="select" value={saftForm.tax_accounting_basis ?? "A"} onChange={(e) => setS("tax_accounting_basis", e.target.value)}>
-                  <option value="A">{t("settings.tax_basis.A")}</option>
-                  <option value="BANK">{t("settings.tax_basis.BANK")}</option>
-                  <option value="P">{t("settings.tax_basis.P")}</option>
-                </select>
-              </Field>
-              <Field label={t("companies.inventory_valuation_method")}>
-                <select className="select" value={saftForm.inventory_valuation_method ?? "WAC"} onChange={(e) => setS("inventory_valuation_method", e.target.value)}>
-                  <option value="WAC">{t("settings.inv.WAC")}</option>
-                  <option value="FIFO">{t("settings.inv.FIFO")}</option>
-                  <option value="LIFO">{t("settings.inv.LIFO")}</option>
-                </select>
-              </Field>
-              <Field label={t("settings.group")}>
-                <select className="select" value={saftForm.is_part_of_group ?? ""} onChange={(e) => setS("is_part_of_group", e.target.value)}>
-                  <option value="">{t("settings.group.empty")}</option>
-                  <option value="1">{t("settings.group.1")}</option>
-                  <option value="2">{t("settings.group.2")}</option>
-                  <option value="3">{t("settings.group.3")}</option>
-                  <option value="4">{t("settings.group.4")}</option>
-                  <option value="5">{t("settings.group.5")}</option>
-                </select>
-              </Field>
-              <Field label={t("settings.tax_entity")}>
-                <input className="input" value={saftForm.tax_entity ?? ""} onChange={(e) => setS("tax_entity", e.target.value)} />
-              </Field>
-              <Field label={t("settings.software_name")}>
-                <input className="input" value={saftForm.software_company_name ?? ""} onChange={(e) => setS("software_company_name", e.target.value)} />
-              </Field>
-              <Field label={t("settings.software_id")}>
-                <input className="input" value={saftForm.software_id ?? ""} onChange={(e) => setS("software_id", e.target.value)} />
-              </Field>
-              <Field label={t("settings.software_version")}>
-                <input className="input" value={saftForm.software_version ?? ""} onChange={(e) => setS("software_version", e.target.value)} />
-              </Field>
-            </div>
-            <div className="form-actions">
-              <button className="btn btn-primary" type="submit" disabled={saving}>
-                {saving ? t("common.loading") : t("settings.save.saft")}
-              </button>
-            </div>
-          </form>
-
-          <div className="card card-pad" style={{ marginBottom: 16 }}>
-            <div className="page-head" style={{ marginBottom: 12 }}>
-              <h3 className="section-title" style={{ margin: 0 }}>
-                {t("settings.locations")}
-              </h3>
-              <button
-                type="button"
-                className="btn btn-sm"
-                onClick={() => {
-                  setEditLocId(0);
-                  setLocForm(EMPTY_LOC);
-                  setShowLoc(true);
-                }}
-              >
-                {t("settings.add.location")}
-              </button>
-            </div>
-            {showLoc && (
-              <form className="inline-form" onSubmit={saveLoc}>
-                <h4 className="section-title" style={{ fontSize: 13 }}>
-                  {editLocId > 0 ? t("common.edit") : t("common.create")}
-                </h4>
-                <div className="form-grid-3">
-                  <Field label={`${t("companies.name")} *`}>
-                    <input className="input" value={locForm.name} onChange={(e) => setL("name", e.target.value)} required />
-                  </Field>
-                  <Field label={t("settings.location_type")}>
-                    <select className="select" value={locForm.location_type} onChange={(e) => setL("location_type", e.target.value)}>
-                      <option value="OFFICE">{t("settings.loc.OFFICE")}</option>
-                      <option value="STORE">{t("settings.loc.STORE")}</option>
-                      <option value="WAREHOUSE">{t("settings.loc.WAREHOUSE")}</option>
-                      <option value="BRANCH">{t("settings.loc.BRANCH")}</option>
-                      <option value="OTHER">{t("settings.loc.OTHER")}</option>
-                    </select>
-                  </Field>
-                  <Field label={t("settings.is_main")}>
-                    <select className="select" value={locForm.is_main} onChange={(e) => setL("is_main", e.target.value)}>
-                      <option value="0">{t("common.no")}</option>
-                      <option value="1">{t("settings.is_main.yes")}</option>
-                    </select>
-                  </Field>
-                  <Field label={t("settings.street")}>
-                    <input className="input" value={locForm.street_name} onChange={(e) => setL("street_name", e.target.value)} />
-                  </Field>
-                  <Field label={t("settings.building")}>
-                    <input className="input" value={locForm.building_number} onChange={(e) => setL("building_number", e.target.value)} />
-                  </Field>
-                  <Field label={t("companies.city")}>
-                    <input className="input" value={locForm.city} onChange={(e) => setL("city", e.target.value)} />
-                  </Field>
-                  <Field label={t("companies.post_code")}>
-                    <input className="input" value={locForm.post_code} onChange={(e) => setL("post_code", e.target.value)} />
-                  </Field>
-                  <Field label={t("settings.region")}>
-                    <input className="input" placeholder="BG-22" value={locForm.region} onChange={(e) => setL("region", e.target.value)} />
-                  </Field>
-                  <Field label={t("settings.country")}>
-                    <input className="input" value={locForm.country} onChange={(e) => setL("country", e.target.value)} />
-                  </Field>
-                </div>
-                <div className="form-actions">
-                  <button type="button" className="btn" onClick={() => setShowLoc(false)}>
-                    {t("common.cancel")}
-                  </button>
-                  <button className="btn btn-primary" type="submit" disabled={saving}>
-                    {t("common.save")}
-                  </button>
-                </div>
-              </form>
-            )}
-            {locations.length === 0 && <p className="muted">{t("settings.empty.locations")}</p>}
-            {locations.map((loc) => (
-              <div className="list-item" key={loc.id}>
-                <div>
-                  <div style={{ fontWeight: 600 }}>
-                    {loc.name}
-                    {Number(loc.is_main) ? (
-                      <span className="badge badge-success" style={{ marginLeft: 8 }}>
-                        {t("settings.is_main.yes")}
-                      </span>
-                    ) : null}
-                  </div>
-                  <div className="muted" style={{ fontSize: 12 }}>
-                    {t(`settings.loc.${loc.location_type}`)}
-                    {loc.city ? ` — ${loc.city}` : ""}
-                    {loc.street_name ? `, ${loc.street_name}` : ""}
-                    {loc.building_number ? ` ${loc.building_number}` : ""}
-                  </div>
-                </div>
-                <div className="icon-actions">
-                  <IconButton
-                    icon="edit"
-                    title={t("common.edit")}
-                    onClick={() => {
-                      setEditLocId(loc.id);
-                      setLocForm({
-                        name: loc.name,
-                        location_type: loc.location_type,
-                        street_name: loc.street_name ?? "",
-                        building_number: loc.building_number ?? "",
-                        city: loc.city ?? "",
-                        post_code: loc.post_code ?? "",
-                        region: loc.region ?? "",
-                        country: loc.country || "BG",
-                        is_main: Number(loc.is_main) ? "1" : "0",
-                      });
-                      setShowLoc(true);
-                    }}
-                  />
-                  <IconButton
-                    icon="delete"
-                    title={t("common.delete")}
-                    danger
-                    onClick={() => delLoc(loc.id)}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="card card-pad" style={{ marginBottom: 16 }}>
-            <div className="page-head" style={{ marginBottom: 12 }}>
-              <h3 className="section-title" style={{ margin: 0 }}>
-                {t("settings.owners")}
-              </h3>
-              <Link href="/dividends" className="btn btn-sm">{t("settings.to_dividends")}</Link>
-              <button
-                type="button"
-                className="btn btn-sm"
-                onClick={() => {
-                  setEditOwnerId(0);
-                  setOwnerForm(EMPTY_OWNER);
-                  setShowOwner(true);
-                }}
-              >
-                {t("settings.add.owner")}
-              </button>
-            </div>
-            {showOwner && (
-              <form className="inline-form" onSubmit={saveOwner}>
-                <h4 className="section-title" style={{ fontSize: 13 }}>
-                  {editOwnerId > 0 ? t("common.edit") : t("common.create")}
-                </h4>
-                <div className="form-grid-3">
-                  <Field label={`${t("settings.owner.first_bg")} *`}>
-                    <input className="input" value={ownerForm.first_name_bg} onChange={(e) => setO("first_name_bg", e.target.value)} required />
-                  </Field>
-                  <Field label={`${t("settings.owner.last_bg")} *`}>
-                    <input className="input" value={ownerForm.last_name_bg} onChange={(e) => setO("last_name_bg", e.target.value)} required />
-                  </Field>
-                  <Field label={t("settings.person.egn")}>
-                    <input className="input" value={ownerForm.egn} onChange={(e) => setO("egn", e.target.value)} />
-                  </Field>
-                  <Field label={t("settings.owner.first_lat")}>
-                    <input className="input" value={ownerForm.first_name_latin} onChange={(e) => setO("first_name_latin", e.target.value)} />
-                  </Field>
-                  <Field label={t("settings.owner.last_lat")}>
-                    <input className="input" value={ownerForm.last_name_latin} onChange={(e) => setO("last_name_latin", e.target.value)} />
-                  </Field>
-                  <Field label={t("settings.country")}>
-                    <input className="input" value={ownerForm.country} onChange={(e) => setO("country", e.target.value)} />
-                  </Field>
-                  <Field label={t("settings.owner.percent")}>
-                    <input className="input" type="number" step="0.01" value={ownerForm.ownership_percentage} onChange={(e) => setO("ownership_percentage", e.target.value)} />
-                  </Field>
-                </div>
-                <div className="form-actions">
-                  <button type="button" className="btn" onClick={() => setShowOwner(false)}>
-                    {t("common.cancel")}
-                  </button>
-                  <button className="btn btn-primary" type="submit" disabled={saving}>
-                    {t("common.save")}
-                  </button>
-                </div>
-              </form>
-            )}
-            {owners.length === 0 && <p className="muted">{t("settings.empty.owners")}</p>}
-            {owners.map((o) => (
-              <div className="list-item" key={o.id}>
-                <div>
-                  <div style={{ fontWeight: 600 }}>
-                    {o.first_name_bg} {o.last_name_bg}
-                  </div>
-                  <div className="muted" style={{ fontSize: 12 }}>
-                    {o.ownership_percentage}% {t("settings.owner.owned")}
-                    {o.egn ? ` | ${t("settings.person.egn")}: ${o.egn}` : ""} | {o.country}
-                  </div>
-                </div>
-                <div className="icon-actions">
-                  <IconButton
-                    icon="edit"
-                    title={t("common.edit")}
-                    onClick={() => {
-                      setEditOwnerId(o.id);
-                      setOwnerForm({
-                        first_name_bg: o.first_name_bg,
-                        last_name_bg: o.last_name_bg,
-                        egn: o.egn ?? "",
-                        first_name_latin: o.first_name_latin ?? "",
-                        last_name_latin: o.last_name_latin ?? "",
-                        country: o.country || "BG",
-                        ownership_percentage: o.ownership_percentage ?? "0",
-                      });
-                      setShowOwner(true);
-                    }}
-                  />
-                  <IconButton
-                    icon="delete"
-                    title={t("common.delete")}
-                    danger
-                    onClick={() => delOwner(o.id)}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="card card-pad">
-            <div className="page-head" style={{ marginBottom: 12 }}>
-              <h3 className="section-title" style={{ margin: 0 }}>
-                {t("settings.parents")}
-              </h3>
-              <button
-                type="button"
-                className="btn btn-sm"
-                onClick={() => {
-                  setEditParentId(0);
-                  setParentForm(EMPTY_PARENT);
-                  setShowParent(true);
-                }}
-              >
-                {t("settings.add.parent")}
-              </button>
-            </div>
-            {showParent && (
-              <form className="inline-form" onSubmit={saveParent}>
-                <h4 className="section-title" style={{ fontSize: 13 }}>
-                  {editParentId > 0 ? t("common.edit") : t("common.create")}
-                </h4>
-                <div className="form-grid">
-                  <Field label={`${t("settings.parent.name_bg")} *`}>
-                    <input className="input" value={parentForm.name_bg} onChange={(e) => setP("name_bg", e.target.value)} required />
-                  </Field>
-                  <Field label={t("settings.parent.uic")}>
-                    <input className="input" value={parentForm.uic} onChange={(e) => setP("uic", e.target.value)} />
-                  </Field>
-                  <Field label={t("settings.parent.name_lat")}>
-                    <input className="input" value={parentForm.name_latin} onChange={(e) => setP("name_latin", e.target.value)} />
-                  </Field>
-                  <Field label={t("settings.country")}>
-                    <input className="input" value={parentForm.country} onChange={(e) => setP("country", e.target.value)} />
-                  </Field>
-                </div>
-                <div className="form-actions">
-                  <button type="button" className="btn" onClick={() => setShowParent(false)}>
-                    {t("common.cancel")}
-                  </button>
-                  <button className="btn btn-primary" type="submit" disabled={saving}>
-                    {t("common.save")}
-                  </button>
-                </div>
-              </form>
-            )}
-            {parents.length === 0 && <p className="muted">{t("settings.empty.parents")}</p>}
-            {parents.map((p) => (
-              <div className="list-item" key={p.id}>
-                <div>
-                  <div style={{ fontWeight: 600 }}>{p.name_bg}</div>
-                  <div className="muted" style={{ fontSize: 12 }}>
-                    {p.uic ? `${t("settings.parent.uic")}: ${p.uic} | ` : ""}
-                    {p.country}
-                  </div>
-                </div>
-                <div className="icon-actions">
-                  <IconButton
-                    icon="edit"
-                    title={t("common.edit")}
-                    onClick={() => {
-                      setEditParentId(p.id);
-                      setParentForm({
-                        name_bg: p.name_bg,
-                        uic: p.uic ?? "",
-                        name_latin: p.name_latin ?? "",
-                        country: p.country || "BG",
-                      });
-                      setShowParent(true);
-                    }}
-                  />
-                  <IconButton
-                    icon="delete"
-                    title={t("common.delete")}
-                    danger
-                    onClick={() => delParent(p.id)}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <SettingsSaftTab
+          t={t}
+          saftForm={saftForm}
+          setS={setS}
+          saving={saving}
+          onSaveSaft={saveSaft}
+          locations={locations}
+          showLoc={showLoc}
+          setShowLoc={setShowLoc}
+          editLocId={editLocId}
+          setEditLocId={setEditLocId}
+          locForm={locForm}
+          setLocForm={setLocForm}
+          setL={setL}
+          emptyLoc={EMPTY_LOC}
+          saveLoc={saveLoc}
+          delLoc={delLoc}
+          owners={owners}
+          showOwner={showOwner}
+          setShowOwner={setShowOwner}
+          editOwnerId={editOwnerId}
+          setEditOwnerId={setEditOwnerId}
+          ownerForm={ownerForm}
+          setOwnerForm={setOwnerForm}
+          setO={setO}
+          emptyOwner={EMPTY_OWNER}
+          saveOwner={saveOwner}
+          delOwner={delOwner}
+          parents={parents}
+          showParent={showParent}
+          setShowParent={setShowParent}
+          editParentId={editParentId}
+          setEditParentId={setEditParentId}
+          parentForm={parentForm}
+          setParentForm={setParentForm}
+          setP={setP}
+          emptyParent={EMPTY_PARENT}
+          saveParent={saveParent}
+          delParent={delParent}
+        />
       )}
 
       {tab === 2 && (

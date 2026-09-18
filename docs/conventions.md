@@ -5,7 +5,7 @@
 `.baga` файл над ~600 реда не минава. Затова схемата е `schema_pg_a/b/c`
 (+ boila близнаци), а големите action файлове се цепят
 (`fixed_assets` / `fixed_assets_ops`, `internal_docs` / `internal_docs_confirm`,
-`invoices` / `invoices_post` / `invoices_print`,
+`invoices` / `invoices_update` / `invoices_post` / `invoices_print`,
 `reports` / `reports_util` / `reports_trial` / `reports_book` /
 `reports_corr` / `reports_fs`,
 `recipes` / `production` / `production_confirm`,

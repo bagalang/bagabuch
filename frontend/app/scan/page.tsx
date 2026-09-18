@@ -7,78 +7,25 @@ import { useI18n } from "../../components/I18nProvider";
 import { IconButton } from "../../components/IconButton";
 import { api, ListResponse } from "../../lib/api";
 import {
-  CURRENCIES,
   Invoice,
   InvoiceLine,
-  VAT_RATES,
   calcLine,
   calcTotals,
   docTypeIsCredit,
-  docTypesFor,
   emptyLine,
   num,
   round2,
   todayIso,
 } from "../../lib/invoice";
-
-interface Counterpart {
-  id: number;
-  name: string;
-  eik: string;
-  vat_number: string;
-  counterpart_type?: string;
-}
-
-interface Product {
-  id: number;
-  name: string;
-  code: string;
-  unit: string;
-  price: string;
-  vat_rate: string;
-}
-
-interface ScanLine {
-  description: string;
-  quantity: string;
-  unit: string;
-  unit_price: string;
-  vat_rate: string;
-  net_amount: string;
-  vat_amount: string;
-  total_amount: string;
-  product_id?: number;
-}
-
-interface ScanExtract {
-  direction: string;
-  filename: string;
-  invoice_number: string;
-  issue_date: string;
-  due_date: string;
-  document_type: string;
-  counterpart_name: string;
-  counterpart_eik: string;
-  counterpart_vat_number: string;
-  currency: string;
-  total_net_amount: string;
-  total_vat_amount: string;
-  total_amount: string;
-  lines: ScanLine[];
-  counterpart_id?: number;
-  counterpart?: Counterpart;
-}
-
-interface ViesLookup {
-  valid: boolean | number;
-  name: string;
-  address: string;
-}
-
-interface QueuedFile {
-  id: string;
-  file: File;
-}
+import { ScanDraft } from "./ScanDraft";
+import {
+  Counterpart,
+  Product,
+  QueuedFile,
+  ScanExtract,
+  ScanLine,
+  ViesLookup,
+} from "./types";
 
 const MAX_BYTES = 8 * 1024 * 1024;
 
@@ -558,368 +505,57 @@ function ScanInner() {
       )}
 
       {!busy && stage === 1 && (
-        <>
-          <section className="card invoice-section">
-            <h2 className="invoice-section-title">{t("scan.header")}</h2>
-            <div className="form-grid">
-              <div className="field">
-                <label className="label">{t("invoices.document_type")}</label>
-                <select
-                  className="select"
-                  value={documentType}
-                  onChange={(e) => setDocumentType(e.target.value)}
-                >
-                  {docTypesFor(direction).map((dt) => (
-                    <option key={dt} value={dt}>
-                      {dt === "proforma" ? "" : `${dt} — `}
-                      {t(`invoices.document_type.${dt}`)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="field">
-                <label className="label">{t("scan.number")}</label>
-                <input
-                  className="input"
-                  value={number}
-                  onChange={(e) => setNumber(e.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label className="label">{t("scan.date")}</label>
-                <input
-                  className="input"
-                  type="date"
-                  value={issueDate}
-                  onChange={(e) => setIssueDate(e.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label className="label">{t("scan.due")}</label>
-                <input
-                  className="input"
-                  type="date"
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label className="label">{t("scan.currency")}</label>
-                <select
-                  className="select"
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value)}
-                >
-                  {CURRENCIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </section>
-
-          <section className="card invoice-section">
-            <h2 className="invoice-section-title">{t("scan.counterpart")}</h2>
-            <div className="form-grid">
-              <div className="field">
-                <label className="label">{t("scan.ocr_name")}</label>
-                <input
-                  className="input"
-                  value={ocrName}
-                  onChange={(e) => setOcrName(e.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label className="label">{t("scan.eik")}</label>
-                <input
-                  className="input"
-                  value={ocrEik}
-                  onChange={(e) => setOcrEik(e.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label className="label">{t("scan.vat_no")}</label>
-                <input
-                  className="input"
-                  value={ocrVat}
-                  onChange={(e) => setOcrVat(e.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label className="label">{t("scan.pick_existing")}</label>
-                <select
-                  className="select"
-                  value={counterpartId}
-                  onChange={(e) => setCounterpartId(e.target.value)}
-                >
-                  <option value="">{t("invoices.pick_counterpart")}</option>
-                  {counterparts.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                      {c.eik ? ` (${c.eik})` : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            {found ? (
-              <div className="flash-ok">
-                {t("scan.found")}: {found.name}
-              </div>
-            ) : (
-              <div className="flash-err" style={{ display: "block" }}>
-                <div>{t("scan.not_found")}</div>
-                <button className="btn btn-primary btn-sm" onClick={createCounterpart}>
-                  {direction === "in" ? t("scan.add_supplier") : t("scan.add_customer")}
-                </button>
-              </div>
-            )}
-            {vies && (vies.valid === true || vies.valid === 1) && (
-              <div className="flash-ok">
-                {t("scan.vies_ok")}
-                {vies.name ? ` — ${vies.name}` : ""}
-              </div>
-            )}
-            {vies && vies.valid !== true && vies.valid !== 1 && (
-              <div className="flash-err">{t("scan.vies_fail")}</div>
-            )}
-          </section>
-
-          <section className="card invoice-section">
-            <h2 className="invoice-section-title">{t("scan.lines")}</h2>
-            <div className="lines-wrap">
-              <table className="table lines-table">
-                <thead>
-                  <tr>
-                    <th>{t("scan.scanned_name")}</th>
-                    <th>{t("scan.our_product")}</th>
-                    <th>{t("scan.qty")}</th>
-                    <th>{t("scan.price")}</th>
-                    <th>{t("scan.vat_rate")}</th>
-                    <th>{t("scan.line_total")}</th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {priced.map((l, i) => {
-                    const mapped = l.product_id
-                      ? productById.get(l.product_id)
-                      : undefined;
-                    return (
-                      <tr key={i}>
-                        <td>
-                          <input
-                            className="input"
-                            value={l.description}
-                            onChange={(e) =>
-                              setLine(i, { description: e.target.value })
-                            }
-                          />
-                        </td>
-                        <td style={{ minWidth: 220 }}>
-                          <button
-                            type="button"
-                            className={`btn picker-trigger${mapped ? "" : " picker-empty"}`}
-                            onClick={() => openProductPicker(i)}
-                          >
-                            {mapped
-                              ? `${mapped.code ? `${mapped.code} — ` : ""}${mapped.name}`
-                              : t("scan.pick_product")}
-                          </button>
-                          {mapped && (
-                            <button
-                              type="button"
-                              className="btn btn-ghost btn-sm"
-                              onClick={() => clearProduct(i)}
-                            >
-                              {t("scan.clear_product")}
-                            </button>
-                          )}
-                        </td>
-                        <td>
-                          <input
-                            className="input"
-                            value={l.quantity}
-                            onChange={(e) =>
-                              setLine(i, { quantity: e.target.value })
-                            }
-                          />
-                        </td>
-                        <td>
-                          <input
-                            className="input"
-                            value={l.unit_price}
-                            onChange={(e) =>
-                              setLine(i, { unit_price: e.target.value })
-                            }
-                          />
-                        </td>
-                        <td>
-                          <select
-                            className="select"
-                            value={l.vat_rate}
-                            onChange={(e) =>
-                              setLine(i, { vat_rate: e.target.value })
-                            }
-                          >
-                            {VAT_RATES.map((r) => (
-                              <option key={r} value={r}>
-                                {r}%
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                        <td className="num">
-                          {l.total_amount} {currency}
-                        </td>
-                        <td>
-                          <IconButton
-                            icon="delete"
-                            title={t("common.delete")}
-                            danger
-                            onClick={() =>
-                              setLines((prev) =>
-                                prev.filter((_, idx) => idx !== i)
-                              )
-                            }
-                          />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <button
-              className="btn"
-              type="button"
-              onClick={() => setLines((prev) => [...prev, emptyLine()])}
-            >
-              + {t("invoices.add_line")}
-            </button>
-            <p className="muted" style={{ marginTop: 12 }}>
-              {t("invoices.total")}: {totals.total} {currency}
-            </p>
-          </section>
-
-          <div className="form-actions">
-            <button className="btn btn-primary" onClick={saveDraft}>
-              {t("scan.save_draft")}
-            </button>
-          </div>
-
-          {itemOpenFor !== null && (
-            <div className="modal-backdrop" onClick={closeProductPicker}>
-              <div
-                className="card modal picker-modal"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <h2 className="modal-title">{t("scan.our_product")}</h2>
-                <p className="muted" style={{ marginTop: -8 }}>
-                  {t("scan.pick_hint")}
-                  {lines[itemOpenFor]?.description
-                    ? ` — ${lines[itemOpenFor].description}`
-                    : ""}
-                </p>
-                {!addingProduct ? (
-                  <>
-                    <input
-                      className="input"
-                      autoFocus
-                      value={itemQuery}
-                      onChange={(e) => setItemQuery(e.target.value)}
-                      placeholder={t("invoices.search")}
-                    />
-                    <div className="picker-list">
-                      {filteredProducts.map((p) => (
-                        <button
-                          type="button"
-                          key={p.id}
-                          className="picker-item"
-                          onClick={() => pickProduct(itemOpenFor, p)}
-                        >
-                          <b>
-                            {p.code ? `${p.code} — ` : ""}
-                            {p.name}
-                          </b>
-                          <span className="muted">
-                            {p.price} · ДДС {p.vat_rate}%
-                          </span>
-                        </button>
-                      ))}
-                      {filteredProducts.length === 0 && (
-                        <div className="muted">{t("common.empty")}</div>
-                      )}
-                    </div>
-                    <div className="form-actions" style={{ marginTop: 12 }}>
-                      <button
-                        type="button"
-                        className="btn btn-primary"
-                        onClick={() => {
-                          setAddingProduct(true);
-                          setNewName(
-                            itemQuery.trim() ||
-                              lines[itemOpenFor]?.description ||
-                              ""
-                          );
-                          setCreateError("");
-                        }}
-                      >
-                        + {t("scan.add_product")}
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <div>
-                    <p className="muted">{t("scan.add_product_hint")}</p>
-                    {createError && (
-                      <div className="error-text" style={{ marginBottom: 8 }}>
-                        {createError}
-                      </div>
-                    )}
-                    <div className="field">
-                      <label className="label">{t("products.name")}</label>
-                      <input
-                        className="input"
-                        autoFocus
-                        value={newName}
-                        onChange={(e) => setNewName(e.target.value)}
-                      />
-                    </div>
-                    <div className="field">
-                      <label className="label">{t("products.code")}</label>
-                      <input
-                        className="input"
-                        value={newCode}
-                        onChange={(e) => setNewCode(e.target.value)}
-                      />
-                    </div>
-                    <div className="form-actions">
-                      <button
-                        type="button"
-                        className="btn"
-                        onClick={() => setAddingProduct(false)}
-                        disabled={creating}
-                      >
-                        {t("common.back")}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-primary"
-                        onClick={createProduct}
-                        disabled={creating}
-                      >
-                        {creating ? t("scan.creating") : t("common.create")}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </>
+        <ScanDraft
+          t={t}
+          direction={direction}
+          documentType={documentType}
+          setDocumentType={setDocumentType}
+          number={number}
+          setNumber={setNumber}
+          issueDate={issueDate}
+          setIssueDate={setIssueDate}
+          dueDate={dueDate}
+          setDueDate={setDueDate}
+          currency={currency}
+          setCurrency={setCurrency}
+          ocrName={ocrName}
+          setOcrName={setOcrName}
+          ocrEik={ocrEik}
+          setOcrEik={setOcrEik}
+          ocrVat={ocrVat}
+          setOcrVat={setOcrVat}
+          counterpartId={counterpartId}
+          setCounterpartId={setCounterpartId}
+          counterparts={counterparts}
+          found={found}
+          createCounterpart={createCounterpart}
+          vies={vies}
+          priced={priced}
+          productById={productById}
+          setLine={setLine}
+          openProductPicker={openProductPicker}
+          clearProduct={clearProduct}
+          setLines={setLines}
+          totals={totals}
+          saveDraft={saveDraft}
+          itemOpenFor={itemOpenFor}
+          closeProductPicker={closeProductPicker}
+          lines={lines}
+          addingProduct={addingProduct}
+          itemQuery={itemQuery}
+          setItemQuery={setItemQuery}
+          filteredProducts={filteredProducts}
+          pickProduct={pickProduct}
+          setAddingProduct={setAddingProduct}
+          setNewName={setNewName}
+          setCreateError={setCreateError}
+          createError={createError}
+          newName={newName}
+          newCode={newCode}
+          setNewCode={setNewCode}
+          createProduct={createProduct}
+          creating={creating}
+        />
       )}
     </div>
   );

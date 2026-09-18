@@ -4,11 +4,9 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, ListResponse, getActiveCompany } from "../lib/api";
 import {
-  CURRENCIES,
   Invoice,
   InvoiceLine,
   PAY_METHODS,
-  VAT_RATES,
   applyDiscountToLines,
   calcLine,
   calcTotals,
@@ -23,33 +21,20 @@ import {
   toDateInput,
 } from "../lib/invoice";
 import { useI18n } from "./I18nProvider";
-import { UnitPicker } from "./UnitPicker";
-import { UnitOfMeasure, unitLabel } from "../lib/units";
+import { UnitOfMeasure } from "../lib/units";
 import { VatExemption, filterVatex, vatexLabel } from "../lib/vatExemptions";
 import {
   CompanyLocation,
   fetchCompanyLocations,
   mainLocationId,
 } from "../lib/locations";
-
-interface Counterpart {
-  id: number;
-  name: string;
-  eik: string;
-  vat_number: string;
-  address: string;
-  city: string;
-  counterpart_type?: string;
-}
-
-interface Product {
-  id: number;
-  name: string;
-  code: string;
-  unit: string;
-  price: string;
-  vat_rate: string;
-}
+import { InvoiceFormHeader } from "./InvoiceFormHeader";
+import { InvoiceFormLines } from "./InvoiceFormLines";
+import { InvoiceFormPickers } from "./InvoiceFormPickers";
+import {
+  InvoiceFormCounterpart as Counterpart,
+  InvoiceFormProduct as Product,
+} from "./invoiceFormTypes";
 
 interface Props {
   mode: "create" | "edit";
@@ -386,327 +371,46 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
 
   return (
     <form className="invoice-form" onSubmit={handleSave}>
-      <section className="card invoice-section">
-        <h2 className="invoice-section-title">{t("invoices.header")}</h2>
-        <div className="form-grid">
-          <div className="field">
-            <label className="label">{t("invoices.document_type")}</label>
-            <select
-              className="select"
-              name="document_type"
-              value={documentType}
-              onChange={(e) => setDocumentType(e.target.value)}
-            >
-              {docTypesFor(direction).map((dt) => (
-                <option key={dt} value={dt}>
-                  {dt === "proforma" ? "" : `${dt} — `}
-                  {t(`invoices.document_type.${dt}`)}
-                </option>
-              ))}
-            </select>
-            {isCredit && (
-              <p className="muted" style={{ marginTop: 6 }}>
-                {t("invoices.credit_sign_hint")}
-              </p>
-            )}
-          </div>
-        </div>
-        <div className="form-grid">
-          <div className="field">
-            <label className="label">{t("invoices.direction")}</label>
-            <select
-              className="select"
-              value={direction}
-              onChange={(e) => setDirection(e.target.value)}
-            >
-              <option value="out">{t("invoices.direction.out")}</option>
-              <option value="in">{t("invoices.direction.in")}</option>
-            </select>
-          </div>
-          {locations.length > 0 && (
-            <div className="field">
-              <label className="label">{t("invoices.location")}</label>
-              <select
-                className="select"
-                value={locationId}
-                onChange={(e) => setLocationId(e.target.value)}
-              >
-                {locationId === "0" && <option value="0">—</option>}
-                {locations.map((loc) => (
-                  <option key={loc.id} value={loc.id}>
-                    {loc.name}
-                    {Number(loc.is_main) ? ` (${t("settings.is_main.yes")})` : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-          <div className="field">
-            <label className="label">
-              {t("invoices.number")}
-              {direction === "in" ? " *" : ""}
-            </label>
-            <input
-              className="input"
-              value={number}
-              onChange={(e) => setNumber(e.target.value)}
-              required={direction === "in"}
-              placeholder={
-                direction === "in"
-                  ? t("invoices.number_in_hint")
-                  : t("invoices.number_out_hint")
-              }
-            />
-          </div>
-          <div className="field">
-            <label className="label">{t("invoices.issue_date")} *</label>
-            <input
-              className="input"
-              type="date"
-              value={issueDate}
-              onChange={(e) => setIssueDate(e.target.value)}
-              required
-            />
-          </div>
-          <div className="field">
-            <label className="label">{t("invoices.tax_event_date")}</label>
-            <input
-              className="input"
-              type="date"
-              value={taxEventDate}
-              onChange={(e) => setTaxEventDate(e.target.value)}
-            />
-          </div>
-          <div className="field">
-            <label className="label">{t("invoices.due_date")}</label>
-            <input
-              className="input"
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-            />
-          </div>
-          <div className="field">
-            <label className="label">{t("invoices.currency")}</label>
-            <select
-              className="select"
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value)}
-            >
-              {CURRENCIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </div>
-          {currency !== "EUR" && (
-            <div className="field">
-              <label className="label">{t("invoices.currency_rate")}</label>
-              <div style={{ display: "flex", gap: 6 }}>
-                <input
-                  className="input"
-                  value={currencyRate}
-                  onChange={(e) => setCurrencyRate(e.target.value)}
-                />
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  title={t("invoices.currency_rate_fetch_hint")}
-                  onClick={async () => {
-                    try {
-                      const r = await api.get<{ rate: string; date: string }>(
-                        `/v1/exchange-rates/rate?currency=${encodeURIComponent(currency)}&date=${encodeURIComponent(issueDate)}`
-                      );
-                      setCurrencyRate(r.rate);
-                    } catch (err) {
-                      setFormError(err instanceof Error ? err.message : String(err));
-                    }
-                  }}
-                >
-                  {t("invoices.currency_rate_fetch")}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-        {docTypeRequiresOriginal(documentType) && (
-          <div className="field">
-            <label className="label">{t("invoices.original_invoice")} *</label>
-            <select
-              className="select"
-              value={originalInvoiceId}
-              onChange={(e) => setOriginalInvoiceId(e.target.value)}
-              required
-            >
-              <option value="">—</option>
-              {invoices
-                .filter((i) => i.document_type === "01" || i.document_type === "11")
-                .map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.number} · {i.issue_date} · {i.total_amount}
-                  </option>
-                ))}
-            </select>
-          </div>
-        )}
-      </section>
-
-      <section className="card invoice-section">
-        <h2 className="invoice-section-title">
-          {direction === "in" ? t("invoices.supplier") : t("invoices.recipient")}
-        </h2>
-        <button
-          type="button"
-          className={`btn picker-trigger${selectedCp ? "" : " picker-empty"}`}
-          onClick={() => setCpOpen(true)}
-        >
-          {selectedCp
-            ? `${selectedCp.eik ? `${selectedCp.eik} — ` : ""}${selectedCp.name}`
-            : t("invoices.pick_counterpart")}
-        </button>
-        {selectedCp && (
-          <div className="party-preview">
-            <div>
-              {t("counterparts.name")}: {selectedCp.name}
-            </div>
-            <div>
-              {t("counterparts.eik")}: {selectedCp.eik || "—"}
-            </div>
-            <div>
-              {t("counterparts.vat_number")}: {selectedCp.vat_number || "—"}
-            </div>
-            <div>
-              {t("companies.address")}: {selectedCp.address} {selectedCp.city}
-            </div>
-          </div>
-        )}
-      </section>
-
-      <section className="card invoice-section">
-        <div className="invoice-section-head">
-          <h2 className="invoice-section-title">{t("invoices.lines")}</h2>
-          <label className="check-inline">
-            <input
-              type="checkbox"
-              checked={pricesIncludeVat}
-              onChange={(e) => setPricesIncludeVat(e.target.checked)}
-            />
-            {t("invoices.prices_include_vat")}
-          </label>
-        </div>
-        <div className="lines-wrap">
-          <table className="table lines-table">
-            <thead>
-              <tr>
-                <th>{t("invoices.item")}</th>
-                <th>{t("invoices.qty")}</th>
-                <th>{t("products.unit")}</th>
-                <th>
-                  {pricesIncludeVat
-                    ? t("invoices.price_with_vat")
-                    : t("invoices.unit_price")}
-                </th>
-                <th>{t("products.vat_rate")}</th>
-                <th>{t("invoices.line_total")}</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {pricedLines.map((l, i) => (
-                <tr key={i}>
-                  <td>
-                    <button
-                      type="button"
-                      className={`btn picker-trigger${l.description ? "" : " picker-empty"}`}
-                      onClick={() => {
-                        setItemOpenFor(i);
-                        setItemQuery("");
-                      }}
-                    >
-                      {l.description
-                        ? `${l.code ? `${l.code} — ` : ""}${l.description}`
-                        : t("invoices.pick_item")}
-                    </button>
-                    <input
-                      className="input"
-                      value={l.description}
-                      onChange={(e) => setLine(i, { description: e.target.value })}
-                      placeholder={t("journal.description")}
-                    />
-                    {num(l.vat_rate) === 0 && (
-                      <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
-                        {t("invoices.zero_vat_hint")}
-                      </div>
-                    )}
-                  </td>
-                  <td>
-                    <input
-                      className="input"
-                      value={l.quantity}
-                      onChange={(e) => setLine(i, { quantity: e.target.value })}
-                    />
-                  </td>
-                  <td>
-                    <UnitPicker
-                      compact
-                      value={l.unit || "C62"}
-                      onChange={(unit) => setLine(i, { unit })}
-                      units={units}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      className="input"
-                      value={l.unit_price}
-                      onChange={(e) => setLine(i, { unit_price: e.target.value })}
-                    />
-                  </td>
-                  <td>
-                    <select
-                      className="select"
-                      value={l.vat_rate}
-                      onChange={(e) => setLine(i, { vat_rate: e.target.value })}
-                    >
-                      {VAT_RATES.map((r) => (
-                        <option key={r} value={r}>
-                          {r}%
-                        </option>
-                      ))}
-                      {l.vat_rate &&
-                        !(VAT_RATES as readonly string[]).includes(l.vat_rate) && (
-                          <option value={l.vat_rate}>{l.vat_rate}%</option>
-                        )}
-                    </select>
-                  </td>
-                  <td className="num">{l.net_amount}</td>
-                  <td>
-                    <button
-                      type="button"
-                      className="btn btn-danger btn-sm"
-                      onClick={() =>
-                        setLines((prev) =>
-                          prev.length > 1 ? prev.filter((_, idx) => idx !== i) : prev
-                        )
-                      }
-                    >
-                      ✕
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <button
-          type="button"
-          className="btn btn-sm"
-          onClick={() => setLines((prev) => [...prev, emptyLine()])}
-        >
-          + {t("invoices.add_line")}
-        </button>
-      </section>
-
+      <InvoiceFormHeader
+        t={t}
+        direction={direction}
+        setDirection={setDirection}
+        documentType={documentType}
+        setDocumentType={setDocumentType}
+        isCredit={isCredit}
+        locations={locations}
+        locationId={locationId}
+        setLocationId={setLocationId}
+        number={number}
+        setNumber={setNumber}
+        issueDate={issueDate}
+        setIssueDate={setIssueDate}
+        taxEventDate={taxEventDate}
+        setTaxEventDate={setTaxEventDate}
+        dueDate={dueDate}
+        setDueDate={setDueDate}
+        currency={currency}
+        setCurrency={setCurrency}
+        currencyRate={currencyRate}
+        setCurrencyRate={setCurrencyRate}
+        originalInvoiceId={originalInvoiceId}
+        setOriginalInvoiceId={setOriginalInvoiceId}
+        invoices={invoices}
+        selectedCp={selectedCp}
+        setCpOpen={setCpOpen}
+        setFormError={setFormError}
+      />
+      <InvoiceFormLines
+        t={t}
+        pricedLines={pricedLines}
+        pricesIncludeVat={pricesIncludeVat}
+        setPricesIncludeVat={setPricesIncludeVat}
+        setLine={setLine}
+        setLines={setLines}
+        setItemOpenFor={setItemOpenFor}
+        setItemQuery={setItemQuery}
+        units={units}
+      />
       <section className="card invoice-section">
         <h2 className="invoice-section-title">{t("invoices.totals_section")}</h2>
         <div className="form-grid">
@@ -819,78 +523,22 @@ export function InvoiceForm({ mode, invoiceId }: Props) {
         </button>
       </div>
 
-      {cpOpen && (
-        <div className="modal-backdrop" onClick={() => setCpOpen(false)}>
-          <div className="card modal picker-modal" onClick={(e) => e.stopPropagation()}>
-            <h2 className="modal-title">{t("invoices.pick_counterpart")}</h2>
-            <input
-              className="input"
-              autoFocus
-              value={cpQuery}
-              onChange={(e) => setCpQuery(e.target.value)}
-              placeholder={t("invoices.search")}
-            />
-            <div className="picker-list">
-              {filteredCp.map((c) => (
-                <button
-                  type="button"
-                  key={c.id}
-                  className="picker-item"
-                  onClick={() => {
-                    setCounterpartId(String(c.id));
-                    setCpOpen(false);
-                    setCpQuery("");
-                  }}
-                >
-                  <b>{c.name}</b>
-                  <span className="muted">
-                    {c.eik} {c.vat_number}
-                  </span>
-                </button>
-              ))}
-              {filteredCp.length === 0 && (
-                <div className="muted">{t("common.empty")}</div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {itemOpenFor !== null && (
-        <div className="modal-backdrop" onClick={() => setItemOpenFor(null)}>
-          <div className="card modal picker-modal" onClick={(e) => e.stopPropagation()}>
-            <h2 className="modal-title">{t("invoices.pick_item")}</h2>
-            <input
-              className="input"
-              autoFocus
-              value={itemQuery}
-              onChange={(e) => setItemQuery(e.target.value)}
-              placeholder={t("invoices.search")}
-            />
-            <div className="picker-list">
-              {filteredProducts.map((p) => (
-                <button
-                  type="button"
-                  key={p.id}
-                  className="picker-item"
-                  onClick={() => pickProduct(itemOpenFor, p)}
-                >
-                  <b>
-                    {p.code ? `${p.code} — ` : ""}
-                    {p.name}
-                  </b>
-                  <span className="muted">
-                    {p.price} / {unitLabel(p.unit || "C62", units)} · ДДС {p.vat_rate}%
-                  </span>
-                </button>
-              ))}
-              {filteredProducts.length === 0 && (
-                <div className="muted">{t("common.empty")}</div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <InvoiceFormPickers
+        t={t}
+        cpOpen={cpOpen}
+        setCpOpen={setCpOpen}
+        cpQuery={cpQuery}
+        setCpQuery={setCpQuery}
+        filteredCp={filteredCp}
+        setCounterpartId={setCounterpartId}
+        itemOpenFor={itemOpenFor}
+        setItemOpenFor={setItemOpenFor}
+        itemQuery={itemQuery}
+        setItemQuery={setItemQuery}
+        filteredProducts={filteredProducts}
+        pickProduct={pickProduct}
+        units={units}
+      />
     </form>
   );
 }

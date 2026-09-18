@@ -3,6 +3,7 @@
 
 import type { Metadata } from "next";
 import "./globals.css";
+import "./globals-pages.css";
 import { Providers } from "../components/Providers";
 
 export const metadata: Metadata = {
