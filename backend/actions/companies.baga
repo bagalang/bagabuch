@@ -59,7 +59,7 @@ fn act_companies_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         is_vat_registered = ivr.num
     }
     let vat_period = jopt_str(b.doc, b.root, "vat_period", "monthly")
-    let currency = jopt_str(b.doc, b.root, "currency", "BGN")
+    let currency = jopt_str(b.doc, b.root, "currency", "EUR")
     let address = jopt_str(b.doc, b.root, "address", "")
     let city = jopt_str(b.doc, b.root, "city", "")
     let post_code = jopt_str(b.doc, b.root, "post_code", "")

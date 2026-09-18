@@ -194,8 +194,20 @@ export function CrudPage({ config }: { config: CrudConfig }) {
     const payload: Record_ = {};
     for (const f of config.fields) {
       const v = form[f.name];
-      if (f.type === "checkbox") payload[f.name] = v ? 1 : 0;
-      else payload[f.name] = v ?? "";
+      if (f.type === "checkbox") {
+        payload[f.name] = Boolean(v);
+      } else if (f.type === "number") {
+        const raw = String(v ?? "").trim();
+        if (raw === "") {
+          if (f.default !== undefined && f.default !== "") {
+            payload[f.name] = Number(f.default);
+          }
+        } else {
+          payload[f.name] = Number(raw);
+        }
+      } else {
+        payload[f.name] = v ?? "";
+      }
     }
     return payload;
   };

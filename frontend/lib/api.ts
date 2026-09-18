@@ -22,6 +22,41 @@ export class ApiError extends Error {
   }
 }
 
+function formatApiDetail(data: unknown, fallback: string): string {
+  if (typeof data === "string" && data.length > 0) return data;
+  if (data === null || data === undefined || typeof data !== "object") return fallback;
+  const detail = (data as { detail?: unknown }).detail;
+  if (typeof detail === "string" && detail.length > 0) return detail;
+  if (Array.isArray(detail)) {
+    const parts: string[] = [];
+    for (const item of detail) {
+      if (typeof item === "string") {
+        parts.push(item);
+        continue;
+      }
+      if (item && typeof item === "object") {
+        const o = item as { msg?: unknown; loc?: unknown };
+        const msg = typeof o.msg === "string" ? o.msg : JSON.stringify(item);
+        if (Array.isArray(o.loc) && o.loc.length > 0) {
+          const loc = o.loc.filter((x) => typeof x === "string").join(".");
+          parts.push(loc ? `${loc}: ${msg}` : msg);
+        } else {
+          parts.push(msg);
+        }
+      }
+    }
+    if (parts.length > 0) return parts.join("; ");
+  }
+  if (detail !== undefined) {
+    try {
+      return JSON.stringify(detail);
+    } catch {
+      return fallback;
+    }
+  }
+  return fallback;
+}
+
 async function request<T>(
   path: string,
   method: string,
@@ -60,10 +95,7 @@ async function request<T>(
     }
   }
   if (!res.ok) {
-    const detail =
-      (data as { detail?: string } | null)?.detail ??
-      (typeof data === "string" ? data : res.statusText);
-    throw new ApiError(res.status, String(detail));
+    throw new ApiError(res.status, formatApiDetail(data, res.statusText));
   }
   return data as T;
 }
@@ -83,14 +115,13 @@ export async function downloadFile(path: string, filename: string): Promise<void
   const res = await fetch(`${API_BASE}${path}`, { headers, cache: "no-store" });
   if (!res.ok) {
     const text = await res.text();
-    let detail = res.statusText;
+    let parsed: unknown = text;
     try {
-      const data = JSON.parse(text) as { detail?: string };
-      if (data.detail) detail = data.detail;
+      parsed = JSON.parse(text);
     } catch {
-      if (text) detail = text;
+      parsed = text;
     }
-    throw new ApiError(res.status, String(detail));
+    throw new ApiError(res.status, formatApiDetail(parsed, res.statusText || text));
   }
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);

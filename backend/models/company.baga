@@ -93,6 +93,43 @@ fn company_all(db: OrmDb) -> OrmQuery !IO !Net {
     return orm_query(db, concat(company_select_sql(), " ORDER BY id"))?
 }
 
+// SAF-T колони, добавени след първия INSERT. vat_branch_number е ДДС
+// поделение (НАП), не търговски обект. ДДС регистрация по подразбиране е 0.
+fn company_push_defaults(cols: Vec<str>, vals: Vec<str>) {
+    vec_push(cols, "country")
+    vec_push(vals, "BG")
+    vec_push(cols, "manager_name")
+    vec_push(vals, "")
+    vec_push(cols, "manager_egn")
+    vec_push(vals, "")
+    vec_push(cols, "authorized_person_name")
+    vec_push(vals, "")
+    vec_push(cols, "authorized_person_egn")
+    vec_push(vals, "")
+    vec_push(cols, "vat_branch_number")
+    vec_push(vals, "")
+    vec_push(cols, "tax_accounting_basis")
+    vec_push(vals, "A")
+    vec_push(cols, "tax_entity")
+    vec_push(vals, "")
+    vec_push(cols, "software_company_name")
+    vec_push(vals, "bagabuch")
+    vec_push(cols, "software_id")
+    vec_push(vals, "BAGABUCH")
+    vec_push(cols, "software_version")
+    vec_push(vals, "1.0")
+    vec_push(cols, "is_part_of_group")
+    vec_push(vals, "")
+    vec_push(cols, "street_name")
+    vec_push(vals, "")
+    vec_push(cols, "building_number")
+    vec_push(vals, "")
+    vec_push(cols, "region")
+    vec_push(vals, "")
+    vec_push(cols, "settings")
+    vec_push(vals, "{}")
+}
+
 fn company_create(db: OrmDb, name: str, eik: str, vat_number: str, is_vat_registered: i64, vat_period: str, currency: str, address: str, city: str, post_code: str, phone: str, email: str, website: str, mol: str, manager_eik: str, accountant_name: str, accountant_egn: str, tax_authority: str, nap_office: str, iban: str, bic: str, inventory_valuation_method: str, fiscal_year_start_month: i64) -> OrmExec !IO !Net {
     if company_backend_boila()? == 1 {
         let c = company_next_id(db)?
@@ -149,6 +186,7 @@ fn company_create(db: OrmDb, name: str, eik: str, vat_number: str, is_vat_regist
         vec_push(vals, bic)
         vec_push(vals, inventory_valuation_method)
         vec_push(vals, int_to_str(fiscal_year_start_month))
+        company_push_defaults(cols, vals)
         return orm_insert_strs(d, company_table(), cols, vals)?
     }
     let cols = vec_new()
@@ -197,6 +235,7 @@ fn company_create(db: OrmDb, name: str, eik: str, vat_number: str, is_vat_regist
     vec_push(vals, bic)
     vec_push(vals, inventory_valuation_method)
     vec_push(vals, int_to_str(fiscal_year_start_month))
+    company_push_defaults(cols, vals)
     return orm_insert_strs(db, company_table(), cols, vals)?
 }
 
