@@ -1,24 +1,29 @@
-# VPS: от корена на baga монорепото
+# VPS / локално: от корена на baga монорепото
 #   docker compose -f app-product/bagabuch/deploy/docker-compose.yml --env-file app-product/bagabuch/deploy/.env up --build -d
 #
 # Задължително в .env: FMR_JWT_SECRET (дълъг случаен низ). Не ползвай dev-secret.
+#
+# boiladb държи данните в rocksbaga (LSM: WAL + SST) под /data.
+# network_mode: host — портовете са директно на машината (3000 / 8080 / 6575 / 5050).
+
+name: bagabuch
 
 services:
   boiladb:
+    container_name: bagabuch-boiladb
     build:
       context: ../../..
       dockerfile: app-product/bagabuch/deploy/Dockerfile.baga
       args:
         BAGA_ENTRY: app-product/boilaDB/tools/serve_pg.baga
     restart: unless-stopped
+    network_mode: host
     environment:
       BOILA_PGPORT: "6575"
       BOILA_WORKERS: "8"
       BOILA_PATH: /data
     volumes:
       - boila-data:/data
-    expose:
-      - "6575"
     healthcheck:
       test: ["CMD-SHELL", "bash -c 'echo >/dev/tcp/127.0.0.1/6575'"]
       interval: 10s
@@ -27,19 +32,21 @@ services:
       start_period: 40s
 
   backend:
+    container_name: bagabuch-backend
     build:
       context: ../../..
       dockerfile: app-product/bagabuch/deploy/Dockerfile.baga
       args:
         BAGA_ENTRY: app-product/bagabuch/backend/start.baga
     restart: unless-stopped
+    network_mode: host
     depends_on:
       boiladb:
         condition: service_healthy
     environment:
       PORT: "8080"
       ORM_BACKEND: boila
-      BOILA_PGHOST: boiladb
+      BOILA_PGHOST: "127.0.0.1"
       BOILA_PGPORT: "6575"
       BOILA_PGUSER: boila
       BOILA_PGDATABASE: boila
@@ -49,10 +56,8 @@ services:
       FMR_JWT_SECRET: ${FMR_JWT_SECRET:?set FMR_JWT_SECRET in deploy/.env}
       FMR_JWT_TTL_SEC: ${FMR_JWT_TTL_SEC:-604800}
       FMR_TITLE: bagabuch
-      FMR_VERSION: "0.8.4"
-      BAGABUCH_SIDECAR: http://sidecar:5050
-    expose:
-      - "8080"
+      FMR_VERSION: "0.8.5"
+      BAGABUCH_SIDECAR: http://127.0.0.1:5050
     healthcheck:
       test: ["CMD-SHELL", "bash -c 'echo >/dev/tcp/127.0.0.1/8080'"]
       interval: 10s
@@ -61,8 +66,10 @@ services:
       start_period: 20s
 
   sidecar:
+    container_name: bagabuch-sidecar
     image: python:3.12-slim
     restart: unless-stopped
+    network_mode: host
     working_dir: /app
     volumes:
       - ../scripts/py:/app:ro
@@ -71,23 +78,21 @@ services:
       BAGABUCH_SIDECAR_PORT: "5050"
       BAGABUCH_DB_PATH: /data
     command: ["sh", "-c", "pip install -q -r requirements.txt && python sidecar.py"]
-    expose:
-      - "5050"
 
   frontend:
+    container_name: bagabuch-frontend
     build:
       context: ..
       dockerfile: deploy/Dockerfile.frontend
       args:
-        BAGABUCH_API_PROXY: http://backend:8080
+        BAGABUCH_API_PROXY: http://127.0.0.1:8080
     restart: unless-stopped
+    network_mode: host
     depends_on:
       backend:
         condition: service_healthy
     environment:
-      BAGABUCH_API_PROXY: http://backend:8080
-    ports:
-      - "3000:3000"
+      BAGABUCH_API_PROXY: http://127.0.0.1:8080
 
 volumes:
   boila-data:

@@ -6,9 +6,9 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
 COPY . /src
+RUN make all
 ARG BAGA_ENTRY
 RUN test -n "$BAGA_ENTRY" \
- && make all \
  && ./baga --emit-c -I . -I app-product "$BAGA_ENTRY" > /tmp/app.c \
  && gcc -O2 -Iinclude -o /out-bin /tmp/app.c src/baga_par_rt.c -lm -pthread
 
