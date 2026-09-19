@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # Компилира един Baga вход (serve_pg или bagabuch backend) от монорепото.
-FROM debian:bookworm-slim AS build
+FROM debian:trixie-slim AS build
 RUN apt-get update \
  && apt-get install -y --no-install-recommends gcc libc6-dev make \
  && rm -rf /var/lib/apt/lists/*
@@ -12,7 +12,7 @@ RUN test -n "$BAGA_ENTRY" \
  && ./baga --emit-c -I . -I app-product "$BAGA_ENTRY" > /tmp/app.c \
  && gcc -O2 -Iinclude -o /out-bin /tmp/app.c src/baga_par_rt.c -lm -pthread
 
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 RUN apt-get update \
  && apt-get install -y --no-install-recommends bash \
  && rm -rf /var/lib/apt/lists/*
