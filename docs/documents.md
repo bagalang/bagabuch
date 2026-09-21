@@ -52,7 +52,15 @@
 потвърждението на вътрешен протокол и потвърждението на производствена
 поръчка. Виж [opening-and-periods.md](opening-and-periods.md).
 
-Печат: HTML → reportbaga (`pdf` / `docx` / `odt`). Има UBL експорт и внос от Peppol XML (`/scan`, `POST /v1/scans/ubl`).
+Печат: HTML → reportbaga. Форматите са `pdf`, `docx` и `odt` (текстов OpenDocument; електронната таблица ODS е за справките, не за фактурата).
+
+Името на сваления файл е номерът и видът на английски, с долна черта:
+
+`0000000078_invoice.pdf`, `0000000079_credit_note.docx`, `0000000080_debit_note.odt`, `0000000081_proforma.pdf`.
+
+Същият низ е в `Content-Disposition`. Честите видове: `invoice`, `debit_note`, `credit_note`, `invoice_cash`, `proforma`. Останалите ППДДС кодове имат собствено кратко име (`protocol`, `customs_declaration`, `sales_report`, …).
+
+UBL експортът остава `ubl-` плюс номер. Вносът от Peppol XML е на `/scan` (`POST /v1/scans/ubl`).
 
 ## 2. Вътрешни документи (`internal_docs`)
 

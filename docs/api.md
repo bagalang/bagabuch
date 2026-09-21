@@ -60,6 +60,8 @@ VIES (нужен JWT; ключът е на **активната** фирма):
 | GET | `/v1/invoices/{id}/ubl` |
 | GET/POST | `/v1/journal`, GET/PUT `/v1/journal/{id}` |
 
+Печатът връща файл `{номер}_{вид}.ext`: `0000000078_invoice.pdf`, `…_credit_note.docx`, `…_debit_note.odt`.
+
 ## Вътрешни документи и склад
 
 | Метод | Път |

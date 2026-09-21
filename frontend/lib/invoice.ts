@@ -276,3 +276,61 @@ export function docTypePrefix(t: string): string {
       return "";
   }
 }
+
+export function docTypeFileSlug(t: string): string {
+  switch (t) {
+    case "02":
+      return "debit_note";
+    case "03":
+      return "credit_note";
+    case "04":
+      return "call_off_dispatch";
+    case "05":
+      return "call_off_receipt";
+    case "07":
+      return "customs_declaration";
+    case "09":
+      return "protocol";
+    case "11":
+      return "invoice_cash";
+    case "12":
+      return "debit_note_cash";
+    case "13":
+      return "credit_note_cash";
+    case "23":
+      return "credit_note_126b";
+    case "29":
+      return "protocol_126b";
+    case "50":
+      return "fuel_protocol";
+    case "81":
+      return "sales_report";
+    case "82":
+      return "sales_report_special";
+    case "83":
+      return "sales_report_fuel";
+    case "84":
+      return "sales_report_bread";
+    case "85":
+      return "sales_report_flour";
+    case "91":
+      return "vat_protocol";
+    case "92":
+      return "vat_protocol_credit";
+    case "93":
+      return "vat_protocol_151v";
+    case "94":
+      return "vat_protocol_151v_scheme";
+    case "95":
+      return "food_protocol";
+    case "proforma":
+      return "proforma";
+    default:
+      return "invoice";
+  }
+}
+
+export function invoiceDownloadName(number: string, documentType: string, ext: string): string {
+  const n = (number || "document").replace(/["\\/:*?<>|]/g, "_").trim() || "document";
+  return `${n}_${docTypeFileSlug(documentType)}.${ext}`;
+}

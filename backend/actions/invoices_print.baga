@@ -244,6 +244,55 @@ fn act_invoices_next_number(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     return act_ok(db, o)
 }
 
+fn inv_file_kind(t: str) -> str {
+    if t == "02" { return "debit_note" }
+    if t == "03" { return "credit_note" }
+    if t == "04" { return "call_off_dispatch" }
+    if t == "05" { return "call_off_receipt" }
+    if t == "07" { return "customs_declaration" }
+    if t == "09" { return "protocol" }
+    if t == "11" { return "invoice_cash" }
+    if t == "12" { return "debit_note_cash" }
+    if t == "13" { return "credit_note_cash" }
+    if t == "23" { return "credit_note_126b" }
+    if t == "29" { return "protocol_126b" }
+    if t == "50" { return "fuel_protocol" }
+    if t == "81" { return "sales_report" }
+    if t == "82" { return "sales_report_special" }
+    if t == "83" { return "sales_report_fuel" }
+    if t == "84" { return "sales_report_bread" }
+    if t == "85" { return "sales_report_flour" }
+    if t == "91" { return "vat_protocol" }
+    if t == "92" { return "vat_protocol_credit" }
+    if t == "93" { return "vat_protocol_151v" }
+    if t == "94" { return "vat_protocol_151v_scheme" }
+    if t == "95" { return "food_protocol" }
+    if t == "proforma" { return "proforma" }
+    return "invoice"
+}
+
+fn inv_file_safe(s: str) -> str {
+    let mut out = ""
+    let mut i: i64 = 0
+    while i < len(s) {
+        let c = char_at(s, i)
+        if c == 34 || c == 47 || c == 92 || c == 58 || c == 42 || c == 63 || c == 60 || c == 62 || c == 124 {
+            out = concat(out, "_")
+        } else {
+            out = concat(out, substr(s, i, i + 1))
+        }
+        i = i + 1
+    }
+    if out == "" {
+        return "document"
+    }
+    return out
+}
+
+fn inv_download_name(number: str, document_type: str, format: str) -> str {
+    return concat(concat(inv_file_safe(number), concat("_", inv_file_kind(document_type))), concat(".", format))
+}
+
 fn inv_file_resp(db: OrmDb, data: bytes, mime: str, filename: str) -> FmrOut {
     let mut r = http_response_bytes(200, data)
     r = http_set_header(r, "Content-Type", mime)
@@ -451,7 +500,7 @@ fn act_invoices_print(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     }
     html = concat(html, concat("<p>Словом: ", concat(inv_h(inv_slovom(total_amount, currency)), "</p>")))
     html = concat(html, "</body></html>")
-    let fname = concat(concat("faktura-", number), concat(".", format))
+    let fname = inv_download_name(number, document_type, format)
     let out = report_from_html_io(html, format)?
     if out.ok == 0 {
         return act_err(d2, 500, out.err)

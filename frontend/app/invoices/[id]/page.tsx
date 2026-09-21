@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { api, downloadFile } from "../../../lib/api";
-import { Invoice, docTypePrefix } from "../../../lib/invoice";
+import { Invoice, docTypePrefix, invoiceDownloadName } from "../../../lib/invoice";
 import { PrintableInvoice } from "../../../components/PrintableInvoice";
 import { RequireAuth } from "../../../components/RequireAuth";
 import { useI18n } from "../../../components/I18nProvider";
@@ -46,11 +46,8 @@ function DetailInner() {
     }
   };
 
-  const filename = (ext: string) => {
-    const n = inv?.number || String(id);
-    const p = docTypePrefix(inv?.document_type || "01");
-    return `${p}${n}.${ext}`;
-  };
+  const filename = (ext: string) =>
+    invoiceDownloadName(inv?.number || String(id), inv?.document_type || "01", ext);
 
   if (!inv && !error) {
     return <div className="muted">{t("common.loading")}</div>;
