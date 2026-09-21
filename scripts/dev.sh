@@ -84,7 +84,7 @@ echo "==> backend на :$PORT (ORM_BACKEND=boila)"
   # 8 workers: Next.js + React Strict Mode fire many parallel GETs per page;
   # 4 pinned on keep-alive and new pages (and /health) hung.
   export FMR_WORKERS="${FMR_WORKERS:-8}" FMR_LOG="${FMR_LOG:-1}" FMR_CORS="${FMR_CORS:-*}"
-  export FMR_JWT_SECRET="${FMR_JWT_SECRET:-dev-secret}" FMR_TITLE=bagabuch FMR_VERSION=0.8.5
+  export FMR_JWT_SECRET="${FMR_JWT_SECRET:-dev-secret}" FMR_TITLE=bagabuch FMR_VERSION=0.8.6
   if [ -n "$STDBUF" ]; then
     exec stdbuf -oL -eL ./baga -I . -I app-product app-product/bagabuch/backend/start.baga
   else
@@ -94,11 +94,14 @@ echo "==> backend на :$PORT (ORM_BACKEND=boila)"
 record_pid $!
 
 SIDECAR_PORT="${BAGABUCH_SIDECAR_PORT:-5050}"
-echo "==> Python sidecar SMTP+S3 на :$SIDECAR_PORT"
+echo "==> Python sidecar SMTP+S3+dump на :$SIDECAR_PORT"
 (
   cd "$ROOT/scripts/py"
   export BAGABUCH_SIDECAR_PORT="$SIDECAR_PORT"
-  export BAGABUCH_DB_PATH="${BOILA_PATH}"
+  export BOILA_PGHOST="${BOILA_PGHOST:-127.0.0.1}"
+  export BOILA_PGPORT
+  export BOILA_PGUSER="${BOILA_PGUSER:-boila}"
+  export BOILA_PGDATABASE="${BOILA_PGDATABASE:-boila}"
   if [ -n "$STDBUF" ]; then
     exec stdbuf -oL -eL python3 sidecar.py
   else
@@ -115,7 +118,7 @@ echo
 echo "Стартирани (универсални приложения, само през портове):"
 echo "  boilaDB  : PostgreSQL v3 wire на :$BOILA_PGPORT"
 echo "  backend  : HTTP/JSON на :$PORT          (/health /ready /v1/meta /openapi.json)"
-echo "  sidecar  : SMTP+S3 Python на :$SIDECAR_PORT"
+echo "  sidecar  : SMTP+S3+dump Python на :$SIDECAR_PORT"
 echo "  frontend : Next.js на :$FRONTEND_PORT"
 echo "Ctrl+C спира всичко. От друг терминал: ./scripts/stop.sh"
 wait || true

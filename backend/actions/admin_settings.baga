@@ -21,10 +21,22 @@ fn sidecar_url() -> str !IO {
 }
 
 fn sidecar_post(path: str, body: str) -> HttpResponse !IO !Net !Random {
+    return sidecar_post_to(path, body, 60)?
+}
+
+fn sidecar_post_to(path: str, body: str, timeout_s: i64) -> HttpResponse !IO !Net !Random {
     let url = concat(sidecar_url()?, path)
     let headers: Map<str, str> = map_new()
     map_set(headers, "content-type", "application/json")
-    return http_request("POST", url, headers, body, 60)?
+    return http_request("POST", url, headers, body, timeout_s)?
+}
+
+fn env_or(name: str, def: str) -> str !IO {
+    let v = env(name)?
+    if v == "" {
+        return def
+    }
+    return v
 }
 
 fn sidecar_down(db: OrmDb) -> FmrOut {
@@ -220,9 +232,15 @@ fn act_s3_backup(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net !Random {
         return act_err(orm_db_q(q), 500, orm_err_q(q))
     }
     let mut cfg = s3_cfg_from_settings(q)
-    let db_path = env("BOILA_PATH")?
-    cfg = jobj_str(cfg, "db_path", db_path)
-    let resp = sidecar_post("/s3/backup", jobj_encode(cfg))?
+    cfg = jobj_str(cfg, "pg_host", env_or("BOILA_PGHOST", "127.0.0.1")?)
+    cfg = jobj_str(cfg, "pg_port", env_or("BOILA_PGPORT", "6575")?)
+    cfg = jobj_str(cfg, "pg_user", env_or("BOILA_PGUSER", "boila")?)
+    cfg = jobj_str(cfg, "pg_database", env_or("BOILA_PGDATABASE", "boila")?)
+    let pw = env("BOILA_PGPASSWORD")?
+    if pw != "" {
+        cfg = jobj_str(cfg, "pg_password", pw)
+    }
+    let resp = sidecar_post_to("/s3/backup", jobj_encode(cfg), 300)?
     return sidecar_result(orm_db_q(q), resp)
 }
 

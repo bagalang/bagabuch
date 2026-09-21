@@ -36,8 +36,26 @@ docker compose -f app-product/bagabuch/deploy/docker-compose.yml \
 |--------|------|------|
 | boiladb | база, PostgreSQL wire | 6575 вътре |
 | backend | Baga API | 8080 вътре |
-| sidecar | SMTP/S3 Python | 5050 вътре |
+| sidecar | SMTP/S3 + dump Python | 5050 вътре |
 | frontend | Next.js | 3000 публичен |
 
 Caddy в отделен compose (както baraba) с `caddy-network` ако вече имаш reverse
 proxy на VPS.
+
+## Архив (S3)
+
+Админ → S3 / Архиви качва `bagabuch_backup_YYYYMMDD_HHMMSS.sql.gz` — логически
+dump през живата boilaDB (`COPY TO STDOUT` в REPEATABLE READ). Sidecar-ът **не**
+монтира `boila-data` и не тарва LSM файлове.
+
+Възстановяване върху празен `BOILA_PATH`, boiladb пуснат, backend още не:
+
+```bash
+gunzip -c bagabuch_backup_….sql.gz | \
+  psql "host=127.0.0.1 port=6575 user=boila dbname=boila sslmode=disable"
+```
+
+После старт на backend (migrate е no-op, ако dump-ът има `baga_schema_migrations`).
+
+Офлайн физически checkpoint (спрян сървър): `boilaDB/tools/backup.baga`
+`BACKUP_MODE=create|verify|restore`. Не се пуска срещу жив `BOILA_PATH`.

@@ -193,5 +193,8 @@ DROP INDEX … ON t). Приложението още подава явен PK (
 таблиците без SERIAL — броячът се закача само при CREATE TABLE … BIGSERIAL.
 
 Стар `BOILA_PATH` (без маркера `p43|dual`) работи с scan fallback на
-versioned GET; нова директория получава O(1) point GET (P43). Backup:
-`app-product/boilaDB/tools/backup.baga` (`BACKUP_MODE=create|verify|restore`).
+versioned GET; нова директория получава O(1) point GET (P43). Жив архив от
+админа: Python sidecar dump през boilaDB `COPY TO STDOUT` (REPEATABLE READ)
+→ S3 `*.sql.gz`. Офлайн физически checkpoint:
+`app-product/boilaDB/tools/backup.baga` (`BACKUP_MODE=create|verify|restore`)
+— не срещу жив `BOILA_PATH`.

@@ -83,6 +83,12 @@ Baga `<` `>` `<=` `>=` върху `str` сравняват **указатели*
 Python sidecar `scripts/py/sidecar.py` на `:5050` (Flask + boto3). Backend-ът
 говори HTTP (`BAGABUCH_SIDECAR`). `dev.sh` го пуска.
 
+S3 архивът е **логически dump** към живата boilaDB през PostgreSQL wire
+(`COPY TO STDOUT` в `BEGIN ISOLATION LEVEL REPEATABLE READ`, `dump.py`).
+Не се тарват LSM файловете под `BOILA_PATH` — това не е snapshot, докато
+`serve_pg` пише. Физическият checkpoint (`boilaDB/tools/backup.baga`, P26)
+остава офлайн: CLI-то само отваря стора, не се пуска срещу жив `BOILA_PATH`.
+
 ## SAF-T номенклатури
 
 Официалните кодове на НАП (движения, фактури, данъци, области, сметки)

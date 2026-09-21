@@ -143,7 +143,9 @@ JSON на екрана (сумите с точка); файлът е XHTML та�
 ## Админ, SMTP, S3, потребители
 
 SMTP и S3 **не са Baga пакети**. Python sidecar `:5050` (`scripts/py/sidecar.py`).
-Backend-ът му говори HTTP.
+Backend-ът му говори HTTP. `POST /s3-backup` прави логически dump през
+boilaDB (`COPY TO STDOUT`, REPEATABLE READ) и качва `bagabuch_backup_*.sql.gz`.
+Не тарва живите LSM файлове.
 
 | Метод | Път |
 |--------|-----|

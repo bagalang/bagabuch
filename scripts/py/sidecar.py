@@ -3,22 +3,24 @@
 
 Baga talks HTTP here (no process spawn). Same idea as su-doxis:
 smtp_service.py + s3_backup.py, one process.
+
+S3 backup is a boilaDB logical dump (COPY TO STDOUT, REPEATABLE READ),
+not a tar of live LSM files under BOILA_PATH.
 """
 
 from __future__ import annotations
 
-import json
 import os
 import smtplib
 import ssl
-import tarfile
 import tempfile
 from datetime import datetime, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from pathlib import Path
 
 from flask import Flask, jsonify, request
+
+from dump import dump_to_path, pg_cfg
 
 app = Flask(__name__)
 PORT = int(os.environ.get("BAGABUCH_SIDECAR_PORT", "5050"))
@@ -180,40 +182,30 @@ def s3_test():
         return _json_error(str(e))
 
 
-def _tar_db(db_path: str, dest: str) -> int:
-    root = Path(db_path)
-    if not root.is_dir():
-        raise FileNotFoundError(f"няма база: {db_path}")
-    with tarfile.open(dest, "w:gz") as tar:
-        for p in root.iterdir():
-            tar.add(p, arcname=p.name)
-    return os.path.getsize(dest)
-
-
 @app.post("/s3/backup")
 def s3_backup():
     data = request.get_json(silent=True) or {}
     c = s3_cfg(data)
-    db_path = data.get("db_path") or os.environ.get("BAGABUCH_DB_PATH") or ""
     if not c["bucket"]:
         return _json_error("S3 bucket е задължителен")
-    if not db_path:
-        return _json_error("BAGABUCH_DB_PATH / db_path липсва")
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    filename = f"bagabuch_backup_{stamp}.tar.gz"
+    filename = f"bagabuch_backup_{stamp}.sql.gz"
     s3_key = f"{c['prefix']}{filename}"
     tmp = ""
     try:
-        fd, tmp = tempfile.mkstemp(suffix=".tar.gz")
+        fd, tmp = tempfile.mkstemp(suffix=".sql.gz")
         os.close(fd)
-        size = _tar_db(db_path, tmp)
+        st = dump_to_path(pg_cfg(data), tmp)
         client = s3_client(c["endpoint"], c["access_key"], c["secret_key"], c["region"])
         client.upload_file(tmp, c["bucket"], s3_key)
+        n = st.get("tables") or 0
         return _ok(
-            f"Бекъп създаден: {filename}",
+            f"Бекъп създаден: {filename} ({n} таблици, dump през boilaDB COPY)",
             filename=filename,
             s3_key=s3_key,
-            size=size,
+            size=st.get("size") or 0,
+            tables=n,
+            kind="copy",
         )
     except Exception as e:
         return _json_error(str(e))
@@ -278,5 +270,5 @@ def health():
 
 
 if __name__ == "__main__":
-    print(f"bagabuch sidecar SMTP+S3 on 127.0.0.1:{PORT}")
+    print(f"bagabuch sidecar SMTP+S3+dump on 127.0.0.1:{PORT}")
     app.run(host="127.0.0.1", port=PORT, debug=False)

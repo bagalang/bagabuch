@@ -1,5 +1,15 @@
 # История на версиите — bagabuch
 
+## 0.8.6 — 2026-09-21
+
+S3 архивът вече е логически dump през живата boilaDB, не tar на LSM файлове.
+
+- Python sidecar: `COPY TO STDOUT` в `BEGIN ISOLATION LEVEL REPEATABLE READ`
+  (`scripts/py/dump.py`), gzip SQL към S3 (`bagabuch_backup_*.sql.gz`).
+- Sidecar-ът вече не монтира `boila-data` и не чете `BOILA_PATH`.
+- Офлайн физическият checkpoint (`boilaDB/tools/backup.baga`, P26) остава
+  за спрян сървър — CLI-то само отваря стора.
+
 ## 0.8.5 — 2026-09-16
 
 Банкови транзакции: търсене на контрагент и сметка при осчетоводяване.
