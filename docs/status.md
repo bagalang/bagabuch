@@ -108,7 +108,7 @@
 | Икон-бутони | `frontend/components/IconButton.tsx` |
 | Генеричен CRUD + търсене | `frontend/components/CrudPage.tsx` |
 | Mistral / VIES адрес | `backend/actions/mistral.baga`, `docs/ai.md` |
-| Сканиране на фактури | `backend/actions/scans.baga`, `mistral_ocr.baga`, `frontend/app/scan/` |
+| Сканиране на фактури | `backend/actions/scans.baga`, `mistral_ocr.baga`, `ubl_parse.baga`, `frontend/app/scan/` |
 | Начални салда | `backend/actions/opening_balances.baga`, `frontend/app/opening-balances/` |
 | Справки | `backend/actions/reports.baga` (+ `_util` `_trial` `_book` `_corr` `_fs`), `frontend/app/reports/` |
 | Финансови отчети | `docs/financial-statements.md`; `backend/actions/fs_formulas.baga`, `models/fs_nom_*.baga`, `frontend/components/FsFormulasTab.tsx` |

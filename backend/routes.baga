@@ -43,6 +43,7 @@ import "actions/recipes.baga"
 import "actions/production.baga"
 import "actions/production_confirm.baga"
 import "actions/scans.baga"
+import "actions/ubl_import.baga"
 import "actions/admin_settings.baga"
 import "actions/users.baga"
 import "actions/roles.baga"
@@ -178,6 +179,7 @@ fn fmr_build_app() -> FmrApp !IO {
     app = fmr_route_meta(app, "PATCH", "/v1/opening-balances/{id}", RID_OB_UPDATE(), "", "opening-balances", 0, "OpeningBalanceUpdate", "OpeningBalance", "200", "")
     app = fmr_route_meta(app, "DELETE", "/v1/opening-balances/{id}", RID_OB_DELETE(), "", "opening-balances", 0, "", "-", "204", "")
     app = fmr_route_meta(app, "POST", "/v1/scans/extract", RID_SCANS_EXTRACT(), "", "scans", 0, "ScanExtract", "ScanResult", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/scans/ubl", RID_SCANS_UBL(), "", "scans", 0, "UblImport", "ScanResult", "200", "")
     app = fmr_route_meta(app, "GET", "/v1/product-name-mappings", RID_PNMAP_INDEX(), "", "scans", 0, "", "MappingList", "200", "counterpart_id")
     app = fmr_route_meta(app, "POST", "/v1/product-name-mappings", RID_PNMAP_SAVE(), "", "scans", 0, "MappingSave", "MappingList", "200", "")
     app = fmr_route_meta(app, "GET", "/v1/system-settings", RID_SYSSET_GET(), "", "admin", 0, "", "SettingList", "200", "")
@@ -378,6 +380,7 @@ fn fmr_dispatch(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net !Random !Time {
     if id == RID_OB_UPDATE() { return act_ob_update(ctx, db)? }
     if id == RID_OB_DELETE() { return act_ob_delete(ctx, db)? }
     if id == RID_SCANS_EXTRACT() { return act_scans_extract(ctx, db)? }
+    if id == RID_SCANS_UBL() { return act_scans_ubl(ctx, db)? }
     if id == RID_PNMAP_INDEX() { return act_pnmap_index(ctx, db)? }
     if id == RID_PNMAP_SAVE() { return act_pnmap_save(ctx, db)? }
     if id == RID_SYSSET_GET() { return act_system_settings_get(ctx, db)? }

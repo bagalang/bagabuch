@@ -172,8 +172,10 @@ boilaDB (`COPY TO STDOUT`, REPEATABLE READ) и качва `bagabuch_backup_*.sql
 | Метод | Път | Бележка |
 |--------|-----|---------|
 | POST | `/v1/scans/extract` | `{filename, mime, content_base64, direction: in\|out}` → JSON на фактура с редове |
+| POST | `/v1/scans/ubl` | същото тяло, но UBL 2.1 / Peppol BIS (фактура 380 или кредитно 381). Без Mistral. Връща и `vat_exemption_reason`, `payment_method`, `original_invoice_number` |
 | GET | `/v1/product-name-mappings?counterpart_id=` | запомнени имена от документи |
 | POST | `/v1/product-name-mappings` | `{counterpart_id, items: [{scanned_name, product_id}]}` |
 
-Черновата се записва с обикновения `POST /v1/invoices`. Без ключ extract връща 422.
+Черновата се записва с обикновения `POST /v1/invoices`. Без ключ PDF extract връща 422.
 Модели: OCR `mistral-ocr-latest`, JSON `mistral-small-latest` (евтиният път).
+UBL (`/v1/scans/ubl`) не иска ключ: XML-ът се чете директно, VATEX отива в основанието за 0% ДДС, а артикулът се връзва по запомнено име или по кода от `SellersItemIdentification`.

@@ -17,6 +17,7 @@ export interface Product {
 
 export interface ScanLine {
   description: string;
+  seller_code?: string;
   quantity: string;
   unit: string;
   unit_price: string;
@@ -38,6 +39,13 @@ export interface ScanExtract {
   counterpart_eik: string;
   counterpart_vat_number: string;
   currency: string;
+  currency_rate?: string;
+  payment_method?: string;
+  payment_note?: string;
+  vat_exemption_reason?: string;
+  tax_event_date?: string;
+  original_invoice_number?: string;
+  original_invoice_id?: number;
   total_net_amount: string;
   total_vat_amount: string;
   total_amount: string;

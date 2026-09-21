@@ -176,3 +176,4 @@ fn RID_INVOICES_BULK_POST() -> i64 { return 266 }
 fn RID_INVOICES_BULK_UNPOST() -> i64 { return 267 }
 fn RID_INVOICES_BULK_DELETE() -> i64 { return 268 }
 fn RID_DASHBOARD() -> i64 { return 269 }
+fn RID_SCANS_UBL() -> i64 { return 270 }

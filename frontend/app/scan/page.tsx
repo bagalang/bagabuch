@@ -12,11 +12,13 @@ import {
   calcLine,
   calcTotals,
   docTypeIsCredit,
+  docTypeRequiresOriginal,
   emptyLine,
   num,
   round2,
   todayIso,
 } from "../../lib/invoice";
+import { VatExemption } from "../../lib/vatExemptions";
 import { ScanDraft } from "./ScanDraft";
 import {
   Counterpart,
@@ -55,6 +57,8 @@ function lineFromScan(s: ScanLine): InvoiceLine {
     unit_price: s.unit_price || "0",
     vat_rate: s.vat_rate || "20",
     product_id: s.product_id,
+    seller_code: s.seller_code || "",
+    keep_amounts: Boolean(s.net_amount && s.vat_amount && s.total_amount),
   };
   if (s.net_amount && s.vat_amount && s.total_amount) {
     return {
@@ -65,6 +69,10 @@ function lineFromScan(s: ScanLine): InvoiceLine {
     };
   }
   return calcLine(base, false);
+}
+
+function isXmlFile(file: File): boolean {
+  return file.name.toLowerCase().endsWith(".xml");
 }
 
 function ScanInner() {
@@ -100,6 +108,18 @@ function ScanInner() {
   const [newCode, setNewCode] = useState("");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
+  const [fromXml, setFromXml] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("банков превод");
+  const [paymentNote, setPaymentNote] = useState("");
+  const [currencyRate, setCurrencyRate] = useState("1");
+  const [taxEvent, setTaxEvent] = useState("");
+  const [vatExemption, setVatExemption] = useState("");
+  const [exemptions, setExemptions] = useState<VatExemption[]>([]);
+  const [exLoaded, setExLoaded] = useState(false);
+  const [originalInvoiceId, setOriginalInvoiceId] = useState("");
+  const [origNumber, setOrigNumber] = useState("");
+  const [invoiceChoices, setInvoiceChoices] = useState<Invoice[]>([]);
+  const [invLoaded, setInvLoaded] = useState(false);
 
   const loadLookups = useCallback(async () => {
     try {
@@ -118,16 +138,37 @@ function ScanInner() {
     loadLookups();
   }, [loadLookups]);
 
+  useEffect(() => {
+    if (stage !== 1 || exLoaded) return;
+    api
+      .get<ListResponse<VatExemption>>("/v1/vat-exemptions")
+      .then((r) => setExemptions(r.items ?? []))
+      .catch(() => setExemptions([]))
+      .finally(() => setExLoaded(true));
+  }, [stage, exLoaded]);
+
+  useEffect(() => {
+    if (stage !== 1 || !docTypeRequiresOriginal(documentType) || invLoaded) return;
+    api
+      .get<ListResponse<Invoice>>("/v1/invoices")
+      .then((r) => setInvoiceChoices(r.items ?? []))
+      .catch(() => setInvoiceChoices([]))
+      .finally(() => setInvLoaded(true));
+  }, [stage, documentType, invLoaded]);
+
   const addFiles = (list: FileList | File[]) => {
     const next: QueuedFile[] = [];
     for (const file of Array.from(list)) {
       const name = file.name.toLowerCase();
       const ok =
         name.endsWith(".pdf") ||
+        name.endsWith(".xml") ||
         name.endsWith(".jpg") ||
         name.endsWith(".jpeg") ||
         name.endsWith(".png") ||
         file.type === "application/pdf" ||
+        file.type === "text/xml" ||
+        file.type === "application/xml" ||
         file.type.startsWith("image/");
       if (!ok) {
         setError(t("scan.need_file"));
@@ -182,7 +223,16 @@ function ScanInner() {
   }, [products, itemQuery]);
 
   const setLine = (i: number, patch: Partial<InvoiceLine>) =>
-    setLines((prev) => prev.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
+    setLines((prev) =>
+      prev.map((l, idx) => {
+        if (idx !== i) return l;
+        const next = { ...l, ...patch };
+        if ("quantity" in patch || "unit_price" in patch || "vat_rate" in patch) {
+          next.keep_amounts = false;
+        }
+        return next;
+      })
+    );
 
   const openProductPicker = (i: number) => {
     const scanned = lines[i]?.description || "";
@@ -205,8 +255,6 @@ function ScanInner() {
     setLine(i, {
       product_id: p.id,
       code: p.code || "",
-      unit: p.unit || "C62",
-      vat_rate: p.vat_rate || "20",
     });
     closeProductPicker();
   };
@@ -245,22 +293,32 @@ function ScanInner() {
   };
 
   const runExtract = async (item: QueuedFile) => {
-    setBusy(t("scan.running"));
+    const xml = isXmlFile(item.file);
+    setBusy(xml ? t("scan.running_ubl") : t("scan.running"));
     setError("");
     setActiveName(item.file.name);
+    setFromXml(xml);
     try {
       const content_base64 = await fileToBase64(item.file);
-      const data = await api.post<ScanExtract>("/v1/scans/extract", {
+      const data = await api.post<ScanExtract>(xml ? "/v1/scans/ubl" : "/v1/scans/extract", {
         filename: item.file.name,
-        mime: item.file.type || "",
+        mime: item.file.type || (xml ? "application/xml" : ""),
         content_base64,
         direction,
       });
+      if (data.direction === "in" || data.direction === "out") setDirection(data.direction);
       setNumber(data.invoice_number || "");
       setIssueDate(data.issue_date || todayIso());
       setDueDate(data.due_date || "");
+      setTaxEvent(data.tax_event_date || data.issue_date || "");
       setDocumentType(data.document_type || "01");
       setCurrency(data.currency || "EUR");
+      setCurrencyRate(data.currency_rate || "1");
+      setPaymentMethod(data.payment_method || "банков превод");
+      setPaymentNote(data.payment_note || "");
+      setVatExemption(data.vat_exemption_reason || "");
+      setOrigNumber(data.original_invoice_number || "");
+      setOriginalInvoiceId(data.original_invoice_id ? String(data.original_invoice_id) : "");
       setOcrName(data.counterpart_name || "");
       setOcrEik(data.counterpart_eik || "");
       setOcrVat(data.counterpart_vat_number || "");
@@ -325,9 +383,18 @@ function ScanInner() {
       setError(t("scan.need_number"));
       return;
     }
+    if (docTypeRequiresOriginal(documentType) && !originalInvoiceId) {
+      setError(t("invoices.need_original"));
+      return;
+    }
     const computed = priced;
+    const zeroVat = computed.some((l) => num(l.vat_rate) === 0);
     if (!computed.length) {
       setError(t("scan.no_lines"));
+      return;
+    }
+    if (fromXml && zeroVat && !vatExemption) {
+      setError(t("invoices.vat_exemption_pick"));
       return;
     }
     setBusy(t("scan.saving"));
@@ -349,18 +416,23 @@ function ScanInner() {
         document_type: documentType,
         number,
         issue_date: issueDate,
-        tax_event_date: issueDate,
+        tax_event_date: taxEvent || issueDate,
         due_date: dueDate,
         accounting_month: period || issueDate.slice(0, 7),
         counterpart_id: Number(counterpartId),
         currency,
-        currency_rate: currency === "EUR" ? "1" : "1",
-        payment_method: "банков превод",
-        notes: activeName ? `${t("scan.scanned_from")}: ${activeName}` : "",
+        currency_rate: currencyRate || "1",
+        payment_method: paymentMethod,
+        notes: [
+          activeName ? `${t(fromXml ? "scan.ubl_from" : "scan.scanned_from")}: ${activeName}` : "",
+          paymentNote,
+        ]
+          .filter(Boolean)
+          .join(" · "),
         discount_percent: "0",
         discount_amount: "0",
-        vat_exemption_reason: "",
-        original_invoice_id: 0,
+        vat_exemption_reason: vatExemption,
+        original_invoice_id: originalInvoiceId ? Number(originalInvoiceId) : 0,
         lines: payloadLines,
       });
       const mapItems = computed
@@ -456,7 +528,7 @@ function ScanInner() {
               <div className="muted">{t("scan.drop_or")}</div>
               <input
                 type="file"
-                accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/*"
+                accept=".pdf,.jpg,.jpeg,.png,.xml,application/pdf,application/xml,text/xml,image/*"
                 multiple
                 hidden
                 onChange={onInput}
@@ -484,7 +556,7 @@ function ScanInner() {
                           className="btn btn-primary btn-sm"
                           onClick={() => runExtract(q)}
                         >
-                          {t("scan.run")}
+                          {isXmlFile(q.file) ? t("scan.run_ubl") : t("scan.run")}
                         </button>
                         <IconButton
                           icon="delete"
@@ -518,6 +590,19 @@ function ScanInner() {
           setDueDate={setDueDate}
           currency={currency}
           setCurrency={setCurrency}
+          paymentMethod={paymentMethod}
+          setPaymentMethod={setPaymentMethod}
+          vatExemption={vatExemption}
+          setVatExemption={setVatExemption}
+          exemptions={exemptions}
+          showExemption={
+            Boolean(vatExemption) ||
+            (fromXml && priced.some((l) => num(l.vat_rate) === 0))
+          }
+          originalInvoiceId={originalInvoiceId}
+          setOriginalInvoiceId={setOriginalInvoiceId}
+          origNumber={origNumber}
+          invoiceChoices={invoiceChoices}
           ocrName={ocrName}
           setOcrName={setOcrName}
           ocrEik={ocrEik}

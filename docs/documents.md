@@ -52,7 +52,7 @@
 потвърждението на вътрешен протокол и потвърждението на производствена
 поръчка. Виж [opening-and-periods.md](opening-and-periods.md).
 
-Печат: HTML → reportbaga (`pdf` / `docx` / `odt`). Има и UBL експорт.
+Печат: HTML → reportbaga (`pdf` / `docx` / `odt`). Има UBL експорт и внос от Peppol XML (`/scan`, `POST /v1/scans/ubl`).
 
 ## 2. Вътрешни документи (`internal_docs`)
 

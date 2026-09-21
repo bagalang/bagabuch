@@ -1,7 +1,9 @@
 "use client";
 
-import { CURRENCIES, InvoiceLine, VAT_RATES, docTypesFor, emptyLine } from "../../lib/invoice";
+import { CURRENCIES, Invoice, InvoiceLine, PAY_METHODS, VAT_RATES, docTypeRequiresOriginal, docTypesFor, emptyLine } from "../../lib/invoice";
 import { IconButton } from "../../components/IconButton";
+import { useI18n } from "../../components/I18nProvider";
+import { VatExemption, vatexLabel } from "../../lib/vatExemptions";
 import { Counterpart, Product, ViesLookup } from "./types";
 
 export function ScanDraft(props: {
@@ -17,6 +19,16 @@ export function ScanDraft(props: {
   setDueDate: (v: string) => void;
   currency: string;
   setCurrency: (v: string) => void;
+  paymentMethod: string;
+  setPaymentMethod: (v: string) => void;
+  vatExemption: string;
+  setVatExemption: (v: string) => void;
+  exemptions: VatExemption[];
+  showExemption: boolean;
+  originalInvoiceId: string;
+  setOriginalInvoiceId: (v: string) => void;
+  origNumber: string;
+  invoiceChoices: Invoice[];
   ocrName: string;
   setOcrName: (v: string) => void;
   ocrEik: string;
@@ -57,13 +69,16 @@ export function ScanDraft(props: {
 }) {
   const {
     t, direction, documentType, setDocumentType, number, setNumber, issueDate, setIssueDate,
-    dueDate, setDueDate, currency, setCurrency, ocrName, setOcrName, ocrEik, setOcrEik,
+    dueDate, setDueDate, currency, setCurrency, paymentMethod, setPaymentMethod,
+    vatExemption, setVatExemption, exemptions, showExemption, originalInvoiceId,
+    setOriginalInvoiceId, origNumber, invoiceChoices, ocrName, setOcrName, ocrEik, setOcrEik,
     ocrVat, setOcrVat, counterpartId, setCounterpartId, counterparts, found, createCounterpart,
     vies, priced, productById, setLine, openProductPicker, clearProduct, setLines, totals,
     saveDraft, itemOpenFor, closeProductPicker, lines, addingProduct, itemQuery, setItemQuery,
     filteredProducts, pickProduct, setAddingProduct, setNewName, setCreateError, createError,
     newName, newCode, setNewCode, createProduct, creating,
   } = props;
+  const { lang } = useI18n();
   return (
     <>
           <section className="card invoice-section">
@@ -124,6 +139,67 @@ export function ScanDraft(props: {
                   ))}
                 </select>
               </div>
+              <div className="field">
+                <label className="label">{t("invoices.payment_method")}</label>
+                <select
+                  className="select"
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                >
+                  {PAY_METHODS.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {showExemption && (
+                <div className="field">
+                  <label className="label">{t("invoices.vat_exemption")} *</label>
+                  <select
+                    className="select"
+                    value={vatExemption}
+                    onChange={(e) => setVatExemption(e.target.value)}
+                  >
+                    <option value="">{t("invoices.vat_exemption_pick")}</option>
+                    {exemptions.map((e) => (
+                      <option key={e.code} value={e.code}>
+                        {vatexLabel(e, lang)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {docTypeRequiresOriginal(documentType) && (
+                <div className="field">
+                  <label className="label">{t("invoices.original_invoice")} *</label>
+                  <select
+                    className="select"
+                    value={originalInvoiceId}
+                    onChange={(e) => setOriginalInvoiceId(e.target.value)}
+                  >
+                    <option value="">—</option>
+                    {invoiceChoices
+                      .filter(
+                        (i) =>
+                          i.direction === direction &&
+                          (i.document_type === "01" ||
+                            i.document_type === "11" ||
+                            String(i.id) === originalInvoiceId)
+                      )
+                      .map((i) => (
+                        <option key={i.id} value={i.id}>
+                          {i.number} · {i.issue_date} · {i.total_amount}
+                        </option>
+                      ))}
+                  </select>
+                  {origNumber ? (
+                    <div className="muted">
+                      {t("scan.orig_ref")}: {origNumber}
+                    </div>
+                  ) : null}
+                </div>
+              )}
             </div>
           </section>
 
@@ -224,6 +300,11 @@ export function ScanDraft(props: {
                               setLine(i, { description: e.target.value })
                             }
                           />
+                          {l.seller_code ? (
+                            <div className="muted">
+                              {t("scan.seller_code")}: {l.seller_code}
+                            </div>
+                          ) : null}
                         </td>
                         <td style={{ minWidth: 220 }}>
                           <button

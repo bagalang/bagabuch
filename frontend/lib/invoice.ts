@@ -72,6 +72,8 @@ export interface InvoiceLine {
   net_amount: string;
   vat_amount: string;
   total_amount: string;
+  seller_code?: string;
+  keep_amounts?: boolean;
 }
 
 export interface InvoiceParty {
@@ -154,11 +156,26 @@ export function signedMoney(n: number, negative: boolean): string {
   return round2(negative ? -abs : abs);
 }
 
+function signedText(amount: string, negative: boolean): string {
+  const raw = String(amount ?? "").trim().replace(/\s/g, "").replace(",", ".");
+  const abs = raw.startsWith("-") ? raw.slice(1) : raw;
+  if (!abs || num(abs) === 0) return round2(0);
+  return negative ? `-${abs}` : abs;
+}
+
 export function calcLine(
   l: InvoiceLine,
   pricesIncludeVat: boolean,
   credit = false
 ): InvoiceLine {
+  if (l.keep_amounts && l.net_amount && l.vat_amount && l.total_amount && !pricesIncludeVat) {
+    return {
+      ...l,
+      net_amount: signedText(l.net_amount, credit),
+      vat_amount: signedText(l.vat_amount, credit),
+      total_amount: signedText(l.total_amount, credit),
+    };
+  }
   const q = num(l.quantity);
   const rate = num(l.vat_rate) / 100;
   let priceNet = num(l.unit_price);
