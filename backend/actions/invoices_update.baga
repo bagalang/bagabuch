@@ -31,9 +31,9 @@ fn act_invoices_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         return act_404(orm_db_q(existing), "Invoice not found")
     }
     let st0 = orm_cell_by(existing, 0, "status")
-    if st0 == "posted" || st0 == "cancelled" {
-        return act_err(orm_db_q(existing), 409, "осчетоводена или анулирана фактура не може да се променя")
-    }
+    // Редакцията е свободна (ръчно въвеждане, големи грешки — вж. conventions.md).
+    // При осчетоводена фактура потребителят първо я връща към чернова, ако
+    // иска да пипа редовете; тук не блокираме.
     let existing_direction = orm_cell_by(existing, 0, "direction")
     let mut dbu = orm_db_q(existing)
     let body = jbody_parse_str(fmr_body(ctx))

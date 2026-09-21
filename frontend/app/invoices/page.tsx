@@ -13,15 +13,36 @@ interface Counterpart {
   name: string;
 }
 
+interface BulkResult {
+  posted?: number;
+  unposted?: number;
+  deleted?: number;
+  failed: number;
+}
+
+type BulkAction = "post" | "unpost" | "delete";
+
 function InvoicesInner() {
   const { t } = useI18n();
   const [rows, setRows] = useState<Invoice[]>([]);
   const [counterparts, setCounterparts] = useState<Counterpart[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [dirFilter, setDirFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [selected, setSelected] = useState<number[]>([]);
+  const [busy, setBusy] = useState(false);
+
+  // Филтри от адреса (/invoices?status=draft) — така таблото може да води
+  // право към чернови или вземания. Пазено в URL, не в Suspense.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    setDirFilter(q.get("direction") ?? "");
+    setStatusFilter(q.get("status") ?? "");
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -29,6 +50,7 @@ function InvoicesInner() {
     try {
       const data = await api.get<ListResponse<Invoice>>("/v1/invoices");
       setRows(data.items ?? []);
+      setSelected([]);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -54,6 +76,7 @@ function InvoicesInner() {
     return rows.filter((inv) => {
       if (typeFilter && inv.document_type !== typeFilter) return false;
       if (dirFilter && inv.direction !== dirFilter) return false;
+      if (statusFilter && inv.status !== statusFilter) return false;
       if (!q) return true;
       const name = (
         inv.counterpart_name ||
@@ -62,12 +85,25 @@ function InvoicesInner() {
       ).toLowerCase();
       return inv.number.toLowerCase().includes(q) || name.includes(q);
     });
-  }, [rows, search, typeFilter, dirFilter, counterparts]);
+  }, [rows, search, typeFilter, dirFilter, statusFilter, counterparts]);
 
   const statusClass = (s: string) => {
     if (s === "posted" || s === "paid") return "badge-success";
     if (s === "cancelled") return "badge-danger";
     return "badge-warning";
+  };
+
+  const toggleOne = (id: number) => {
+    setSelected((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const allSelected =
+    filtered.length > 0 && filtered.every((inv) => selected.includes(inv.id));
+
+  const toggleAll = () => {
+    setSelected(allSelected ? [] : filtered.map((inv) => inv.id));
   };
 
   const handleDelete = async (inv: Invoice) => {
@@ -77,6 +113,36 @@ function InvoicesInner() {
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  // Групови действия: една заявка с всички избрани id-та. Backend-ът връща
+  // колко са успешни и кои са се провалили (по документ), затова показваме
+  // обобщение и презареждаме списъка.
+  const runBulk = async (action: BulkAction) => {
+    if (selected.length === 0) {
+      setError(t("invoices.bulk.none"));
+      return;
+    }
+    if (action === "delete" && !window.confirm(t("invoices.bulk.confirm_delete"))) {
+      return;
+    }
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const res = await api.post<BulkResult>(`/v1/invoices/bulk/${action}`, {
+        ids: selected,
+      });
+      const ok = (res.posted ?? 0) + (res.unposted ?? 0) + (res.deleted ?? 0);
+      setNotice(
+        `${t("invoices.bulk.result")}: ${ok}, ${t("invoices.bulk.failed")}: ${res.failed}`
+      );
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -95,6 +161,7 @@ function InvoicesInner() {
       </div>
 
       {error && <div className="error-text">{error}</div>}
+      {notice && <div className="muted" style={{ marginBottom: 8 }}>{notice}</div>}
 
       <div className="card" style={{ padding: 16, marginBottom: 12 }}>
         <div className="form-grid">
@@ -132,8 +199,57 @@ function InvoicesInner() {
               <option value="in">{t("invoices.direction.in")}</option>
             </select>
           </div>
+          <div className="field">
+            <select
+              className="select"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="">{t("invoices.all_statuses")}</option>
+              <option value="draft">{t("invoices.status.draft")}</option>
+              <option value="posted">{t("invoices.status.posted")}</option>
+            </select>
+          </div>
         </div>
       </div>
+
+      {selected.length > 0 && (
+        <div className="card" style={{ padding: 12, marginBottom: 12 }}>
+          <div className="btn-row wrap">
+            <strong>
+              {selected.length} {t("invoices.bulk.selected")}
+            </strong>
+            <button
+              className="btn btn-primary btn-sm"
+              disabled={busy}
+              onClick={() => void runBulk("post")}
+            >
+              {t("invoices.bulk.post")}
+            </button>
+            <button
+              className="btn btn-sm"
+              disabled={busy}
+              onClick={() => void runBulk("unpost")}
+            >
+              {t("invoices.bulk.unpost")}
+            </button>
+            <button
+              className="btn btn-danger btn-sm"
+              disabled={busy}
+              onClick={() => void runBulk("delete")}
+            >
+              {t("invoices.bulk.delete")}
+            </button>
+            <button
+              className="btn btn-ghost btn-sm"
+              disabled={busy}
+              onClick={() => setSelected([])}
+            >
+              {t("invoices.bulk.clear")}
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="card">
         {loading ? (
@@ -145,6 +261,14 @@ function InvoicesInner() {
           <table className="table">
             <thead>
               <tr>
+                <th style={{ width: 32 }}>
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleAll}
+                    title={t("invoices.bulk.select_all")}
+                  />
+                </th>
                 <th>{t("invoices.document_type")}</th>
                 <th>{t("invoices.number")}</th>
                 <th>{t("invoices.issue_date")}</th>
@@ -157,6 +281,13 @@ function InvoicesInner() {
             <tbody>
               {filtered.map((inv) => (
                 <tr key={inv.id}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selected.includes(inv.id)}
+                      onChange={() => toggleOne(inv.id)}
+                    />
+                  </td>
                   <td>
                     <Link href={`/invoices/${inv.id}`}>
                       {t(`invoices.document_type.${inv.document_type}`)}
@@ -189,14 +320,12 @@ function InvoicesInner() {
                           href={`/invoices/${inv.id}/edit`}
                         />
                       )}
-                      {inv.status === "draft" && (
-                        <IconButton
-                          icon="delete"
-                          title={t("common.delete")}
-                          danger
-                          onClick={() => void handleDelete(inv)}
-                        />
-                      )}
+                      <IconButton
+                        icon="delete"
+                        title={t("common.delete")}
+                        danger
+                        onClick={() => void handleDelete(inv)}
+                      />
                     </div>
                   </td>
                 </tr>

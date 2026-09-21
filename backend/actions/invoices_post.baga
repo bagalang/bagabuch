@@ -82,6 +82,12 @@ fn act_invoices_post(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     if id <= 0 {
         return act_err(db, 400, "invalid id")
     }
+    return invoice_post_one(db, id, auth.ctx.user_sub)?
+}
+
+// Ядрото на осчетоводяването по id. Ползва се и от груповото пост.
+// user_sub се подава, за да се намери активната фирма (собственик на записа).
+fn invoice_post_one(db: OrmDb, id: i64, user_sub: str) -> FmrOut !IO !Net {
     if orm_ok_db(db) == 0 {
         return act_err(db, 503, "database unavailable")
     }
@@ -165,7 +171,7 @@ fn act_invoices_post(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         return act_err(orm_db_exec(bgn), 500, orm_err_exec(bgn))
     }
     db2 = orm_db_exec(bgn)
-    let acp = active_company_id(db2, auth.ctx.user_sub)?
+    let acp = active_company_id(db2, user_sub)?
     db2 = acp.db
     let eq = journal_entry_insert(db2, issue_date, doc_type, id, desc, vat_type, counterpart_id, counterpart_name, counterpart_vat_number, number, issue_date, accounting_month, total_amount, vat_amount, acp.id)?
     if orm_ok_q(eq) == 0 || orm_nrows(eq) < 1 {

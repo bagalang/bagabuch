@@ -327,6 +327,17 @@ fn journal_lines_delete_by_entry(db: OrmDb, entry_id: i64) -> OrmExec !IO !Net {
     return orm_exec_params(db, sql, vals, nulls)?
 }
 
+// journal_delete: пълно изтриване на запис — редове + заглавен ред.
+// Ползва се при връщане на фактура към чернова и при нейното изтриване.
+// Без сторно: счетоводството иска чисти обороти (виж conventions.md).
+fn journal_delete_entry(db: OrmDb, id: i64) -> OrmExec !IO !Net {
+    let dl = journal_lines_delete_by_entry(db, id)?
+    if orm_ok(dl) == 0 {
+        return dl
+    }
+    return orm_delete_by_id(orm_db_exec(dl), journal_entry_table(), id)?
+}
+
 fn journal_entry_update(db: OrmDb, id: i64, entry_date: str, description: str, vat_type: str, counterpart_id: i64, counterpart_name: str, counterpart_vat_number: str, document_number: str, document_date: str, vat_period: str, total_amount: str, total_vat_amount: str) -> OrmExec !IO !Net {
     let cols = vec_new()
     vec_push(cols, "entry_date")

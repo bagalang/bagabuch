@@ -97,3 +97,27 @@ fn lot_set_remaining(db: OrmDb, id: i64, remaining: str) -> OrmExec !IO !Net {
     vec_push(vals, remaining)
     return orm_update_by_id(db, lot_table(), id, cols, vals)?
 }
+
+fn lot_by_invoice(db: OrmDb, invoice_id: i64) -> OrmQuery !IO !Net {
+    let sql = concat(lot_select_sql(), " WHERE invoice_id = $1 ORDER BY id")
+    let vals = vec_new()
+    let nulls = vec_new()
+    pg_param_i64(vals, nulls, invoice_id)
+    return orm_query_params(db, sql, vals, nulls)?
+}
+
+fn lot_delete(db: OrmDb, id: i64) -> OrmExec !IO !Net {
+    return orm_delete_by_id(db, lot_table(), id)?
+}
+
+// lot_by_invoice_line: партидата, създадена от конкретен ред на входяща
+// фактура. Използва се при връщане към чернова, за да се махне точно
+// тази партида — ако не е изписвана междувременно.
+fn lot_by_invoice_line(db: OrmDb, invoice_line_id: i64) -> OrmQuery !IO !Net {
+    let sql = concat(lot_select_sql(), " WHERE invoice_line_id = $1 ORDER BY id")
+    let vals = vec_new()
+    let nulls = vec_new()
+    pg_param_i64(vals, nulls, invoice_line_id)
+    return orm_query_params(db, sql, vals, nulls)?
+}
+

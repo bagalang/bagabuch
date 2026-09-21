@@ -7,6 +7,7 @@ import "document_series.baga"
 import "acl.baga"
 import "active_company.baga"
 import "txn.baga"
+import "invoices_bulk.baga"
 import "fmrbaga/app.baga"
 import "fmrbaga/ctx.baga"
 import "fmrbaga/action.baga"
@@ -290,18 +291,16 @@ fn act_invoices_delete(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     if orm_nrows(existing) < 1 {
         return act_404(orm_db_q(existing), "Invoice not found")
     }
-    let st0 = orm_cell_by(existing, 0, "status")
-    if st0 == "posted" {
-        return act_err(orm_db_q(existing), 409, "осчетоводена фактура не може да се изтрие")
+    // Изтриването е свободно и за осчетоводени: маха записа в дневника и
+    // връща стоката (вж. invoices_bulk.baga → bulk_delete_one). Няма сторно —
+    // корекциите стават с кредитни известия и отрицателни суми.
+    let bgn = bb_begin(orm_db_q(existing))?
+    if orm_ok(bgn) == 0 {
+        return act_err(orm_db_exec(bgn), 500, orm_err_exec(bgn))
     }
-    let dbd = orm_db_q(existing)
-    let dl = invoice_delete_lines(dbd, id)?
-    if orm_ok(dl) == 0 {
-        return act_err(orm_db_exec(dl), 500, orm_err_exec(dl))
+    let r = bulk_delete_one(orm_db_exec(bgn), id)?
+    if r.ok == 0 {
+        return act_err_rb(r.db, 422, r.err)
     }
-    let del = invoice_delete(orm_db_exec(dl), id)?
-    if orm_ok(del) == 0 {
-        return act_err(orm_db_exec(del), 500, orm_err_exec(del))
-    }
-    return act_no_content(orm_db_exec(del))
+    return act_no_content(r.db)
 }
