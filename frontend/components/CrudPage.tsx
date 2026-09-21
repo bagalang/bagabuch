@@ -48,6 +48,9 @@ export interface ViesLookupResponse {
   vies_address: string;
   street_name?: string;
   building_number?: string;
+  address_building?: string;
+  additional_address_detail?: string;
+  address_type?: string;
   city?: string;
   post_code?: string;
   region?: string;
@@ -55,8 +58,15 @@ export interface ViesLookupResponse {
   request_date: string;
   vat_number: string;
   country_code: string;
+  country?: string;
   parse_ok?: boolean;
   parse_note?: string;
+}
+
+export interface AddressSplitConfig {
+  labelKey: string;
+  loadingKey: string;
+  emptyKey: string;
 }
 
 export interface CrudConfig {
@@ -70,6 +80,7 @@ export interface CrudConfig {
   columnText?: (column: string, rec: Record<string, unknown>) => string | null;
   rowAction?: RowAction;
   vies?: ViesConfig;
+  addressSplit?: AddressSplitConfig;
 }
 
 type Record_ = Record<string, unknown>;
@@ -96,6 +107,7 @@ export function CrudPage({ config }: { config: CrudConfig }) {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
   const [viesLoading, setViesLoading] = useState(false);
+  const [splitLoading, setSplitLoading] = useState(false);
   const [viesError, setViesError] = useState("");
   const [viesFilled, setViesFilled] = useState(false);
   const [viesNote, setViesNote] = useState("");
@@ -191,6 +203,55 @@ export function CrudPage({ config }: { config: CrudConfig }) {
       setViesError(err instanceof Error ? err.message : String(err));
     } finally {
       setViesLoading(false);
+    }
+  };
+
+  const handleSplitAddress = async () => {
+    const cfg = config.addressSplit;
+    if (!cfg) return;
+    const address = String(form.address ?? "").trim();
+    setViesFilled(false);
+    setViesNote("");
+    if (!address) {
+      setViesError(t(cfg.emptyKey));
+      return;
+    }
+    setSplitLoading(true);
+    setViesError("");
+    try {
+      const data = await api.post<ViesLookupResponse>("/v1/addresses/parse", {
+        address,
+        country: String(form.country ?? "BG"),
+        city: String(form.city ?? ""),
+        post_code: String(form.post_code ?? ""),
+      });
+      if (!data.parse_ok) {
+        setViesError(data.parse_note || t(cfg.emptyKey));
+        return;
+      }
+      setForm((prev) => {
+        const next = { ...prev };
+        const fields: Array<[string, string | undefined]> = [
+          ["street_name", data.street_name],
+          ["building_number", data.building_number],
+          ["address_building", data.address_building],
+          ["additional_address_detail", data.additional_address_detail],
+          ["address_type", data.address_type],
+          ["region", data.region],
+          ["city", data.city],
+          ["post_code", data.post_code],
+          ["country", data.country || data.country_code],
+        ];
+        for (const [field, val] of fields) {
+          if (val) next[field] = val;
+        }
+        return next;
+      });
+      setViesNote(data.parse_note ?? "");
+    } catch (err) {
+      setViesError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSplitLoading(false);
     }
   };
 
@@ -351,19 +412,33 @@ export function CrudPage({ config }: { config: CrudConfig }) {
               {editing ? t("common.edit") : t("common.create")}
             </h2>
             <form onSubmit={handleSave}>
-              {config.vies && (
+              {(config.vies || config.addressSplit) && (
                 <div className="form-actions" style={{ justifyContent: "flex-start" }}>
+                  {config.vies && (
                   <button
                     type="button"
                     className="btn"
                     onClick={handleViesFetch}
-                    disabled={viesLoading}
+                    disabled={viesLoading || splitLoading}
                   >
                     {viesLoading
                       ? t(config.vies.loadingKey)
                       : t(config.vies.labelKey)}
                   </button>
-                  {viesFilled && !viesError && (
+                  )}
+                  {config.addressSplit && (
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={handleSplitAddress}
+                    disabled={splitLoading || viesLoading}
+                  >
+                    {splitLoading
+                      ? t(config.addressSplit.loadingKey)
+                      : t(config.addressSplit.labelKey)}
+                  </button>
+                  )}
+                  {viesFilled && !viesError && config.vies && (
                     <span className="muted">{t(config.vies.filledKey)}</span>
                   )}
                   {viesNote && !viesError && (

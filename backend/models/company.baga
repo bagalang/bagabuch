@@ -67,6 +67,9 @@ fn company_to_json(q: OrmQuery, row: i64) -> JObj {
     o = jobj_str(o, "is_part_of_group", orm_cell_by(q, row, "is_part_of_group"))
     o = jobj_str(o, "street_name", orm_cell_by(q, row, "street_name"))
     o = jobj_str(o, "building_number", orm_cell_by(q, row, "building_number"))
+    o = jobj_str(o, "address_building", orm_cell_by(q, row, "address_building"))
+    o = jobj_str(o, "additional_address_detail", orm_cell_by(q, row, "additional_address_detail"))
+    o = jobj_str(o, "address_type", orm_cell_by(q, row, "address_type"))
     o = jobj_str(o, "region", orm_cell_by(q, row, "region"))
     o = jobj_str(o, "settings", orm_cell_by(q, row, "settings"))
     let ca = orm_cell_by(q, row, "created_at")
@@ -78,7 +81,7 @@ fn company_to_json(q: OrmQuery, row: i64) -> JObj {
 
 // Dual-safe: без ::text кастове (граматиката на boila за кастове е по-тясна).
 fn company_select_sql() -> str {
-    return "SELECT id, name, eik, vat_number, is_vat_registered, vat_period, currency, address, city, post_code, phone, email, website, mol, manager_eik, accountant_name, accountant_egn, tax_authority, nap_office, iban, bic, inventory_valuation_method, fiscal_year_start_month, country, manager_name, manager_egn, authorized_person_name, authorized_person_egn, vat_branch_number, tax_accounting_basis, tax_entity, software_company_name, software_id, software_version, is_part_of_group, street_name, building_number, region, settings, created_at FROM companies"
+    return "SELECT id, name, eik, vat_number, is_vat_registered, vat_period, currency, address, city, post_code, phone, email, website, mol, manager_eik, accountant_name, accountant_egn, tax_authority, nap_office, iban, bic, inventory_valuation_method, fiscal_year_start_month, country, manager_name, manager_egn, authorized_person_name, authorized_person_egn, vat_branch_number, tax_accounting_basis, tax_entity, software_company_name, software_id, software_version, is_part_of_group, street_name, building_number, address_building, additional_address_detail, address_type, region, settings, created_at FROM companies"
 }
 
 fn company_find(db: OrmDb, id: i64) -> OrmQuery !IO !Net {
@@ -123,6 +126,12 @@ fn company_push_defaults(cols: Vec<str>, vals: Vec<str>) {
     vec_push(cols, "street_name")
     vec_push(vals, "")
     vec_push(cols, "building_number")
+    vec_push(vals, "")
+    vec_push(cols, "address_building")
+    vec_push(vals, "")
+    vec_push(cols, "additional_address_detail")
+    vec_push(vals, "")
+    vec_push(cols, "address_type")
     vec_push(vals, "")
     vec_push(cols, "region")
     vec_push(vals, "")

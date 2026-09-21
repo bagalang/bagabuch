@@ -1,6 +1,7 @@
 // actions/companies.baga — фирми: CRUD handlers.
 
 import "../models/company.baga"
+import "../models/addr_saft.baga"
 import "acl.baga"
 import "accounts_seed.baga"
 import "fmrbaga/app.baga"
@@ -405,8 +406,35 @@ fn act_companies_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     let region = jreq_str(b.doc, b.root, "region")
     if region.present == 1 {
         if region.ok == 0 { return act_422_field(db, "region", region) }
+        let hinted = jopt_str(b.doc, b.root, "country", "")
+        let rn = adr_region_norm(region.val, hinted.val)
+        if rn.ok == 0 {
+            return act_err(db, 422, "region трябва да е код BG-01 … BG-28")
+        }
         vec_push(cols, "region")
-        vec_push(vals, region.val)
+        vec_push(vals, rn.code)
+    }
+    let address_building = jreq_str(b.doc, b.root, "address_building")
+    if address_building.present == 1 {
+        if address_building.ok == 0 { return act_422_field(db, "address_building", address_building) }
+        vec_push(cols, "address_building")
+        vec_push(vals, address_building.val)
+    }
+    let additional_address_detail = jreq_str(b.doc, b.root, "additional_address_detail")
+    if additional_address_detail.present == 1 {
+        if additional_address_detail.ok == 0 { return act_422_field(db, "additional_address_detail", additional_address_detail) }
+        vec_push(cols, "additional_address_detail")
+        vec_push(vals, additional_address_detail.val)
+    }
+    let address_type = jreq_str(b.doc, b.root, "address_type")
+    if address_type.present == 1 {
+        if address_type.ok == 0 { return act_422_field(db, "address_type", address_type) }
+        let tn = adr_type_norm(address_type.val)
+        if tn.ok == 0 {
+            return act_err(db, 422, "address_type е StreetAddress, PostalAddress, BillingAddress, ShipToAddress или ShipFromAddress")
+        }
+        vec_push(cols, "address_type")
+        vec_push(vals, tn.code)
     }
     let settings = jreq_str(b.doc, b.root, "settings")
     if settings.present == 1 {

@@ -11,6 +11,9 @@ export function SettingsSaftTab(props: {
   saftForm: Form;
   setS: (k: string, v: string) => void;
   saving: boolean;
+  splitting: boolean;
+  splitNote: string;
+  onSplitAddress: () => void;
   onSaveSaft: (e: FormEvent) => void;
   locations: Location[];
   showLoc: boolean;
@@ -47,7 +50,7 @@ export function SettingsSaftTab(props: {
   delParent: (id: number) => void;
 }) {
   const {
-    t, saftForm, setS, saving, onSaveSaft,
+    t, saftForm, setS, saving, splitting, splitNote, onSplitAddress, onSaveSaft,
     locations, showLoc, setShowLoc, editLocId, setEditLocId, locForm, setLocForm, setL, emptyLoc, saveLoc, delLoc,
     owners, showOwner, setShowOwner, editOwnerId, setEditOwnerId, ownerForm, setOwnerForm, setO, emptyOwner, saveOwner, delOwner,
     parents, showParent, setShowParent, editParentId, setEditParentId, parentForm, setParentForm, setP, emptyParent, saveParent, delParent,
@@ -56,12 +59,34 @@ export function SettingsSaftTab(props: {
         <div style={{ maxWidth: 900 }}>
           <form className="card card-pad" onSubmit={onSaveSaft} style={{ marginBottom: 16 }}>
             <h3 className="section-title">{t("settings.section.saft")}</h3>
+            <div className="form-actions" style={{ justifyContent: "flex-start", marginBottom: 12 }}>
+              <button type="button" className="btn" onClick={onSplitAddress} disabled={splitting || saving}>
+                {splitting ? t("settings.split_address.running") : t("settings.split_address")}
+              </button>
+              {splitNote ? <span className="muted">{splitNote}</span> : null}
+            </div>
             <div className="form-grid-3">
               <SettingsField label={t("settings.street")}>
                 <input className="input" value={saftForm.street_name ?? ""} onChange={(e) => setS("street_name", e.target.value)} />
               </SettingsField>
               <SettingsField label={t("settings.building")}>
                 <input className="input" value={saftForm.building_number ?? ""} onChange={(e) => setS("building_number", e.target.value)} />
+              </SettingsField>
+              <SettingsField label={t("settings.address_building")}>
+                <input className="input" value={saftForm.address_building ?? ""} onChange={(e) => setS("address_building", e.target.value)} />
+              </SettingsField>
+              <SettingsField label={t("settings.additional_address")}>
+                <input className="input" value={saftForm.additional_address_detail ?? ""} onChange={(e) => setS("additional_address_detail", e.target.value)} />
+              </SettingsField>
+              <SettingsField label={t("settings.address_type")}>
+                <select className="select" value={saftForm.address_type ?? ""} onChange={(e) => setS("address_type", e.target.value)}>
+                  <option value="">{t("address_type.empty")}</option>
+                  <option value="StreetAddress">{t("address_type.street")}</option>
+                  <option value="PostalAddress">{t("address_type.postal")}</option>
+                  <option value="BillingAddress">{t("address_type.billing")}</option>
+                  <option value="ShipToAddress">{t("address_type.shipto")}</option>
+                  <option value="ShipFromAddress">{t("address_type.shipfrom")}</option>
+                </select>
               </SettingsField>
               <SettingsField label={t("settings.region")}>
                 <input className="input" placeholder="BG-22" value={saftForm.region ?? ""} onChange={(e) => setS("region", e.target.value)} />

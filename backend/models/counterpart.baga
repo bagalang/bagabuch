@@ -66,6 +66,9 @@ fn counterpart_to_json(q: OrmQuery, row: i64) -> JObj {
     o = jobj_str(o, "post_code", orm_cell_by(q, row, "post_code"))
     o = jobj_str(o, "street_name", orm_cell_by(q, row, "street_name"))
     o = jobj_str(o, "building_number", orm_cell_by(q, row, "building_number"))
+    o = jobj_str(o, "address_building", orm_cell_by(q, row, "address_building"))
+    o = jobj_str(o, "additional_address_detail", orm_cell_by(q, row, "additional_address_detail"))
+    o = jobj_str(o, "address_type", orm_cell_by(q, row, "address_type"))
     o = jobj_str(o, "region", orm_cell_by(q, row, "region"))
     o = jobj_str(o, "contact_person", orm_cell_by(q, row, "contact_person"))
     o = jobj_str(o, "email", orm_cell_by(q, row, "email"))
@@ -80,7 +83,7 @@ fn counterpart_to_json(q: OrmQuery, row: i64) -> JObj {
 
 // Dual-safe: без ::text кастове (граматиката на boila за кастове е по-тясна).
 fn counterpart_select_sql() -> str {
-    return "SELECT id, name, is_client, is_supplier, eik, vat_number, address, vies_address, city, country, post_code, street_name, building_number, region, contact_person, email, phone, company_id, created_at FROM counterparts"
+    return "SELECT id, name, is_client, is_supplier, eik, vat_number, address, vies_address, city, country, post_code, street_name, building_number, address_building, additional_address_detail, address_type, region, contact_person, email, phone, company_id, created_at FROM counterparts"
 }
 
 fn counterpart_find(db: OrmDb, id: i64) -> OrmQuery !IO !Net {
@@ -113,7 +116,7 @@ fn counterpart_by_eik(db: OrmDb, eik: str) -> OrmQuery !IO !Net {
     return orm_query_params(db, sql, vals, nulls)?
 }
 
-fn counterpart_create(db: OrmDb, name: str, counterpart_type: str, eik: str, vat_number: str, address: str, vies_address: str, city: str, country: str, post_code: str, street_name: str, building_number: str, region: str, contact_person: str, email: str, phone: str, company_id: i64) -> OrmExec !IO !Net {
+fn counterpart_create(db: OrmDb, name: str, counterpart_type: str, eik: str, vat_number: str, address: str, vies_address: str, city: str, country: str, post_code: str, street_name: str, building_number: str, region: str, address_building: str, additional_address_detail: str, address_type: str, contact_person: str, email: str, phone: str, company_id: i64) -> OrmExec !IO !Net {
     let ic = counterpart_is_client(counterpart_type)
     let is_ = counterpart_is_supplier(counterpart_type)
     if counterpart_backend_boila()? == 1 {
@@ -138,6 +141,9 @@ fn counterpart_create(db: OrmDb, name: str, counterpart_type: str, eik: str, vat
         vec_push(cols, "street_name")
         vec_push(cols, "building_number")
         vec_push(cols, "region")
+        vec_push(cols, "address_building")
+        vec_push(cols, "additional_address_detail")
+        vec_push(cols, "address_type")
         vec_push(cols, "contact_person")
         vec_push(cols, "email")
         vec_push(cols, "phone")
@@ -157,6 +163,9 @@ fn counterpart_create(db: OrmDb, name: str, counterpart_type: str, eik: str, vat
         vec_push(vals, street_name)
         vec_push(vals, building_number)
         vec_push(vals, region)
+        vec_push(vals, address_building)
+        vec_push(vals, additional_address_detail)
+        vec_push(vals, address_type)
         vec_push(vals, contact_person)
         vec_push(vals, email)
         vec_push(vals, phone)
@@ -177,6 +186,9 @@ fn counterpart_create(db: OrmDb, name: str, counterpart_type: str, eik: str, vat
     vec_push(cols, "street_name")
     vec_push(cols, "building_number")
     vec_push(cols, "region")
+    vec_push(cols, "address_building")
+    vec_push(cols, "additional_address_detail")
+    vec_push(cols, "address_type")
     vec_push(cols, "contact_person")
     vec_push(cols, "email")
     vec_push(cols, "phone")
@@ -195,6 +207,9 @@ fn counterpart_create(db: OrmDb, name: str, counterpart_type: str, eik: str, vat
     vec_push(vals, street_name)
     vec_push(vals, building_number)
     vec_push(vals, region)
+    vec_push(vals, address_building)
+    vec_push(vals, additional_address_detail)
+    vec_push(vals, address_type)
     vec_push(vals, contact_person)
     vec_push(vals, email)
     vec_push(vals, phone)

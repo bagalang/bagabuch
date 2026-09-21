@@ -54,7 +54,7 @@ fn mistral_ocr_model() -> str {
 }
 
 fn mistral_extract_model() -> str {
-    return "mistral-small-latest"
+    return "mistral-small-2603"
 }
 
 fn jflex_str(d: JsonDoc, obj: i64, key: str, default_val: str) -> str {

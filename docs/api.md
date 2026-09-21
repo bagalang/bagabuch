@@ -45,9 +45,14 @@ VIES (нужен JWT; ключът е на **активната** фирма):
 | POST | `/v1/counterparts/vies` | създава контрагент `{vat_number, counterpart_type?}` |
 
 Отговорът на lookup: `valid`, `name`, `address` / `vies_address` (суров),
-`street_name`, `building_number`, `city`, `post_code`, `region`,
+`street_name`, `building_number`, `address_building`,
+`additional_address_detail`, `address_type`, `city`, `post_code`, `region`,
 `country_code`, `vat_number`, `parse_ok`, `parse_note`.
 Разделянето е само ако в настройките на активната фирма има `mistral_api_key`.
+
+`POST /v1/addresses/parse` приема `{address, country?, city?, post_code?}`
+и връща същите SAF-T полета без запис. Област извън `BG-01`…`BG-28` за
+български адрес се изчиства.
 
 ## Фактури и дневник
 
@@ -130,7 +135,7 @@ JSON на екрана (сумите с точка); файлът е XHTML та�
 | CRUD | `/v1/recipes` (BOM: изход + материали + фира) |
 | GET/POST/GET id/DELETE | `/v1/production-orders` (няма PATCH; редовете идват от рецептата) |
 | POST | `/v1/production-orders/{id}/confirm` — изписване + заприход + запис 611 |
-| GET | `/v1/saft/export?period=&mode=monthly\|ondemand\|annual` |
+| GET | `/v1/saft/export?period=&mode=monthly\|ondemand\|annual` | схема V1.0.1; подаване от 2028. Месечен: сметкоплан, фактури, плащания. Годишен: активи. При поискване: наличност. Без данни се вижда формата, не тест на числа |
 | GET | `/v1/saft/nomenclatures?kind=&search=` |
 | GET | `/v1/fs/lines?statement=balance\|pl\|cashflow\|equity` |
 | GET/PUT | `/v1/fs/formulas?statement=` / `{statement, line_code, formula}` |
@@ -179,5 +184,5 @@ boilaDB (`COPY TO STDOUT`, REPEATABLE READ) и качва `bagabuch_backup_*.sql
 | POST | `/v1/product-name-mappings` | `{counterpart_id, items: [{scanned_name, product_id}]}` |
 
 Черновата се записва с обикновения `POST /v1/invoices`. Без ключ PDF extract връща 422.
-Модели: OCR `mistral-ocr-latest`, JSON `mistral-small-latest` (евтиният път).
+Модели: OCR `mistral-ocr-latest`, JSON `mistral-small-2603` (Small 4).
 UBL (`/v1/scans/ubl`) не иска ключ: XML-ът се чете директно, VATEX отива в основанието за 0% ДДС, а артикулът се връзва по запомнено име или по кода от `SellersItemIdentification`.

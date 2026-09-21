@@ -1,6 +1,7 @@
 // actions/counterparts.baga — контрагенти: CRUD handlers.
 
 import "../models/counterpart.baga"
+import "../models/addr_saft.baga"
 import "mistral.baga"
 import "acl.baga"
 import "active_company.baga"
@@ -73,6 +74,17 @@ fn act_counterparts_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
     let street_name = jopt_str(b.doc, b.root, "street_name", "")
     let building_number = jopt_str(b.doc, b.root, "building_number", "")
     let region = jopt_str(b.doc, b.root, "region", "")
+    let rn = adr_region_norm(region.val, country.val)
+    if rn.ok == 0 {
+        return act_err(db, 422, "region трябва да е код BG-01 … BG-28")
+    }
+    let address_building = jopt_str(b.doc, b.root, "address_building", "")
+    let additional_address_detail = jopt_str(b.doc, b.root, "additional_address_detail", "")
+    let address_type = jopt_str(b.doc, b.root, "address_type", "")
+    let tn = adr_type_norm(address_type.val)
+    if tn.ok == 0 {
+        return act_err(db, 422, "address_type е StreetAddress, PostalAddress, BillingAddress, ShipToAddress или ShipFromAddress")
+    }
     let contact_person = jopt_str(b.doc, b.root, "contact_person", "")
     let email = jopt_str(b.doc, b.root, "email", "")
     let phone = jopt_str(b.doc, b.root, "phone", "")
@@ -80,7 +92,7 @@ fn act_counterparts_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         return act_err(db, 503, "database unavailable")
     }
     let accp = active_company_id(db, auth.ctx.user_sub)?
-    let ins = counterpart_create(accp.db, name.val, counterpart_type.val, eik.val, vat_number.val, address.val, vies_address.val, city.val, country.val, post_code.val, street_name.val, building_number.val, region.val, contact_person.val, email.val, phone.val, accp.id)?
+    let ins = counterpart_create(accp.db, name.val, counterpart_type.val, eik.val, vat_number.val, address.val, vies_address.val, city.val, country.val, post_code.val, street_name.val, building_number.val, rn.code, address_building.val, additional_address_detail.val, tn.code, contact_person.val, email.val, phone.val, accp.id)?
     if orm_ok(ins) == 0 {
         return act_err(orm_db_exec(ins), 409, orm_err_exec(ins))
     }
@@ -231,8 +243,41 @@ fn act_counterparts_update(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         if region.ok == 0 {
             return act_422_field(db, "region", region)
         }
+        let hinted = jopt_str(b.doc, b.root, "country", "")
+        let rn = adr_region_norm(region.val, hinted.val)
+        if rn.ok == 0 {
+            return act_err(db, 422, "region трябва да е код BG-01 … BG-28")
+        }
         vec_push(cols, "region")
-        vec_push(vals, region.val)
+        vec_push(vals, rn.code)
+    }
+    let address_building = jreq_str(b.doc, b.root, "address_building")
+    if address_building.present == 1 {
+        if address_building.ok == 0 {
+            return act_422_field(db, "address_building", address_building)
+        }
+        vec_push(cols, "address_building")
+        vec_push(vals, address_building.val)
+    }
+    let additional_address_detail = jreq_str(b.doc, b.root, "additional_address_detail")
+    if additional_address_detail.present == 1 {
+        if additional_address_detail.ok == 0 {
+            return act_422_field(db, "additional_address_detail", additional_address_detail)
+        }
+        vec_push(cols, "additional_address_detail")
+        vec_push(vals, additional_address_detail.val)
+    }
+    let address_type = jreq_str(b.doc, b.root, "address_type")
+    if address_type.present == 1 {
+        if address_type.ok == 0 {
+            return act_422_field(db, "address_type", address_type)
+        }
+        let tn = adr_type_norm(address_type.val)
+        if tn.ok == 0 {
+            return act_err(db, 422, "address_type е StreetAddress, PostalAddress, BillingAddress, ShipToAddress или ShipFromAddress")
+        }
+        vec_push(cols, "address_type")
+        vec_push(vals, tn.code)
     }
     let contact_person = jreq_str(b.doc, b.root, "contact_person")
     if contact_person.present == 1 {
@@ -443,6 +488,9 @@ fn act_counterparts_vies_lookup(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net !Rand
     o = jobj_str(o, "vies_address", r.address)
     o = jobj_str(o, "street_name", parts.street_name)
     o = jobj_str(o, "building_number", parts.building_number)
+    o = jobj_str(o, "address_building", parts.address_building)
+    o = jobj_str(o, "additional_address_detail", parts.additional_address_detail)
+    o = jobj_str(o, "address_type", parts.address_type)
     o = jobj_str(o, "city", parts.city)
     o = jobj_str(o, "post_code", parts.post_code)
     o = jobj_str(o, "region", parts.region)
@@ -518,7 +566,7 @@ fn act_counterparts_vies_create(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net !Rand
         country = parts.country
     }
     let acv = active_company_id(mk.db, auth.ctx.user_sub)?
-    let ins = counterpart_create(acv.db, name, counterpart_type.val, eik, vat, addr, addr, city, country, post, parts.street_name, parts.building_number, parts.region, "", "", "", acv.id)?
+    let ins = counterpart_create(acv.db, name, counterpart_type.val, eik, vat, addr, addr, city, country, post, parts.street_name, parts.building_number, parts.region, parts.address_building, parts.additional_address_detail, parts.address_type, "", "", "", acv.id)?
     if orm_ok(ins) == 0 {
         return act_err(orm_db_exec(ins), 409, orm_err_exec(ins))
     }

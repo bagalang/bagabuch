@@ -218,5 +218,11 @@ fn bagabuch_migrations_c() -> MigrationSet {
     set = migrate_add(set, 20260921103, "add_users_totp_pending_b32", "ALTER TABLE users ADD COLUMN totp_pending_b32 TEXT NOT NULL DEFAULT ''", "ALTER TABLE users DROP COLUMN totp_pending_b32")
     set = migrate_add(set, 20260921104, "create_user_recovery_codes", "CREATE TABLE user_recovery_codes (id BIGSERIAL PRIMARY KEY, user_id BIGINT NOT NULL, code_hash TEXT NOT NULL, used BIGINT NOT NULL DEFAULT 0)", "DROP TABLE IF EXISTS user_recovery_codes")
     set = migrate_add(set, 20260921105, "create_password_reset_tokens", "CREATE TABLE password_reset_tokens (id BIGSERIAL PRIMARY KEY, user_id BIGINT NOT NULL, token_hash TEXT NOT NULL, expires_at BIGINT NOT NULL, used BIGINT NOT NULL DEFAULT 0)", "DROP TABLE IF EXISTS password_reset_tokens")
+    set = migrate_add(set, 20260921106, "add_companies_address_building", "ALTER TABLE companies ADD COLUMN address_building TEXT NOT NULL DEFAULT ''", "ALTER TABLE companies DROP COLUMN address_building")
+    set = migrate_add(set, 20260921107, "add_companies_additional_address_detail", "ALTER TABLE companies ADD COLUMN additional_address_detail TEXT NOT NULL DEFAULT ''", "ALTER TABLE companies DROP COLUMN additional_address_detail")
+    set = migrate_add(set, 20260921108, "add_companies_address_type", "ALTER TABLE companies ADD COLUMN address_type TEXT NOT NULL DEFAULT ''", "ALTER TABLE companies DROP COLUMN address_type")
+    set = migrate_add(set, 20260921109, "add_counterparts_address_building", "ALTER TABLE counterparts ADD COLUMN address_building TEXT NOT NULL DEFAULT ''", "ALTER TABLE counterparts DROP COLUMN address_building")
+    set = migrate_add(set, 20260921110, "add_counterparts_additional_address_detail", "ALTER TABLE counterparts ADD COLUMN additional_address_detail TEXT NOT NULL DEFAULT ''", "ALTER TABLE counterparts DROP COLUMN additional_address_detail")
+    set = migrate_add(set, 20260921111, "add_counterparts_address_type", "ALTER TABLE counterparts ADD COLUMN address_type TEXT NOT NULL DEFAULT ''", "ALTER TABLE counterparts DROP COLUMN address_type")
     return set
 }

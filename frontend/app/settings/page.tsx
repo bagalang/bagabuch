@@ -52,6 +52,8 @@ function SettingsInner() {
   const [tab, setTab] = useState<0 | 1 | 2 | 3>(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [splitting, setSplitting] = useState(false);
+  const [splitNote, setSplitNote] = useState("");
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
 
@@ -117,6 +119,9 @@ function SettingsInner() {
     setSaftForm({
       street_name: str(c.street_name),
       building_number: str(c.building_number),
+      address_building: str(c.address_building),
+      additional_address_detail: str(c.additional_address_detail),
+      address_type: str(c.address_type),
       region: str(c.region),
       tax_accounting_basis: str(c.tax_accounting_basis, "A"),
       inventory_valuation_method: str(c.inventory_valuation_method, "WAC"),
@@ -222,6 +227,65 @@ function SettingsInner() {
     }
   };
 
+  const splitAddress = async () => {
+    const address = (companyForm.address ?? "").trim();
+    if (!address) {
+      setErr(t("settings.split_address.empty"));
+      setSplitNote("");
+      return;
+    }
+    setSplitting(true);
+    setErr("");
+    setSplitNote("");
+    try {
+      const data = await api.post<{
+        street_name: string;
+        building_number: string;
+        address_building: string;
+        additional_address_detail: string;
+        city: string;
+        post_code: string;
+        region: string;
+        country: string;
+        address_type: string;
+        parse_ok: boolean;
+        parse_note: string;
+      }>("/v1/addresses/parse", {
+        address,
+        country: companyForm.country || "BG",
+        city: companyForm.city,
+        post_code: companyForm.post_code,
+      });
+      if (!data.parse_ok) {
+        setErr(data.parse_note || t("settings.split_address.empty"));
+        return;
+      }
+      const fill = (prev: Form, key: string, value: string) =>
+        value ? { ...prev, [key]: value } : prev;
+      setSaftForm((prev) => {
+        let next = fill(prev, "street_name", data.street_name);
+        next = fill(next, "building_number", data.building_number);
+        next = fill(next, "address_building", data.address_building);
+        next = fill(next, "additional_address_detail", data.additional_address_detail);
+        next = fill(next, "region", data.region);
+        next = fill(next, "address_type", data.address_type);
+        return next;
+      });
+      setCompanyForm((prev) => {
+        let next = prev;
+        if (!prev.city && data.city) next = { ...next, city: data.city };
+        if (!prev.post_code && data.post_code) next = { ...next, post_code: data.post_code };
+        if (!prev.country && data.country) next = { ...next, country: data.country };
+        return next;
+      });
+      setSplitNote(data.parse_note ? `${data.parse_note} ${t("settings.split_address.save")}` : t("settings.split_address.save"));
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSplitting(false);
+    }
+  };
+
   const saveSaft = async (e: FormEvent) => {
     e.preventDefault();
     if (activeId <= 0) return;
@@ -231,6 +295,9 @@ function SettingsInner() {
       await api.patch(`/v1/companies/${activeId}`, {
         street_name: saftForm.street_name,
         building_number: saftForm.building_number,
+        address_building: saftForm.address_building,
+        additional_address_detail: saftForm.additional_address_detail,
+        address_type: saftForm.address_type,
         region: saftForm.region,
         tax_accounting_basis: saftForm.tax_accounting_basis,
         inventory_valuation_method: saftForm.inventory_valuation_method,
@@ -453,6 +520,9 @@ function SettingsInner() {
           saftForm={saftForm}
           setS={setS}
           saving={saving}
+          splitting={splitting}
+          splitNote={splitNote}
+          onSplitAddress={splitAddress}
           onSaveSaft={saveSaft}
           locations={locations}
           showLoc={showLoc}

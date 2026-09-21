@@ -1,9 +1,10 @@
 // actions/mistral.baga — Mistral AI през ключа в companies.settings.
-// Адрес от VIES е един дълъг низ; SAF-T иска улица/сграда/град/код/регион.
-// Модел: Ministral 3 3B (най-евтиният chat). OCR на документи е отделна стъпка.
+// Адресът се дели към SAF-T AddressStructure. Модел: Mistral Small 4.
+// OCR на документи е в mistral_ocr.baga.
 
 import "../models/setting.baga"
 import "../models/company.baga"
+import "../models/addr_saft.baga"
 import "fmrbaga/jsonx.baga"
 import "ormbaga/orm.baga"
 import "std/json/json.baga"
@@ -16,10 +17,13 @@ struct AddrParts {
     ok: i64,
     street_name: str,
     building_number: str,
+    address_building: str,
+    additional_address_detail: str,
     city: str,
     post_code: str,
     region: str,
-    country: str
+    country: str,
+    address_type: str
 }
 
 struct MistralKey {
@@ -32,16 +36,19 @@ fn addr_parts_empty() -> AddrParts {
         ok: 0,
         street_name: "",
         building_number: "",
+        address_building: "",
+        additional_address_detail: "",
         city: "",
         post_code: "",
         region: "",
-        country: ""
+        country: "",
+        address_type: ""
     }
 }
 
-// Най-евтиният chat модел в API-то на Mistral (Ministral 3 3B, ~$0.10/1M).
+// Mistral Small 4 (mistral-small-2603). ЕС оператор, JSON схема за адрес.
 fn mistral_parse_model() -> str {
-    return "ministral-3-3b-2512"
+    return "mistral-small-2603"
 }
 
 fn mistral_chat_url() -> str {
@@ -126,10 +133,58 @@ fn addr_parts_from_obj(d: JsonDoc, root: i64) -> AddrParts {
         ok: 1,
         street_name: str_trim(jopt_str(d, root, "street_name", "").val),
         building_number: str_trim(jopt_str(d, root, "building_number", "").val),
+        address_building: str_trim(jopt_str(d, root, "address_building", "").val),
+        additional_address_detail: str_trim(jopt_str(d, root, "additional_address_detail", "").val),
         city: str_trim(jopt_str(d, root, "city", "").val),
         post_code: str_trim(jopt_str(d, root, "post_code", "").val),
         region: str_trim(jopt_str(d, root, "region", "").val),
-        country: str_trim(jopt_str(d, root, "country", "").val)
+        country: str_trim(jopt_str(d, root, "country", "").val),
+        address_type: str_trim(jopt_str(d, root, "address_type", "").val)
+    }
+}
+
+fn addr_clean(parts: AddrParts, cc: str, hint_city: str, hint_post: str) -> AddrParts {
+    let street = adr_clip(parts.street_name, 70)
+    let number = adr_clip(parts.building_number, 18)
+    let building = adr_clip(parts.address_building, 35)
+    let extra = adr_clip(parts.additional_address_detail, 70)
+    let mut city = adr_clip(parts.city, 35)
+    if city == "" {
+        city = adr_clip(hint_city, 35)
+    }
+    let mut post = adr_clip(parts.post_code, 18)
+    if post == "" {
+        post = adr_clip(hint_post, 18)
+    }
+    let country = adr_country(parts.country, cc)
+    let rn = adr_region_norm(parts.region, country)
+    let mut region = ""
+    if rn.ok == 1 {
+        region = rn.code
+    }
+    let tn = adr_type_norm(parts.address_type)
+    let mut at = ""
+    if tn.ok == 1 {
+        at = tn.code
+    }
+    if at == "" && street != "" {
+        at = "StreetAddress"
+    }
+    let mut ok: i64 = 1
+    if street == "" && city == "" && post == "" {
+        ok = 0
+    }
+    return AddrParts {
+        ok: ok,
+        street_name: street,
+        building_number: number,
+        address_building: building,
+        additional_address_detail: extra,
+        city: city,
+        post_code: post,
+        region: region,
+        country: country,
+        address_type: at
     }
 }
 
@@ -153,14 +208,20 @@ fn mistral_chat_content(body: str) -> str {
     return jopt_str(parsed.doc, msg, "content", "").val
 }
 
-fn mistral_parse_prompt(raw: str, cc: str) -> str {
-    let mut s = "Split this EU VIES address into JSON for SAF-T. Return only a JSON object with keys street_name, building_number, city, post_code, region, country. region is ISO 3166-2 if known else empty. country is ISO 3166-1 alpha-2. Empty string if unknown. No extra text.\nCountry code: "
+fn mistral_parse_prompt(raw: str, cc: str, hint_city: str, hint_post: str) -> str {
+    let mut s = "Split this address into JSON for Bulgarian SAF-T AddressStructure. Return only a JSON object with keys street_name, building_number, address_building, additional_address_detail, city, post_code, region, country, address_type. street_name is the street only, max 70 characters. building_number is the house number only, max 18 (XML element Number). address_building is a building id such as blok or Building A, max 35, else empty. additional_address_detail is entrance, floor, apartment, max 70, else empty. city max 35. post_code max 18. region for Bulgaria must be exactly one code from the list below, otherwise empty. country is ISO 3166-1 alpha-2. address_type is StreetAddress, PostalAddress, BillingAddress, ShipToAddress or ShipFromAddress. Use StreetAddress for a street. Empty string if unknown. No extra text.\nRegions:\n"
+    s = concat(s, adr_region_prompt())
+    s = concat(s, "Country code: ")
     s = concat(s, cc)
+    s = concat(s, "\nKnown city: ")
+    s = concat(s, hint_city)
+    s = concat(s, "\nKnown post code: ")
+    s = concat(s, hint_post)
     s = concat(s, "\nAddress:\n")
     return concat(s, raw)
 }
 
-fn mistral_parse_address(api_key: str, raw: str, cc: str) -> AddrParts !IO !Net !Random {
+fn mistral_parse_address_ex(api_key: str, raw: str, cc: str, hint_city: str, hint_post: str) -> AddrParts !IO !Net !Random {
     if api_key == "" || raw == "" || raw == "---" {
         return addr_parts_empty()
     }
@@ -169,7 +230,7 @@ fn mistral_parse_address(api_key: str, raw: str, cc: str) -> AddrParts !IO !Net 
     sys = jobj_str(sys, "content", "You extract structured address fields. Return only JSON.")
     let mut user = jobj_new()
     user = jobj_str(user, "role", "user")
-    user = jobj_str(user, "content", mistral_parse_prompt(raw, cc))
+    user = jobj_str(user, "content", mistral_parse_prompt(raw, cc, hint_city, hint_post))
     let mut msgs = jarr_new()
     msgs = jarr_obj(msgs, sys)
     msgs = jarr_obj(msgs, user)
@@ -177,7 +238,8 @@ fn mistral_parse_address(api_key: str, raw: str, cc: str) -> AddrParts !IO !Net 
     req = jobj_str(req, "model", mistral_parse_model())
     req = jobj_arr(req, "messages", msgs)
     req = jobj_raw(req, "temperature", "0")
-    req = jobj_i64(req, "max_tokens", 256)
+    req = jobj_i64(req, "max_tokens", 512)
+    req = jobj_raw(req, "response_format", "{\"type\":\"json_object\"}")
     let headers: Map<str, str> = map_new()
     map_set(headers, "authorization", concat("Bearer ", api_key))
     map_set(headers, "content-type", "application/json")
@@ -195,24 +257,11 @@ fn mistral_parse_address(api_key: str, raw: str, cc: str) -> AddrParts !IO !Net 
     if parsed.ok == 0 {
         return addr_parts_empty()
     }
-    let parts = addr_parts_from_obj(parsed.doc, parsed.root)
-    let mut country = parts.country
-    if country == "" {
-        country = cc
-    }
-    let mut ok: i64 = 1
-    if parts.street_name == "" && parts.city == "" && parts.post_code == "" {
-        ok = 0
-    }
-    return AddrParts {
-        ok: ok,
-        street_name: parts.street_name,
-        building_number: parts.building_number,
-        city: parts.city,
-        post_code: parts.post_code,
-        region: parts.region,
-        country: country
-    }
+    return addr_clean(addr_parts_from_obj(parsed.doc, parsed.root), cc, hint_city, hint_post)
+}
+
+fn mistral_parse_address(api_key: str, raw: str, cc: str) -> AddrParts !IO !Net !Random {
+    return mistral_parse_address_ex(api_key, raw, cc, "", "")?
 }
 
 fn vies_parse_note(api_key: str, parts: AddrParts) -> str {
