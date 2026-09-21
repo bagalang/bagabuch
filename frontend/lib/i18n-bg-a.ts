@@ -102,6 +102,7 @@ export const bgA = {
   "companies.address": "Адрес",
   "companies.city": "Град",
   "companies.mol": "МОЛ",
+  "companies.manager": "Управител",
   "companies.iban": "IBAN",
   "companies.bic": "BIC",
   "companies.is_vat_registered": "ДДС регистрирана",

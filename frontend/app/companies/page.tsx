@@ -60,7 +60,14 @@ const config: CrudConfig = {
     },
     { name: "fiscal_year_start_month", labelKey: "companies.fiscal_year_start_month", type: "number", default: "1" },
   ],
-  columns: ["name", "eik", "city", "is_vat_registered"],
+  columns: ["name", "manager", "eik", "city", "is_vat_registered"],
+  columnLabelKey: { manager: "companies.manager" },
+  columnText: (column, rec) => {
+    if (column !== "manager") return null;
+    const manager = String(rec.manager_name ?? "").trim();
+    if (manager) return manager;
+    return String(rec.mol ?? "").trim();
+  },
   rowAction: {
     labelKey: "companies.activate",
     onClick: (rec) => {

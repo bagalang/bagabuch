@@ -64,6 +64,10 @@ export interface CrudConfig {
   titleKey: string;
   fields: FieldDef[];
   columns: string[];
+  // Етикет за колона, която не е поле във формата (ключ от i18n).
+  columnLabelKey?: Record<string, string>;
+  // Текст в клетката. null = стандартното поле.
+  columnText?: (column: string, rec: Record<string, unknown>) => string | null;
   rowAction?: RowAction;
   vies?: ViesConfig;
 }
@@ -287,8 +291,10 @@ export function CrudPage({ config }: { config: CrudConfig }) {
             <thead>
               <tr>
                 {config.columns.map((c) => {
+                  const labelKey = config.columnLabelKey?.[c];
                   const f = config.fields.find((x) => x.name === c);
-                  return <th key={c}>{f ? t(f.labelKey) : c}</th>;
+                  const label = labelKey ? t(labelKey) : f ? t(f.labelKey) : c;
+                  return <th key={c}>{label}</th>;
                 })}
                 <th>{t("common.actions")}</th>
               </tr>
@@ -297,21 +303,26 @@ export function CrudPage({ config }: { config: CrudConfig }) {
               {filtered.map((rec) => (
                 <tr key={String(rec.id)}>
                   {config.columns.map((c) => {
+                    const custom = config.columnText?.(c, rec);
                     const f = config.fields.find((x) => x.name === c);
-                    return (
-                      <td key={c}>
-                        {f ? cellText(rec, f, t) : String(rec[c] ?? "")}
-                      </td>
-                    );
+                    const text =
+                      custom != null
+                        ? custom
+                        : f
+                          ? cellText(rec, f, t)
+                          : String(rec[c] ?? "");
+                    return <td key={c}>{text}</td>;
                   })}
                   <td>
                     <div className="icon-actions">
                       {config.rowAction && (
-                        <IconButton
-                          icon="activate"
-                          title={t(config.rowAction.labelKey)}
+                        <button
+                          type="button"
+                          className="btn btn-success btn-activate"
                           onClick={() => config.rowAction?.onClick(rec)}
-                        />
+                        >
+                          {t(config.rowAction.labelKey)}
+                        </button>
                       )}
                       <IconButton
                         icon="edit"

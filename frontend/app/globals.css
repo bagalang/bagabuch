@@ -135,6 +135,25 @@ textarea {
   background: var(--danger-soft);
 }
 
+.btn-success {
+  background: #16a34a;
+  border-color: #15803d;
+  color: #fff;
+  font-weight: 600;
+}
+
+.btn-success:hover {
+  background: #15803d;
+  border-color: #166534;
+  color: #fff;
+}
+
+.btn-activate {
+  min-height: 42px;
+  padding: 10px 20px;
+  font-size: 15px;
+}
+
 .btn-ghost {
   background: transparent;
   border-color: transparent;

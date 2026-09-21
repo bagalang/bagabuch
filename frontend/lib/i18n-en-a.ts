@@ -97,6 +97,7 @@ export const enA = {
   "companies.address": "Address",
   "companies.city": "City",
   "companies.mol": "Manager",
+  "companies.manager": "Manager",
   "companies.iban": "IBAN",
   "companies.bic": "BIC",
   "companies.is_vat_registered": "VAT registered",
