@@ -77,6 +77,14 @@ Baga `<` `>` `<=` `>=` върху `str` сравняват **указатели*
 `BAGABUCH_VIES_ANCHOR_FILE`, `BAGABUCH_ECB_ANCHOR_FILE`,
 `BAGABUCH_MISTRAL_ANCHOR_FILE`. Виж [architecture.md](architecture.md).
 
+## Регистрация, парола, 2FA
+
+Публичната регистрация създава потребител **и** фирма веднага (без email
+потвърждение — за разлика от baraba). Спира се с `auth.registration_enabled=0`
+в глобалните настройки. Възстановяване на парола е SMTP sidecar +
+`app.url` (линк `/reset-password?token=`). 2FA е `otpbaga` (TOTP + hashed
+резервни кодове); MFA JWT има `"mfa":1` и не минава към останалите пътища.
+
 ## SMTP и S3
 
 Не се пишат Baga пакети за поща и object storage. Същото като su-doxis:

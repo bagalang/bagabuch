@@ -1,12 +1,13 @@
 [package]
 name = "backend"
-version = "0.8.5"
+version = "0.8.7"
 entry = "start.baga"
 kind = "bin"
 
 [dependencies]
 fmrbaga = { path = "../../../app-product/fmrbaga" }
 jwtbaga = { path = "../../../app-product/jwtbaga" }
+otpbaga = { path = "../../../app-product/otpbaga" }
 ormbaga = { path = "../../../app-product/ormbaga" }
 bagadecimal = { path = "../../../app-product/bagadecimal" }
 chronobaga = { path = "../../../app-product/chronobaga" }

@@ -15,6 +15,15 @@
   padding: 32px;
 }
 
+.login-card-wide {
+  max-width: 440px;
+}
+
+.login-links {
+  margin: 16px 0 0;
+  text-align: center;
+}
+
 .login-title {
   font-size: 20px;
   font-weight: 700;

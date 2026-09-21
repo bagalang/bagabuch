@@ -29,7 +29,7 @@ fn user_hash_password(email: str, password: str) -> str {
 }
 
 fn user_select_sql() -> str {
-    return "SELECT id, email, name, password_hash, role, is_active, is_super_admin, role_id, created_at FROM users"
+    return "SELECT id, email, name, password_hash, role, is_active, is_super_admin, role_id, totp_enabled, totp_secret_b32, totp_pending_b32, created_at FROM users"
 }
 
 fn user_to_json(q: OrmQuery, row: i64) -> JObj {
@@ -41,6 +41,7 @@ fn user_to_json(q: OrmQuery, row: i64) -> JObj {
     o = jobj_i64(o, "is_active", orm_cell_by_i64(q, row, "is_active"))
     o = jobj_i64(o, "is_super_admin", orm_cell_by_i64(q, row, "is_super_admin"))
     o = jobj_i64(o, "role_id", orm_cell_by_i64(q, row, "role_id"))
+    o = jobj_i64(o, "totp_enabled", orm_cell_by_i64(q, row, "totp_enabled"))
     let ca = orm_cell_by(q, row, "created_at")
     if ca != "" {
         o = jobj_str(o, "created_at", ca)

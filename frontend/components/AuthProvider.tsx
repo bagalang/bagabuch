@@ -15,14 +15,14 @@ import { subscribeStorage, readStorage } from "../lib/storage";
 interface AuthContextValue {
   authed: boolean;
   ready: boolean;
-  login: (username: string, password: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<{ mfa?: string; mfa_token?: string }>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue>({
   authed: false,
   ready: false,
-  login: async () => {},
+  login: async () => ({}),
   logout: () => {},
 });
 
@@ -46,7 +46,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const authed = token !== "";
 
   const login = useCallback(async (username: string, password: string) => {
-    await apiLogin(username, password);
+    const r = await apiLogin(username, password);
+    return { mfa: r.mfa, mfa_token: r.mfa_token };
   }, []);
 
   const logout = useCallback(() => {

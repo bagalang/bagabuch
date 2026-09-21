@@ -43,6 +43,7 @@ const NAV_ITEMS = [
   { href: "/nomenclatures", key: "nav.nomenclatures" },
   { href: "/fixed-assets", key: "nav.fixed_assets" },
   { href: "/admin", key: "nav.admin" },
+  { href: "/security", key: "nav.security" },
   { href: "/users", key: "nav.users" },
   { href: "/roles", key: "nav.roles" },
 ];

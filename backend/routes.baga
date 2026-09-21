@@ -4,6 +4,9 @@
 
 import "actions/system.baga"
 import "actions/auth.baga"
+import "actions/auth_register.baga"
+import "actions/auth_reset.baga"
+import "actions/auth_totp.baga"
 import "actions/companies.baga"
 import "actions/company_settings.baga"
 import "actions/document_series.baga"
@@ -59,6 +62,14 @@ fn RID_OPENAPI() -> i64 { return 4 }
 fn RID_METRICS() -> i64 { return 5 }
 fn RID_TOKEN() -> i64 { return 10 }
 fn RID_ME() -> i64 { return 11 }
+fn RID_REG_STATUS() -> i64 { return 12 }
+fn RID_REGISTER() -> i64 { return 13 }
+fn RID_FORGOT() -> i64 { return 14 }
+fn RID_RESET() -> i64 { return 15 }
+fn RID_MFA() -> i64 { return 16 }
+fn RID_TOTP_START() -> i64 { return 17 }
+fn RID_TOTP_CONFIRM() -> i64 { return 18 }
+fn RID_TOTP_DISABLE() -> i64 { return 19 }
 fn RID_COMPANIES_INDEX() -> i64 { return 20 }
 fn RID_COMPANIES_CREATE() -> i64 { return 21 }
 fn RID_COMPANIES_SHOW() -> i64 { return 22 }
@@ -224,6 +235,14 @@ fn fmr_build_app() -> FmrApp !IO {
     app = fmr_route_meta(app, "GET", "/metrics", RID_METRICS(), "", "system", 0, "", "-", "200", "")
     app = fmr_route_meta(app, "POST", "/v1/auth/token", RID_TOKEN(), "", "auth", 1, "TokenRequest?", "TokenResponse", "200", "sub:s")
     app = fmr_route_meta(app, "GET", "/v1/me", RID_ME(), "", "auth", 0, "", "Me", "200", "")
+    app = fmr_route_meta(app, "GET", "/v1/auth/registration-status", RID_REG_STATUS(), "", "auth", 1, "", "RegStatus", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/auth/register", RID_REGISTER(), "", "auth", 1, "RegisterRequest", "RegisterResult", "201", "")
+    app = fmr_route_meta(app, "POST", "/v1/auth/forgot-password", RID_FORGOT(), "", "auth", 1, "ForgotPassword", "Message", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/auth/reset-password", RID_RESET(), "", "auth", 1, "ResetPassword", "Message", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/auth/mfa", RID_MFA(), "", "auth", 1, "MfaRequest", "TokenResponse", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/me/totp/start", RID_TOTP_START(), "", "auth", 0, "", "TotpStart", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/me/totp/confirm", RID_TOTP_CONFIRM(), "", "auth", 0, "TotpConfirm", "Message", "200", "")
+    app = fmr_route_meta(app, "POST", "/v1/me/totp/disable", RID_TOTP_DISABLE(), "", "auth", 0, "TotpDisable", "Message", "200", "")
     app = fmr_route_meta(app, "GET", "/v1/companies", RID_COMPANIES_INDEX(), "", "companies", 0, "", "CompanyList", "200", "limit,offset")
     app = fmr_route_meta(app, "POST", "/v1/companies", RID_COMPANIES_CREATE(), "", "companies", 0, "CompanyCreate", "Company", "201", "")
     app = fmr_route_meta(app, "GET", "/v1/companies/{id}", RID_COMPANIES_SHOW(), "", "companies", 0, "", "Company", "200", "")
@@ -388,6 +407,9 @@ fn fmr_before(ctx: FmrCtx) -> DepResult !Time {
     if jwt_accept_hs256(ctx.jwt_secret, token, now, "", "") == 0 {
         return dep_fail(ctx, fmr_401("Invalid or expired token"))
     }
+    if jwt_claim_int(token, "mfa") == 1 && ctx.route_id != RID_MFA() {
+        return dep_fail(ctx, fmr_401("изисква се 2FA код"))
+    }
     return dep_ok(ctx)
 }
 
@@ -409,6 +431,14 @@ fn fmr_dispatch(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net !Random !Time {
     if id == RID_METRICS() { return act_metrics(ctx, db)? }
     if id == RID_TOKEN() { return act_token(ctx, db)? }
     if id == RID_ME() { return act_me(ctx, db) }
+    if id == RID_REG_STATUS() { return act_reg_status(ctx, db)? }
+    if id == RID_REGISTER() { return act_register(ctx, db)? }
+    if id == RID_FORGOT() { return act_forgot_password(ctx, db)? }
+    if id == RID_RESET() { return act_reset_password(ctx, db)? }
+    if id == RID_MFA() { return act_mfa(ctx, db)? }
+    if id == RID_TOTP_START() { return act_totp_start(ctx, db)? }
+    if id == RID_TOTP_CONFIRM() { return act_totp_confirm(ctx, db)? }
+    if id == RID_TOTP_DISABLE() { return act_totp_disable(ctx, db)? }
     if id == RID_COMPANIES_INDEX() { return act_companies_index(ctx, db)? }
     if id == RID_COMPANIES_CREATE() { return act_companies_create(ctx, db)? }
     if id == RID_COMPANIES_SHOW() { return act_companies_show(ctx, db)? }

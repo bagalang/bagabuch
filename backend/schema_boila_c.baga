@@ -213,5 +213,10 @@ fn bagabuch_boila_migrations_c() -> MigrationSet {
         "DROP TABLE IF EXISTS fs_line_formulas"
     )
     set = migrate_add(set, 20260908104, "fs_line_formulas_company_id_idx", "CREATE INDEX IF NOT EXISTS fs_line_formulas_company_id_idx ON fs_line_formulas (company_id)", "DROP INDEX IF EXISTS fs_line_formulas_company_id_idx ON fs_line_formulas")
+    set = migrate_add(set, 20260921101, "add_users_totp_enabled", "ALTER TABLE users ADD COLUMN totp_enabled BIGINT", "ALTER TABLE users DROP COLUMN totp_enabled")
+    set = migrate_add(set, 20260921102, "add_users_totp_secret_b32", "ALTER TABLE users ADD COLUMN totp_secret_b32 TEXT", "ALTER TABLE users DROP COLUMN totp_secret_b32")
+    set = migrate_add(set, 20260921103, "add_users_totp_pending_b32", "ALTER TABLE users ADD COLUMN totp_pending_b32 TEXT", "ALTER TABLE users DROP COLUMN totp_pending_b32")
+    set = migrate_add(set, 20260921104, "create_user_recovery_codes", "CREATE TABLE IF NOT EXISTS user_recovery_codes (id BIGINT, user_id BIGINT, code_hash TEXT, used BIGINT, PRIMARY KEY (id))", "DROP TABLE IF EXISTS user_recovery_codes")
+    set = migrate_add(set, 20260921105, "create_password_reset_tokens", "CREATE TABLE IF NOT EXISTS password_reset_tokens (id BIGINT, user_id BIGINT, token_hash TEXT, expires_at BIGINT, used BIGINT, PRIMARY KEY (id))", "DROP TABLE IF EXISTS password_reset_tokens")
     return set
 }

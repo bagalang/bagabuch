@@ -12,8 +12,14 @@ Route id-тата в `backend/routes.baga` са стабилни — не се �
 | Метод | Път |
 |--------|-----|
 | GET | `/health` `/ready` `/readyz` `/v1/meta` `/openapi.json` `/metrics` |
-| POST | `/v1/auth/token` |
+| POST | `/v1/auth/token` `{email, password}` → JWT или `{mfa:"totp", mfa_token}` |
+| POST | `/v1/auth/mfa` `{mfa_token, code}` → JWT (TOTP или резервен код) |
+| GET | `/v1/auth/registration-status` `{registration_enabled: 0\|1}` |
+| POST | `/v1/auth/register` `{email, name, password, company_name, company_eik, …}` |
+| POST | `/v1/auth/forgot-password` `{email}` |
+| POST | `/v1/auth/reset-password` `{token, password}` |
 | GET | `/v1/me` |
+| POST | `/v1/me/totp/start` `/confirm` `/disable` |
 | GET/PUT | `/v1/active-company` |
 
 ## Фирма и настройки

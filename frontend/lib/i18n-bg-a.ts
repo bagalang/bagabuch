@@ -73,6 +73,10 @@ export const bgA = {
   "login.password": "Парола",
   "login.submit": "Вписване",
   "login.error": "Неуспешно вписване",
+  "login.otp": "Код от приложението или резервен код",
+  "login.otp_submit": "Потвърди",
+  "login.forgot": "Забравена парола",
+  "login.register": "Регистрация",
   // табло
   "dashboard.title": "Табло",
   "dashboard.welcome": "Добре дошли",

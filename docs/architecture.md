@@ -43,8 +43,11 @@
 ## Автентикация
 
 `POST /v1/auth/token` — JWT през jwtbaga (HS256). Тяло: `{sub|email, password}`.
-Паролата се проверява срещу `users.password_hash`. Празен `users` е bootstrap
-за seed. `/me` връща правата на ролята. Супер-админът минава с `"*"`.
+Паролата се проверява срещу `users.password_hash`. При включена 2FA отговорът
+е `{mfa:"totp", mfa_token}` — пълният JWT идва след `POST /v1/auth/mfa`.
+Празен `users` е bootstrap за seed. `/me` връща правата на ролята. Супер-админът
+минава с `"*"`. Публична регистрация с фирма: `POST /v1/auth/register`
+(изключва се с `auth.registration_enabled=0`).
 
 Правата са кодове като в baraba (`invoice:read`, `accounting:post`, …) и се
 налагат върху API. Групи: super_admin, admin, accountant, viewer.

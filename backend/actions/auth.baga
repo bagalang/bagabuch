@@ -55,6 +55,21 @@ fn auth_issue(ctx: FmrCtx, db: OrmDb, sub: str) -> FmrOut !Time !IO {
     return act_ok(db, o)
 }
 
+fn auth_issue_mfa(ctx: FmrCtx, db: OrmDb, sub: str) -> FmrOut !Time !IO {
+    let now = time_now_ms()? / 1000
+    let ttl: i64 = 300
+    let extra = concat("\"iat\":", int_to_str(now))
+    let extra_exp = concat(extra, concat(",\"exp\":", int_to_str(now + ttl)))
+    let extra2 = concat(extra_exp, ",\"iss\":\"bagabuch\",\"mfa\":1")
+    let token = fmr_issue_token(ctx.jwt_secret, sub, extra2)
+    let mut o = jobj_new()
+    o = jobj_str(o, "mfa", "totp")
+    o = jobj_str(o, "mfa_token", token)
+    o = jobj_i64(o, "expires_in", ttl)
+    o = jobj_str(o, "message", "Въведи кода от приложението или резервен код")
+    return act_ok(db, o)
+}
+
 fn auth_provision_superadmin(db: OrmDb) -> FmrOut !IO !Net {
     let sub = auth_default_sub()
     let hash = user_hash_password(sub, auth_default_pass())
@@ -166,6 +181,9 @@ fn act_token(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net !Time {
         }
         return act_err(orm_db_q(uq), 401, "грешен потребител или парола")
     }
+    if orm_cell_by_i64(uq, 0, "totp_enabled") == 1 {
+        return auth_issue_mfa(ctx, orm_db_q(uq), email)
+    }
     return auth_issue(ctx, orm_db_q(uq), email)
 }
 
@@ -186,6 +204,7 @@ fn act_me(ctx: FmrCtx, db: OrmDb) -> FmrOut !IO !Net {
         o = jobj_str(o, "name", orm_cell_by(uq, 0, "name"))
         o = jobj_i64(o, "is_super_admin", orm_cell_by_i64(uq, 0, "is_super_admin"))
         o = jobj_i64(o, "role_id", orm_cell_by_i64(uq, 0, "role_id"))
+        o = jobj_i64(o, "totp_enabled", orm_cell_by_i64(uq, 0, "totp_enabled"))
         let perms = acl_user_perms_json(orm_db_q(uq), auth.ctx.user_sub)?
         o = jobj_raw(o, "permissions", perms)
         return act_ok(orm_db_q(uq), o)

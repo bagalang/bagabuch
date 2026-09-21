@@ -9,7 +9,7 @@ import { useI18n } from "../../components/I18nProvider";
 import { api, ListResponse } from "../../lib/api";
 import { IconButton } from "../../components/IconButton";
 
-type Tab = "app" | "smtp" | "s3";
+type Tab = "app" | "smtp" | "s3" | "auth";
 
 interface Setting {
   key: string;
@@ -43,6 +43,7 @@ const KEYS = {
     "s3.region",
     "s3.prefix",
   ],
+  auth: ["auth.registration_enabled"],
 };
 
 function emptyMap(keys: string[]): Record<string, string> {
@@ -58,10 +59,12 @@ function AdminInner() {
     ...emptyMap(KEYS.app),
     ...emptyMap(KEYS.smtp),
     ...emptyMap(KEYS.s3),
+    ...emptyMap(KEYS.auth),
     "smtp.port": "587",
     "smtp.use_tls": "1",
     "s3.region": "us-east-1",
     "s3.prefix": "backups/",
+    "auth.registration_enabled": "1",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -209,7 +212,7 @@ function AdminInner() {
         {t("admin.hint")}
       </p>
       <div className="tabs">
-        {(["app", "smtp", "s3"] as Tab[]).map((k) => (
+        {(["app", "smtp", "s3", "auth"] as Tab[]).map((k) => (
           <button
             key={k}
             type="button"
@@ -286,6 +289,34 @@ function AdminInner() {
             </button>
             <button className="btn btn-primary" disabled={busy === "smtp" || !testTo}>
               {busy === "smtp" ? t("admin.testing") : t("admin.smtp.test")}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {tab === "auth" && (
+        <form
+          className="card content"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void saveKeys(KEYS.auth);
+          }}
+        >
+          <div className="field">
+            <label className="label">{t("admin.auth.registration")}</label>
+            <select
+              className="select"
+              value={form["auth.registration_enabled"] || "1"}
+              onChange={(e) => set("auth.registration_enabled", e.target.value)}
+            >
+              <option value="1">{t("common.yes")}</option>
+              <option value="0">{t("common.no")}</option>
+            </select>
+          </div>
+          <p className="muted">{t("admin.auth.hint")}</p>
+          <div className="form-actions">
+            <button className="btn btn-primary" disabled={saving}>
+              {t("common.save")}
             </button>
           </div>
         </form>

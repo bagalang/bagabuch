@@ -132,15 +132,34 @@ export async function downloadFile(path: string, filename: string): Promise<void
   URL.revokeObjectURL(url);
 }
 
-// автентикация
-export async function login(username: string, password: string): Promise<string> {
-  const data = await api.post<{ access_token: string }>("/v1/auth/token", {
+export type TokenResponse = {
+  access_token?: string;
+  mfa?: string;
+  mfa_token?: string;
+  message?: string;
+  expires_in?: number;
+};
+
+export async function login(
+  username: string,
+  password: string
+): Promise<TokenResponse> {
+  const data = await api.post<TokenResponse>("/v1/auth/token", {
     sub: username,
     email: username,
     password,
   });
-  setToken(data.access_token);
-  return data.access_token;
+  if (data.access_token) setToken(data.access_token);
+  return data;
+}
+
+export async function loginMfa(mfaToken: string, code: string): Promise<TokenResponse> {
+  const data = await api.post<TokenResponse>("/v1/auth/mfa", {
+    mfa_token: mfaToken,
+    code,
+  });
+  if (data.access_token) setToken(data.access_token);
+  return data;
 }
 
 export function logout(): void {
