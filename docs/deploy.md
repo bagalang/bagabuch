@@ -35,7 +35,7 @@ docker compose -f app-product/bagabuch/deploy/docker-compose.yml \
 | Услуга | Роля | Порт |
 |--------|------|------|
 | boiladb | база, PostgreSQL wire | 6575 вътре |
-| backend | Baga API | 8080 вътре |
+| backend | Baga API; PDF печатът ползва DejaVu Sans | 8080 вътре |
 | sidecar | SMTP/S3 + dump Python | 5050 вътре |
 | frontend | Next.js | 3000 публичен |
 

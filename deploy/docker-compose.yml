@@ -38,6 +38,7 @@ services:
       dockerfile: app-product/bagabuch/deploy/Dockerfile.baga
       args:
         BAGA_ENTRY: app-product/bagabuch/backend/start.baga
+        INSTALL_FONTS: "1"
     restart: unless-stopped
     network_mode: host
     depends_on:

@@ -13,8 +13,11 @@ RUN test -n "$BAGA_ENTRY" \
  && gcc -O2 -Iinclude -o /out-bin /tmp/app.c src/baga_par_rt.c -lm -pthread
 
 FROM debian:trixie-slim
+# PDF печатът чете /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf.
+ARG INSTALL_FONTS=0
 RUN apt-get update \
  && apt-get install -y --no-install-recommends bash \
+ && if [ "$INSTALL_FONTS" = "1" ]; then apt-get install -y --no-install-recommends fonts-dejavu-core; fi \
  && rm -rf /var/lib/apt/lists/*
 COPY --from=build /out-bin /usr/local/bin/app
 EXPOSE 8080
