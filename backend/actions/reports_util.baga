@@ -5,6 +5,7 @@ import "fmrbaga/jsonx.baga"
 import "ormbaga/orm.baga"
 import "xmlbaga/xml.baga"
 import "bagadecimal/src/decimal.baga"
+import "reportbaga/html_table.baga"
 import "std/str/str.baga"
 
 struct RptBuilt {
@@ -318,6 +319,11 @@ fn rpt_period(from: str, to: str) -> str {
     return concat(from, concat(" — ", to))
 }
 
+// R4 (reportbaga, 2026-10-31): пълен BGN формат — 2 десетични, nbsp за хиляди,
+// запетая. Числови низове само; останалото минава непроменено.
 fn rpt_bg_num(s: str) -> str {
+    if report_is_number(s) == 1 {
+        return report_fmt_bgn(s)
+    }
     return str_replace(s, ".", ",")
 }

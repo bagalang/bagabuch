@@ -172,6 +172,14 @@ fn s3_cfg_from_settings(q: OrmQuery) -> JObj {
     } else {
         cfg = jobj_str(cfg, "prefix", prefix)
     }
+    // s3baga A2 (2026-10-31): virtual-hosted bucket style — за AWS S3 и
+    // доставчици, които изискват bucket.endpoint host вместо path-style.
+    let style = setting_map_get(q, "s3.style")
+    if style == "virtual" || style == "vhost" {
+        cfg = jobj_str(cfg, "style", "virtual")
+    } else {
+        cfg = jobj_str(cfg, "style", "path")
+    }
     return cfg
 }
 
